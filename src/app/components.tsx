@@ -1,17 +1,14 @@
 "use client"
 import React from "react"
 import { SessionProvider, signIn, signOut, useSession } from "next-auth/react"
-import { ThemeProvider } from "next-themes"
-import { Button, ChakraProvider } from "@chakra-ui/react"
-import { system } from "@/config/theme"
+import { Button } from "@chakra-ui/react"
+import { Provider } from "@/components/ui/provider"
 
 export function Wrapper({ children }: { children: React.ReactNode }) {
     return <SessionProvider>
-        <ThemeProvider>
-            <ChakraProvider value={system}>
-                {children}
-            </ChakraProvider>
-        </ThemeProvider>
+        <Provider>
+            {children}
+        </Provider>
     </SessionProvider>
 }
 
