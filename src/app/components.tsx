@@ -1,7 +1,7 @@
 "use client"
 import React from "react"
 import { SessionProvider, signIn, signOut, useSession } from "next-auth/react"
-import { Button } from "@chakra-ui/react"
+import { Button, SystemStyleObject } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
 
 export function Wrapper({ children }: { children: React.ReactNode }) {
@@ -12,7 +12,7 @@ export function Wrapper({ children }: { children: React.ReactNode }) {
     </SessionProvider>
 }
 
-export function LoginButton() {
+export function LoginButton(props: SystemStyleObject) {
     const { data: session } = useSession()
     const login = async () => {
         if(session?.user) {
@@ -22,7 +22,7 @@ export function LoginButton() {
         }
     }
 
-    return <Button type="submit" variant="surface" onClick={login}>
-        {session?.user ? "Logout" : "Login"}
+    return <Button {...props} type="submit" variant="outline" onClick={login}>
+        {session?.user ? "登出" : "登录"}
     </Button>
 }

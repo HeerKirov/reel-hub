@@ -8,9 +8,6 @@ export default async function Home() {
     return (
         <>
             <div>
-                REEL HUB
-            </div>
-            <div>
                 <LoginButton/>
                 <Button variant="outline">
                     {session?.user ? (JSON.stringify(session.user)) : "(None)"}
