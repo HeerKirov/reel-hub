@@ -26,12 +26,13 @@ export default function RootLayout({ children }: Readonly<{children: React.React
 
 async function Root({ children }: Readonly<{children: React.ReactNode}>) {
     const session = await getSession()
-    const contentBase: SystemStyleObject = {mt: "40px"}
-    const contentLg: SystemStyleObject = {ml: "200px", mt: "0"}
+    const contentBase: SystemStyleObject = {mt: "50px"}
+    const contentLg: SystemStyleObject = {ml: "60px", mt: "0"}
+    const contentXl: SystemStyleObject = {ml: "200px"}
 
     return (<>
         <NavigationSideBar avatar={session?.user ? {name: session.user.name, image: session.user.image ?? undefined} : undefined}/>
-        <Box {...contentBase} lg={contentLg}>
+        <Box {...contentBase} lg={contentLg} xl={contentXl}>
             <Container>
                 {children}
             </Container>

@@ -8,7 +8,7 @@ import {
     RiBarChartBoxAiLine, RiBookmark3Line, RiBookOpenFill, RiDatabase2Fill, RiFilmFill, RiGamepadFill,
     RiImageFill, RiPenNibLine, RiPulseFill, RiTvLine
 } from "react-icons/ri"
-import { Avatar, Box, Button, For, Heading, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
+import { Avatar, Box, Button, Collapsible, Heading, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
 
 const headerFont = Lora({
@@ -35,31 +35,65 @@ export function NavigationSideBar(props: {avatar?: {name: string, image?: string
 
     const themeColor = selected?.theme ?? "teal"
 
-    const sideBase: SystemStyleObject = {height: "40px", width: "100vw", transition: "background-color 0.2s", ...attrs}
-    const sideLg: SystemStyleObject = {height: "100vh", width: "200px"}
+    const sideBase: SystemStyleObject = {height: "50px", width: "100vw", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "background-color 0.2s", ...attrs}
+    const sideLg: SystemStyleObject = {height: "100vh", width: "60px", flexDirection: "column", justifyContent: "initial"}
+    const sideXl: SystemStyleObject = {height: "100vh", width: "200px"}
 
     return (
-        <Box {...sideBase} lg={sideLg} position="fixed" left="0" top="0" textAlign="center" colorPalette={themeColor} bg="colorPalette.solid" color="colorPalette.contrast">
-            <Heading className={headerFont.className} mt="4"><NextLink href="/">REEL HUB</NextLink></Heading>
+        <Box {...sideBase} lg={sideLg} xl={sideXl} position="fixed" left="0" top="0" textAlign="center" colorPalette={themeColor} bg="colorPalette.solid" color="colorPalette.contrast">
+            <Heading className={headerFont.className} flex="0 0 auto" mx="4" lg={{mx: "0", mt: "4"}}><NextLink href="/">REEL HUB</NextLink></Heading>
+
+            <HorizontalMenuList selected={selected} selectedSub={selectedSub}/>
 
             {avatar ? <>
-                <Avatar.Root mt="4" size="xl">
+                <Avatar.Root flex="0 0 auto" lg={{mt: "4"}} size={{base: "sm", xl: "xl"}}>
                     <Avatar.Fallback name={avatar.name}/>
                     <Avatar.Image src={avatar.image ?? undefined}/>
                 </Avatar.Root>
-                <Text mt="1">{avatar.name}</Text>
+                <Text flex="0 0 auto" mx="2" lgOnly={{display: "none"}} lg={{mx: "0", mt: "1"}}>{avatar.name}</Text>
             </> : <>
-                <LoginButton mt="4"/>
+                <LoginButton flex="0 0 auto" lg={{mt: "4"}}/>
             </>}
 
-            <Stack py="1" px="2" mt="4">
-                <For each={NAVIGATIONS}>{item => (
-                    <NavigationButtonGroup {...item} selected={selected === item ? (selectedSub || true) : false}/>
-                )}</For>
-            </Stack>
+            <VerticalMenuList selected={selected} selectedSub={selectedSub}/>
         </Box>
     )
 }
+
+const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selectedSub }: {selected?: (typeof NAVIGATIONS)[number], selectedSub?: (typeof NAVIGATIONS)[number]["children"][number]}) {
+    const textDisplay: SystemStyleObject["display"] = {base: "none", sm: "initial"}
+    return (<Box display={{base: "flex", lg: "none"}} flex="1 1 100%">
+        {selected !== undefined ? selected.children.map(item => (
+            <Button key={item.href} variant={selectedSub === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text display={textDisplay}>{item.label}</Text></NextLink></Button>
+        )) : NAVIGATIONS.map(item => (
+            <Button key={item.href} variant="solid" asChild><NextLink href={item.href}>{item.icon}<Text display={textDisplay}>{item.label}</Text></NextLink></Button>
+        ))}
+    </Box>)
+})
+
+const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub }: {selected?: (typeof NAVIGATIONS)[number], selectedSub?: (typeof NAVIGATIONS)[number]["children"][number]}) {
+    return (
+        <Stack display={{base: "none", lg: "flex"}} py="1" px="2" mt="4" width="100%" overflowY="auto" overflowX="hidden">
+            {NAVIGATIONS.map(item => <VerticalMenuButtonGroup key={item.href} {...item} selected={selected === item ? (selectedSub || true) : false}/>)}
+        </Stack>
+    )
+})
+
+const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: (typeof NAVIGATIONS)[number] & {selected: boolean | (typeof NAVIGATIONS)[number]["children"][number]}) {
+    const textDisplay: SystemStyleObject["display"] = {base: "none", xl: "initial"}
+    return (<>
+        <Button variant="solid" opacity={props.selected ? undefined : "80%"} asChild><NextLink href={props.href}>{props.icon}<Text display={textDisplay}>{props.label}</Text></NextLink></Button>
+        <Collapsible.Root open={!!props.selected}>
+            <Collapsible.Content>
+                <Stack gap="1" my="2" py="2" mx="1" borderTopWidth="1px" borderBottomWidth="1px" borderColor="colorPalette.contrast">
+                    {props.children.map(item => (
+                        <Button key={item.href} variant={props.selected === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text display={textDisplay}>{item.label}</Text></NextLink></Button>
+                    ))}
+                </Stack>
+            </Collapsible.Content>
+        </Collapsible.Root>
+    </>)
+})
 
 const LoginButton = memo(function LoginButton(props: SystemStyleObject) {
     const { data: session } = useSession()
@@ -74,18 +108,6 @@ const LoginButton = memo(function LoginButton(props: SystemStyleObject) {
     return <Button {...props} type="submit" variant="outline" onClick={login}>
         {session?.user ? "登出" : "登录"}
     </Button>
-})
-
-const NavigationButtonGroup = memo(function NavigationButtonGroup(props: (typeof NAVIGATIONS)[number] & {selected: boolean | (typeof NAVIGATIONS)[number]["children"][number]}) {
-    console.log("render", props.label)
-    return (<>
-        <Button variant="solid" color={props.selected ? undefined : "colorPalette.muted"} asChild><NextLink href={props.href}>{props.icon} {props.label}</NextLink></Button>
-        {!!props.selected && <Stack gap="1" my="4" mx="1">
-            <For each={props.children}>{item => (
-                <Button variant={props.selected === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon} {item.label}</NextLink></Button>
-            )}</For>
-        </Stack>}
-    </>)
 })
 
 const NAVIGATIONS: {label: string, href: string, icon: React.ReactNode, theme: string, children: {label: string, href: string, icon: React.ReactNode}[]}[] = [
