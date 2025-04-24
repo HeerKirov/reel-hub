@@ -31,11 +31,11 @@ async function Root({ children }: Readonly<{children: React.ReactNode}>) {
     const contentXl: SystemStyleObject = {ml: "200px"}
 
     return (<>
-        <NavigationSideBar avatar={session?.user ? {name: session.user.name, image: session.user.image ?? undefined} : undefined}/>
         <Box {...contentBase} lg={contentLg} xl={contentXl}>
             <Container>
                 {children}
             </Container>
         </Box>
+        <NavigationSideBar avatar={session?.user ? {name: session.user.name, image: session.user.image ?? undefined} : undefined}/>
     </>)
 }

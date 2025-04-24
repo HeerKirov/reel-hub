@@ -4,13 +4,10 @@ import NextLink from "next/link"
 import { Lora } from "next/font/google"
 import { usePathname } from "next/navigation"
 import { SessionProvider, signIn, signOut } from "next-auth/react"
-import {
-    RiArrowDownSFill,
-    RiBarChartBoxAiLine, RiBookmark3Line, RiBookOpenFill, RiDatabase2Fill, RiFilmFill, RiGamepadFill, RiHome3Line,
-    RiImageFill, RiLoginBoxLine, RiLogoutBoxLine, RiPenNibLine, RiPulseFill, RiTvLine
-} from "react-icons/ri"
+import { RiArrowDownSFill, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine } from "react-icons/ri"
 import { Avatar, Box, Button, Collapsible, Heading, Menu, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
+import { NavigationItem, NAVIGATIONS, NavigationSubItem } from "@/constants/ui"
 
 const headerFont = Lora({
     weight: "700",
@@ -46,7 +43,7 @@ export function NavigationSideBar(props: {avatar?: {name: string, image?: string
 
             <Box flex="1 1 50%" display={{base: "none", sm: "block", lg: "none"}}/>
             <HorizontalMenuDropdown selected={selected}/>
-            <Box flex="1 1 50%" display={{base: "block", sm: "none"}}/>
+            <Box flex="1 1 20%" display={{base: "block", sm: "none"}}/>
             <HorizontalMenuList selected={selected} selectedSub={selectedSub}/>
             <Box flex="1 1 50%" display={{lg: "none"}}/>
 
@@ -86,9 +83,9 @@ const User = memo(function User({ avatar }: {avatar?: {name: string, image?: str
     )
 })
 
-const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selectedSub }: {selected?: (typeof NAVIGATIONS)[number], selectedSub?: (typeof NAVIGATIONS)[number]["children"][number]}) {
+const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selectedSub }: {selected?: NavigationItem, selectedSub?: NavigationSubItem}) {
     const textStyle: SystemStyleObject = {display: {base: "none", md: "initial"}}
-    const buttonStyle: SystemStyleObject = {width: {base: "9", md: "auto"}}
+    const buttonStyle: SystemStyleObject = {width: {base: "9", md: "auto"}, px: {md: "2"}}
     return (
         <Box display={{base: "flex", lg: "none"}} flex="0 0 auto" justifyContent="center">
             {selected !== undefined ? selected.children.map(item => (
@@ -100,7 +97,7 @@ const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selected
     )
 })
 
-const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub }: {selected?: (typeof NAVIGATIONS)[number], selectedSub?: (typeof NAVIGATIONS)[number]["children"][number]}) {
+const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub }: {selected?: NavigationItem, selectedSub?: NavigationSubItem}) {
     return (
         <Stack display={{base: "none", lg: "flex"}} py="1" px="2" mt="4" width="100%" overflowY="auto" overflowX="hidden">
             {NAVIGATIONS.map(item => <VerticalMenuButtonGroup key={item.href} {...item} selected={selected === item ? (selectedSub || true) : false}/>)}
@@ -108,7 +105,7 @@ const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub 
     )
 })
 
-const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, ...attrs }: {selected?: (typeof NAVIGATIONS)[number]} & SystemStyleObject) {
+const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, ...attrs }: {selected?: NavigationItem} & SystemStyleObject) {
     return (
         selected ? <Menu.Root>
             <Menu.Trigger asChild>
@@ -131,7 +128,7 @@ const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, 
     )
 })
 
-const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: (typeof NAVIGATIONS)[number] & {selected: boolean | (typeof NAVIGATIONS)[number]["children"][number]}) {
+const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: NavigationItem & {selected: boolean | NavigationSubItem}) {
     const textStyle: SystemStyleObject = {display: {base: "none", xl: "initial"}}
     return (<>
         <Button variant="solid" opacity={props.selected ? undefined : "80%"} asChild><NextLink href={props.href}>{props.icon}<Text {...textStyle}>{props.label}</Text></NextLink></Button>
@@ -146,52 +143,3 @@ const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: (ty
         </Collapsible.Root>
     </>)
 })
-
-const NAVIGATIONS: {label: string, href: string, icon: React.ReactNode, theme: string, children: {label: string, href: string, icon: React.ReactNode}[]}[] = [
-    {
-        label: "动画", href: "/anime", icon: <RiTvLine/>, theme: "blue",
-        children: [
-            {label: "数据库", href: "/anime/database", icon: <RiDatabase2Fill/>},
-            {label: "订阅", href: "/anime/subscription", icon: <RiBookmark3Line/>},
-            {label: "时间线", href: "/anime/timeline", icon: <RiPulseFill/>},
-            {label: "评价", href: "/anime/comment", icon: <RiPenNibLine/>},
-            {label: "统计", href: "/anime/statistics", icon: <RiBarChartBoxAiLine/>},
-        ]
-    },
-    {
-        label: "游戏", href: "/game", icon: <RiGamepadFill/>, theme: "green",
-        children: [
-            {label: "数据库", href: "/game/database", icon: <RiDatabase2Fill/>},
-            {label: "游玩记录", href: "/game/record", icon: <RiPulseFill/>},
-            {label: "评价", href: "/game/comment", icon: <RiPenNibLine/>},
-            {label: "统计", href: "/game/statistics", icon: <RiBarChartBoxAiLine/>},
-        ]
-    },
-    {
-        label: "电影", href: "/movie", icon: <RiFilmFill/>, theme: "orange",
-        children: [
-            {label: "数据库", href: "/movie/database", icon: <RiDatabase2Fill/>},
-            {label: "观看记录", href: "/movie/record", icon: <RiPulseFill/>},
-            {label: "评价", href: "/movie/comment", icon: <RiPenNibLine/>},
-            {label: "统计", href: "/movie/statistics", icon: <RiBarChartBoxAiLine/>},
-        ]
-    },
-    {
-        label: "小说", href: "/novel", icon: <RiBookOpenFill/>, theme: "cyan",
-        children: [
-            {label: "数据库", href: "/novel/database", icon: <RiDatabase2Fill/>},
-            {label: "足迹", href: "/novel/record", icon: <RiPulseFill/>},
-            {label: "评价", href: "/novel/comment", icon: <RiPenNibLine/>},
-            {label: "统计", href: "/novel/statistics", icon: <RiBarChartBoxAiLine/>},
-        ]
-    },
-    {
-        label: "漫画", href: "/manga", icon: <RiImageFill/>, theme: "pink",
-        children: [
-            {label: "数据库", href: "/manga/database", icon: <RiDatabase2Fill/>},
-            {label: "足迹", href: "/manga/record", icon: <RiPulseFill/>},
-            {label: "评价", href: "/manga/comment", icon: <RiPenNibLine/>},
-            {label: "统计", href: "/manga/statistics", icon: <RiBarChartBoxAiLine/>},
-        ]
-    },
-]
