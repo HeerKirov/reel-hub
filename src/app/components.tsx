@@ -3,19 +3,20 @@ import React, { memo } from "react"
 import NextLink from "next/link"
 import { Lora } from "next/font/google"
 import { usePathname } from "next/navigation"
-import { SessionProvider, signIn, signOut, useSession } from "next-auth/react"
+import { SessionProvider, signIn, signOut } from "next-auth/react"
 import {
-    RiBarChartBoxAiLine, RiBookmark3Line, RiBookOpenFill, RiDatabase2Fill, RiFilmFill, RiGamepadFill,
-    RiImageFill, RiPenNibLine, RiPulseFill, RiTvLine
+    RiArrowDownSFill,
+    RiBarChartBoxAiLine, RiBookmark3Line, RiBookOpenFill, RiDatabase2Fill, RiFilmFill, RiGamepadFill, RiHome3Line,
+    RiImageFill, RiLoginBoxLine, RiLogoutBoxLine, RiPenNibLine, RiPulseFill, RiTvLine
 } from "react-icons/ri"
-import { Avatar, Box, Button, Collapsible, Heading, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
+import { Avatar, Box, Button, Collapsible, Heading, Menu, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
 
 const headerFont = Lora({
     weight: "700",
     subsets: ["latin"],
     display: "swap",
-});
+})
 
 export function Wrapper({ children }: { children: React.ReactNode }) {
     return <SessionProvider>
@@ -41,34 +42,62 @@ export function NavigationSideBar(props: {avatar?: {name: string, image?: string
 
     return (
         <Box {...sideBase} lg={sideLg} xl={sideXl} position="fixed" left="0" top="0" textAlign="center" colorPalette={themeColor} bg="colorPalette.solid" color="colorPalette.contrast">
-            <Heading className={headerFont.className} flex="0 0 auto" mx="4" lg={{mx: "0", mt: "4"}}><NextLink href="/">REEL HUB</NextLink></Heading>
+            <Heading className={headerFont.className} flex="0 0 auto" display="none" sm={{display: "block"}} mx="4" lg={{mx: "0", mt: "4"}}><NextLink href="/">REEL HUB</NextLink></Heading>
 
+            <Box flex="1 1 50%" display={{base: "none", sm: "block", lg: "none"}}/>
+            <HorizontalMenuDropdown selected={selected}/>
+            <Box flex="1 1 50%" display={{base: "block", sm: "none"}}/>
             <HorizontalMenuList selected={selected} selectedSub={selectedSub}/>
+            <Box flex="1 1 50%" display={{lg: "none"}}/>
 
-            {avatar ? <>
-                <Avatar.Root flex="0 0 auto" lg={{mt: "4"}} size={{base: "sm", xl: "xl"}}>
-                    <Avatar.Fallback name={avatar.name}/>
-                    <Avatar.Image src={avatar.image ?? undefined}/>
-                </Avatar.Root>
-                <Text flex="0 0 auto" mx="2" lgOnly={{display: "none"}} lg={{mx: "0", mt: "1"}}>{avatar.name}</Text>
-            </> : <>
-                <LoginButton flex="0 0 auto" lg={{mt: "4"}}/>
-            </>}
+            <User avatar={avatar}/>
 
             <VerticalMenuList selected={selected} selectedSub={selectedSub}/>
         </Box>
     )
 }
 
+const User = memo(function User({ avatar }: {avatar?: {name: string, image?: string}}) {
+
+    const login = () => signIn("auth-service")
+    const logout = () => signOut()
+
+    return avatar ? <Menu.Root>
+        <Menu.Trigger asChild>
+            <Box flex="0 0 auto" display="flex" alignItems="center" flexDirection={{base: "row", lg: "column"}}>
+                <Avatar.Root mx="1" lg={{mt: "4"}} size={{base: "sm", xl: "xl"}}>
+                    <Avatar.Fallback name={avatar.name}/>
+                    <Avatar.Image src={avatar.image ?? undefined}/>
+                </Avatar.Root>
+                <Box ml="1" mr="2" display={{base: "none", sm: "block", lgOnly: "none"}} lg={{ml: "0", mr: "0", mt: "1"}}>{avatar.name}</Box>
+            </Box>
+        </Menu.Trigger>
+        <Portal>
+            <Menu.Positioner>
+                <Menu.Content>
+                    <Menu.Item key="logout" onClick={logout} value="登出"><RiLogoutBoxLine/> 登出</Menu.Item>
+                </Menu.Content>
+            </Menu.Positioner>
+        </Portal>
+    </Menu.Root> : (
+        <Button variant="outline" size="sm" color="colorPalette.contrast" flex="0 0 auto" mr="2" lg={{mt: "4", mr: "0"}} onClick={login}>
+            <RiLoginBoxLine/><Text display={{lgOnly: "none"}}>登录</Text>
+        </Button>
+    )
+})
+
 const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selectedSub }: {selected?: (typeof NAVIGATIONS)[number], selectedSub?: (typeof NAVIGATIONS)[number]["children"][number]}) {
-    const textDisplay: SystemStyleObject["display"] = {base: "none", sm: "initial"}
-    return (<Box display={{base: "flex", lg: "none"}} flex="1 1 100%">
-        {selected !== undefined ? selected.children.map(item => (
-            <Button key={item.href} variant={selectedSub === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text display={textDisplay}>{item.label}</Text></NextLink></Button>
-        )) : NAVIGATIONS.map(item => (
-            <Button key={item.href} variant="solid" asChild><NextLink href={item.href}>{item.icon}<Text display={textDisplay}>{item.label}</Text></NextLink></Button>
-        ))}
-    </Box>)
+    const textStyle: SystemStyleObject = {display: {base: "none", md: "initial"}}
+    const buttonStyle: SystemStyleObject = {width: {base: "9", md: "auto"}}
+    return (
+        <Box display={{base: "flex", lg: "none"}} flex="0 0 auto" justifyContent="center">
+            {selected !== undefined ? selected.children.map(item => (
+                <Button key={item.href} variant={selectedSub === item ? "subtle" : "solid"} {...buttonStyle} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text {...textStyle}>{item.label}</Text></NextLink></Button>
+            )) : NAVIGATIONS.map(item => (
+                <Button key={item.href} variant="solid" {...buttonStyle} asChild><NextLink href={item.href}>{item.icon}<Text {...textStyle}>{item.label}</Text></NextLink></Button>
+            ))}
+        </Box>
+    )
 })
 
 const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub }: {selected?: (typeof NAVIGATIONS)[number], selectedSub?: (typeof NAVIGATIONS)[number]["children"][number]}) {
@@ -79,35 +108,43 @@ const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub 
     )
 })
 
+const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, ...attrs }: {selected?: (typeof NAVIGATIONS)[number]} & SystemStyleObject) {
+    return (
+        selected ? <Menu.Root>
+            <Menu.Trigger asChild>
+                <Button {...attrs} display={{lg: "none"}} variant={{base: "solid", sm: "outline"}} color="colorPalette.contrast" size="sm" pl="2" pr="1" mx="1">{selected.icon} {selected.label} <RiArrowDownSFill/></Button>
+            </Menu.Trigger>
+            <Portal>
+                <Menu.Positioner>
+                    <Menu.Content>
+                        <Menu.Item display={{base: "flex", sm: "none"}} key="/" value="主页" asChild>
+                            <NextLink href="/"><RiHome3Line/> 主页</NextLink>
+                        </Menu.Item>
+                        {NAVIGATIONS.map(item => <Menu.Item key={item.href} value={item.label} asChild>
+                            <NextLink href={item.href}>{item.icon} {item.label}</NextLink>
+                        </Menu.Item>)}
+                    </Menu.Content>
+                </Menu.Positioner>
+            </Portal>
+        </Menu.Root>
+        : <Button {...attrs} display={{sm: "none"}} variant="solid" pl="2" pr="1" mr="1"><NextLink href="/"><RiHome3Line/></NextLink></Button>
+    )
+})
+
 const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: (typeof NAVIGATIONS)[number] & {selected: boolean | (typeof NAVIGATIONS)[number]["children"][number]}) {
-    const textDisplay: SystemStyleObject["display"] = {base: "none", xl: "initial"}
+    const textStyle: SystemStyleObject = {display: {base: "none", xl: "initial"}}
     return (<>
-        <Button variant="solid" opacity={props.selected ? undefined : "80%"} asChild><NextLink href={props.href}>{props.icon}<Text display={textDisplay}>{props.label}</Text></NextLink></Button>
+        <Button variant="solid" opacity={props.selected ? undefined : "80%"} asChild><NextLink href={props.href}>{props.icon}<Text {...textStyle}>{props.label}</Text></NextLink></Button>
         <Collapsible.Root open={!!props.selected}>
             <Collapsible.Content>
                 <Stack gap="1" my="2" py="2" mx="1" borderTopWidth="1px" borderBottomWidth="1px" borderColor="colorPalette.contrast">
                     {props.children.map(item => (
-                        <Button key={item.href} variant={props.selected === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text display={textDisplay}>{item.label}</Text></NextLink></Button>
+                        <Button key={item.href} variant={props.selected === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text {...textStyle}>{item.label}</Text></NextLink></Button>
                     ))}
                 </Stack>
             </Collapsible.Content>
         </Collapsible.Root>
     </>)
-})
-
-const LoginButton = memo(function LoginButton(props: SystemStyleObject) {
-    const { data: session } = useSession()
-    const login = async () => {
-        if(session?.user) {
-            await signOut()
-        }else{
-            await signIn("auth-service")
-        }
-    }
-
-    return <Button {...props} type="submit" variant="outline" onClick={login}>
-        {session?.user ? "登出" : "登录"}
-    </Button>
 })
 
 const NAVIGATIONS: {label: string, href: string, icon: React.ReactNode, theme: string, children: {label: string, href: string, icon: React.ReactNode}[]}[] = [
