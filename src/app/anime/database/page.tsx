@@ -1,28 +1,34 @@
 import { memo } from "react"
+import NextLink from "next/link"
 import {
     Box, Text, Image, SimpleGrid, Flex, SystemStyleObject
 } from "@chakra-ui/react"
 import { NavigationBreadcrumb } from "@/components/server/layout"
-import { PageRouter } from "@/components/client/layout"
-import NextLink from "next/link";
+import { PageRouter } from "@/components/server/filters"
 
-export default function AnimationDatabase() {
+type SearchParams = { page?: string }
+
+export default async function AnimationDatabase(props: {searchParams: Promise<SearchParams>}) {
     return (<>
         <NavigationBreadcrumb url="/anime/database"/>
 
         <Flex flexWrap={{base: "wrap", md: "nowrap"}} gap="2">
-            <QueryBox flex="1 0 auto" order={{base: 0, md: 1}} width={{base: "100%", md: "200px", lg: "220px", xl: "240px"}}/>
+            <QueryBox flex="1 0 auto" order={{base: 0, md: 1}} width={{base: "100%", md: "210px", lg: "220px", xl: "240px"}} searchParams={props.searchParams}/>
             <ContentGrid flex="1 1 100%"/>
         </Flex>
     </>)
 }
 
-const QueryBox = memo(function QueryBox({ ...attrs }: SystemStyleObject) {
+const QueryBox = memo(async function QueryBox({ searchParams, ...attrs }: {searchParams: Promise<SearchParams>} & SystemStyleObject) {
+    const params = await searchParams
+    const page = params.page !== undefined ? parseInt(params.page) : 1
+
     return (<Box {...attrs}>
         <Box p="2" borderWidth="1px" rounded="md">
             1
         </Box>
-        <PageRouter mt="2"/>
+        <PageRouter mt="2" page={page} total={5} searchParams={params}/>
+        <Text textAlign={{base: "center", md: "left"}}>共 100 条记录</Text>
     </Box>)
 })
 
