@@ -1,34 +1,58 @@
 import { memo } from "react"
 import NextLink from "next/link"
-import {
-    Box, Text, Image, SimpleGrid, Flex, SystemStyleObject
-} from "@chakra-ui/react"
+import { Box, Text, Image, SimpleGrid, Flex, SystemStyleObject, Stack, Button, IconButton } from "@chakra-ui/react"
+import { RiAddLine, RiFilter2Line } from "react-icons/ri"
 import { NavigationBreadcrumb } from "@/components/server/layout"
-import { PageRouter } from "@/components/server/filters"
+import { CompactPagination } from "@/components/server/filters"
+import { SearchBox } from "@/components/filters"
+import { ResponsiveIf } from "@/components/logical"
 
-type SearchParams = { page?: string }
+type SearchParams = { page?: string, search?: string }
 
 export default async function AnimationDatabase(props: {searchParams: Promise<SearchParams>}) {
+    const searchParams = await props.searchParams
+    const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
+
     return (<>
         <NavigationBreadcrumb url="/anime/database"/>
 
         <Flex flexWrap={{base: "wrap", md: "nowrap"}} gap="2">
-            <QueryBox flex="1 0 auto" order={{base: 0, md: 1}} width={{base: "100%", md: "210px", lg: "220px", xl: "240px"}} searchParams={props.searchParams}/>
+            <FilterPanel flex="1 0 auto" order={{base: 0, md: 1}} width={{base: "100%", md: "210px", lg: "220px", xl: "240px"}} searchParams={searchParams}/>
             <ContentGrid flex="1 1 100%"/>
         </Flex>
+
+        <ResponsiveIf show={{md: false}}>
+            <CompactPagination mt="1" page={page} total={30} searchParams={searchParams}/>
+            <Text textAlign="center">共 100 条记录</Text>
+        </ResponsiveIf>
     </>)
 }
 
-const QueryBox = memo(async function QueryBox({ searchParams, ...attrs }: {searchParams: Promise<SearchParams>} & SystemStyleObject) {
-    const params = await searchParams
-    const page = params.page !== undefined ? parseInt(params.page) : 1
+const FilterPanel = memo(async function QueryBox({ searchParams, ...attrs }: {searchParams: SearchParams} & SystemStyleObject) {
+    const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
     return (<Box {...attrs}>
-        <Box p="2" borderWidth="1px" rounded="md">
-            1
+        <Box borderWidth="1px" rounded="md">
+            <Button variant="ghost" size="sm" asChild><NextLink href="/anime/database/new"><RiAddLine/> 新建</NextLink></Button>
+            <IconButton variant="ghost" size="sm"><RiFilter2Line/></IconButton>
         </Box>
-        <PageRouter mt="2" page={page} total={5} searchParams={params}/>
-        <Text textAlign={{base: "center", md: "left"}}>共 100 条记录</Text>
+        <ResponsiveIf show={{base: false, md: true}}>
+            <Box mt="1" py="1" px="2" borderWidth="1px" rounded="md">
+                <SearchBox value={searchParams.search} searchParamName="search"/>
+                <Stack gap="1" mt="1">
+                    <Flex alignItems="baseline">
+                        <Box flex="1 0 60px" fontSize="xs" textAlign="right" pr="1">放送时间</Box>
+                        <Box flex="1 1 100%">2025年</Box>
+                    </Flex>
+                    <Flex alignItems="baseline">
+                        <Box flex="1 0 60px" fontSize="xs" textAlign="right" pr="1">分级</Box>
+                        <Box flex="1 1 100%">R12</Box>
+                    </Flex>
+                </Stack>
+            </Box>
+            <CompactPagination mt="1" fullwidth page={page} total={30} searchParams={searchParams}/>
+            <Text textAlign="left">共 100 条记录</Text>
+        </ResponsiveIf>
     </Box>)
 })
 
@@ -42,7 +66,7 @@ const ContentGrid = memo(function ContentGrid({ ...attrs }: SystemStyleObject) {
     ]
 
     return (
-        <SimpleGrid {...attrs} columns={{base: 3, sm: 4, xl: 5}} gap="2">
+        <SimpleGrid gap="2" {...attrs} columns={{base: 3, sm: 4, xl: 5}}>
             {list.map(item => <Box key={item.id}>
                 <NextLink href={`/anime/database/${item.id}`}>
                     <Box  rounded="md" borderWidth="1px" overflow="hidden">

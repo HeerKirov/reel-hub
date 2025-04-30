@@ -109,7 +109,7 @@ const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, 
     return (
         selected ? <Menu.Root>
             <Menu.Trigger asChild>
-                <Button {...attrs} display={{lg: "none"}} variant={{base: "solid", sm: "outline"}} color="colorPalette.contrast" size="sm" pl="2" pr="1" mx="1">{selected.icon} {selected.label} <RiArrowDownSFill/></Button>
+                <Button display={{lg: "none"}} variant={{base: "solid", sm: "outline"}} color="colorPalette.contrast" size="sm" pl="2" pr="1" mx="1" {...attrs}>{selected.icon} {selected.label} <RiArrowDownSFill/></Button>
             </Menu.Trigger>
             <Portal>
                 <Menu.Positioner>
@@ -124,7 +124,7 @@ const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, 
                 </Menu.Positioner>
             </Portal>
         </Menu.Root>
-        : <Button {...attrs} display={{sm: "none"}} variant="solid" pl="2" pr="1" mr="1"><NextLink href="/"><RiHome3Line/></NextLink></Button>
+        : <Button display={{sm: "none"}} variant="solid" pl="2" pr="1" mr="1" {...attrs}><NextLink href="/"><RiHome3Line/></NextLink></Button>
     )
 })
 
