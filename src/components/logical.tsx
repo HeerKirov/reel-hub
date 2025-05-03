@@ -6,10 +6,11 @@ import { useIsClient } from "@/helpers/hooks"
 export type ResponsiveIfProps = {
     show: {base?: boolean, sm?: boolean, md?: boolean, lg?: boolean, xl?: boolean} | [boolean, boolean, boolean, boolean, boolean]
     children?: React.ReactNode
+    asChild?: boolean
 } & SystemStyleObject
 
 export const ResponsiveIf = memo(function ResponsiveIf(props: ResponsiveIfProps) {
-    const { show, children, display, ...attrs } = props
+    const { show, children, display, asChild, ...attrs } = props
     const showList = show instanceof Array ? show : [show.base, show.sm, show.md, show.lg, show.xl]
     const value = useMemo(() => {
         const base = showList[0] ?? true
@@ -17,7 +18,6 @@ export const ResponsiveIf = memo(function ResponsiveIf(props: ResponsiveIfProps)
         const md = showList[2] !== undefined ? showList[2] : sm
         const lg = showList[3] !== undefined ? showList[3] : md
         const xl = showList[4] !== undefined ? showList[4] : lg
-        console.log("value", {base, sm, md, lg, xl})
         return {base, sm, md, lg, xl}
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showList[0], showList[1], showList[2], showList[3], showList[4]])
@@ -38,10 +38,8 @@ export const ResponsiveIf = memo(function ResponsiveIf(props: ResponsiveIfProps)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [display, showList[0], showList[1], showList[2], showList[3], showList[4]])
 
-    console.log("shown:", shown, "isClient:", isClient, "displayStyle:", displayStyle)
-
     return (
-        ifShown && <Box display={displayStyle} {...attrs}>
+        ifShown && <Box display={displayStyle} asChild={asChild} {...attrs}>
             {children}
         </Box>
     )

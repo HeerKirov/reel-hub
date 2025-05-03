@@ -1,14 +1,11 @@
-import { memo } from "react"
 import NextLink from "next/link"
-import { Box, Button, IconButton, Popover, Portal, SystemStyleObject } from "@chakra-ui/react"
-import {
-    RiArrowLeftDoubleLine, RiArrowLeftSLine, RiArrowRightDoubleLine, RiArrowRightSLine
-} from "react-icons/ri"
+import { Box, Button, IconButton, Link, Popover, Portal, SystemStyleObject } from "@chakra-ui/react"
+import { RiArrowLeftDoubleLine, RiArrowLeftSLine, RiArrowRightDoubleLine, RiArrowRightSLine } from "react-icons/ri"
 import { PageRouterPopover } from "./_components"
 
 export type PaginationProps = { page?: number, total?: number, fullwidth?: boolean, searchParams?: Record<string, string>, pageParamName?: string } & SystemStyleObject
 
-export const CompactPagination = memo(function PageRouter({ page = 1, total = 0, fullwidth, searchParams, pageParamName = "page", ...attrs }: PaginationProps) {
+export function CompactPagination({ page = 1, total = 0, fullwidth, searchParams, pageParamName = "page", ...attrs }: PaginationProps) {
     const getHref = (page: number) => {
         const p = new URLSearchParams({...searchParams, [pageParamName]: String(page < 1 ? 1 : page > total ? total : page)})
         return `?${p.toString()}`
@@ -38,4 +35,30 @@ export const CompactPagination = memo(function PageRouter({ page = 1, total = 0,
             <IconButton flex="0 0 auto" variant="outline" size="sm" disabled={page >= total} asChild><NextLink href={getHref(total)}><RiArrowRightDoubleLine/></NextLink></IconButton>
         </Box>
     )
-})
+}
+
+export type LinkGroupFilterProps = { items?: {label: string, value: string, color: SystemStyleObject["color"]}[], searchParams?: Record<string, string>, searchParamName?: string } & SystemStyleObject
+
+export function LinkGroupFilter({ items, searchParams, searchParamName, ...attrs }: LinkGroupFilterProps) {
+    const current = searchParams && searchParamName ? searchParams[searchParamName] : undefined
+
+    const getHref = (value: string) => {
+        if(searchParamName) {
+            const params = {...searchParams}
+            if(value) params[searchParamName] = value
+            else delete params[searchParamName]
+            if("page" in params) delete params["page"]
+            const p = new URLSearchParams(params)
+            return `?${p.toString()}`
+        }
+        return ""
+    }
+
+    return (
+        <Box display="flex" gap="2" flexWrap="wrap" {...attrs}>
+            {items?.map(item => (
+                <Link key={item.value} variant="underline" color={current === (item.value || undefined) ? `${item.color}.fg` : "fg.subtle"} fontWeight={700} asChild><NextLink href={getHref(item.value)}>{item.label}</NextLink></Link>
+            ))}
+        </Box>
+    )
+}
