@@ -1,7 +1,7 @@
 "use client"
 import { ChangeEvent, KeyboardEvent, memo, useCallback, useEffect, useMemo, useState } from "react"
-import { Flex, Input, InputGroup, Link, SimpleGrid, SystemStyleObject } from "@chakra-ui/react"
-import { RiArrowLeftBoxFill, RiSearch2Line } from "react-icons/ri"
+import { Icon, Input, InputGroup, Link, SimpleGrid, SystemStyleObject } from "@chakra-ui/react"
+import { RiArrowLeftBoxFill, RiCloseFill, RiSearch2Line } from "react-icons/ri"
 import { useRouter, useSearchParams } from "next/navigation"
 
 export type SearchBoxProps = {
@@ -54,6 +54,7 @@ export type PublishTimePickerProps = {
     value?: string | null
     onUpdateValue?: (value: string) => void
     searchParamName?: string
+    mode?: "month" | "season"
 } & SystemStyleObject
 
 export const PublishTimePicker = memo(function PublishTimePicker(props: PublishTimePickerProps) {
@@ -61,18 +62,27 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
     const searchParams = useSearchParams()
 
     const years = useMemo(() => Array(new Date().getFullYear() - 1995 + 1).fill(0).map((_, i) => i + 1995).toReversed(), [])
-    const months = useMemo(() => Array(12).fill(0).map((_, i) => i + 1), [])
+    const months = useMemo(() => props.mode === "season" ? [1, 4, 6, 10] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [props.mode])
 
     const [step, setStep] = useState<"y" | "m">("y")
-    const [currentYear, setYear] = useState<number>()
-    const [currentMonth, setMonth] = useState<number>()
+    const [currentYear, setYear] = useState<number | undefined>(() => {
+        const value = props.value?.split("-", 2)
+        return value ? parseInt(value[0]) : undefined
+    })
+    const [currentMonth, setMonth] = useState<"any" | number | undefined>(() => {
+        const value = props.value?.split("-", 2)
+        return value ? (value[1] ? parseInt(value[1]) : "any") : undefined
+    })
 
     const selectYear = (selectedYear: number) => {
         setStep("m")
         setYear(selectedYear)
-        if(selectedYear !== currentYear) {
-            setMonth(undefined)
-            const newValue = `${selectedYear}`
+    }
+
+    const selectMonth = (selectedMonth: "any" | number | undefined) => {
+        setMonth(selectedMonth)
+        if(selectedMonth !== currentMonth) {
+            const newValue = typeof selectedMonth === "number" ? `${currentYear}-${selectedMonth}` : `${currentYear}`
             props.onUpdateValue?.(newValue)
             if(props.searchParamName) {
                 const p = new URLSearchParams(searchParams.toString())
@@ -83,17 +93,12 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
         }
     }
 
-    const selectMonth = (selectedMonth: number | undefined) => {
-        setMonth(selectedMonth)
-        if(selectedMonth !== currentMonth) {
-            const newValue = selectedMonth !== undefined ? `${currentYear}-${selectedMonth}` : `${currentYear}`
-            props.onUpdateValue?.(newValue)
-            if(props.searchParamName) {
-                const p = new URLSearchParams(searchParams.toString())
-                p.set(props.searchParamName, newValue)
-                if(p.has("page")) p.delete("page")
-                router.push(`?${p.toString()}`)
-            }
+    const clear = () => {
+        if(props.searchParamName) {
+            const p = new URLSearchParams(searchParams.toString())
+            p.delete(props.searchParamName)
+            p.delete("page")
+            router.push(`?${p.toString()}`)
         }
     }
 
@@ -102,14 +107,15 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
             {years.map(year => (
                 <Link key={year} variant="underline" color={currentYear === year ? "blue.fg" : "fg.subtle"} fontWeight="700" onClick={() => selectYear(year)}>{year}年</Link>
             ))}
+            {!!props.value && <Link variant="underline" color="fg.subtle" fontWeight="700" onClick={clear}><Icon><RiCloseFill/></Icon> 清除</Link>}
         </SimpleGrid> : <>
-            <Flex justifyContent="space-around">
+            <SimpleGrid columns={2} gap="2" py="1">
                 <Link variant="underline" color="blue.fg" fontWeight="700" justifyContent="center" onClick={() => setStep("y")}><RiArrowLeftBoxFill/> {currentYear}年</Link>
-                <Link variant="underline" color={currentMonth === undefined ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth(undefined)}>任意月份</Link>
-            </Flex>
-            <SimpleGrid columns={3} gap="2" py="1">
+                <Link variant="underline" color={currentMonth === "any" ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth("any")}>任意月份</Link>
                 {months.map(month => (
-                    <Link key={month} variant="underline" color={currentMonth === month ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth(month)}>{month}月</Link>
+                    <Link key={month} variant="underline" color={currentMonth === month ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth(month)}>
+                        {props.mode === "season" ? `${month} - ${month + 2}月` : `${month}月`}
+                    </Link>
                 ))}
             </SimpleGrid>
         </>

@@ -1,10 +1,11 @@
 import NextLink from "next/link"
-import { Box, Text, Image, SimpleGrid, SystemStyleObject, Button, Icon, Link } from "@chakra-ui/react"
-import { RiAddLine } from "react-icons/ri"
+import { Box, Text, Image, SimpleGrid, SystemStyleObject, Button, Icon, Link, IconButton } from "@chakra-ui/react"
+import { RiAddLine, RiPriceTag3Line, RiUser2Line } from "react-icons/ri"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
-import { LinkGroupFilter } from "@/components/server/filters"
+import { LinkGroupFilter, PublishTimeFilterHeader } from "@/components/server/filters"
 import { PublishTimePicker, SearchBox } from "@/components/filters"
+import { hasPermission } from "@/helpers/next"
 
 type SearchParams = { page?: string, search?: string, ratingSex?: string, ratingViolence?: string, publishTime?: string }
 
@@ -12,13 +13,17 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
+    const isAdmin = await hasPermission("admin")
+
     return (
         <ListPageLayout
             searchParams={searchParams}
             breadcrumb={{url: "/anime/database"}}
             bar={<>
+                <IconButton variant="ghost" size="sm" asChild><NextLink href="/anime/database/tags"><RiPriceTag3Line/></NextLink></IconButton>
+                <IconButton variant="ghost" size="sm" asChild><NextLink href="/anime/database/staff"><RiUser2Line/></NextLink></IconButton>
                 <Box flex="1 1 100%"/>
-                <Button variant="ghost" size="sm" asChild><NextLink href="/anime/database/new"><RiAddLine/> 新建</NextLink></Button>
+                {isAdmin && <Button variant="ghost" size="sm" asChild><NextLink href="/anime/database/new"><RiAddLine/> 新建</NextLink></Button>}
             </>}
             filter={<FilterPanel searchParams={searchParams} />}
             content={<ContentGrid />}
@@ -80,32 +85,18 @@ function FilterPanel({ searchParams }: {searchParams: SearchParams}) {
                 <SidePanel.FilterStackItem title={<><Icon><PiKnifeFill/></Icon> 分级</>} asChild>
                     <LinkGroupFilter items={ratingViolenceItems} searchParams={searchParams} searchParamName="ratingViolence"/>
                 </SidePanel.FilterStackItem>
-                <SidePanel.FilterStackCollapseItem title="放送时间" header={<PublishTimeFilterHeader publishTime={searchParams.publishTime}/>}>
-                    <PublishTimePicker value={searchParams.publishTime} searchParamName="publishTime"/>
+                <SidePanel.FilterStackCollapseItem title="放送时间" header={<PublishTimeFilterHeader publishTime={searchParams.publishTime} mode="season"/>}>
+                    <PublishTimePicker value={searchParams.publishTime} searchParamName="publishTime" mode="season"/>
                 </SidePanel.FilterStackCollapseItem>
-                <SidePanel.FilterStackCollapseItem title="标签" asChild header={<Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>}>
+                <SidePanel.FilterStackCollapseItem title={<><Icon><RiPriceTag3Line/></Icon> 标签</>} asChild header={<Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>}>
                     泥嚎
                 </SidePanel.FilterStackCollapseItem>
-                <SidePanel.FilterStackCollapseItem title="STAFF" asChild header={<Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>}>
+                <SidePanel.FilterStackCollapseItem title={<><Icon><RiUser2Line/></Icon> STAFF</>} asChild header={<Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>}>
                     泥嚎
                 </SidePanel.FilterStackCollapseItem>
             </SidePanel.FilterStack>
         </>
     )
-}
-
-function PublishTimeFilterHeader({ publishTime }: {publishTime?: string}) {
-    if(publishTime) {
-        const [year, month] = publishTime.split("-")
-        const str = month ? `${year}年${month}月` : `${year}年`
-        return (
-            <Link variant="underline" fontWeight="700" color="blue.fg">{str}</Link>
-        )
-    }else{
-        return (
-            <Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>
-        )
-    }
 }
 
 function ContentGrid({ ...attrs }: SystemStyleObject) {

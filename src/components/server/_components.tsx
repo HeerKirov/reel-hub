@@ -1,7 +1,7 @@
 "use client"
 import React, { ChangeEvent, KeyboardEvent, memo, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Box, Button, Collapsible, Flex, Input } from "@chakra-ui/react"
+import { Box, Button, Flex, Input } from "@chakra-ui/react"
 import { RiArrowRightLine } from "react-icons/ri"
 
 export const PageRouterPopover = memo(function PageRouterPopover(props: {page: number, total: number, pageParamName: string}) {
@@ -35,22 +35,18 @@ export const PageRouterPopover = memo(function PageRouterPopover(props: {page: n
     )
 })
 
-export const SidePanelFilterStackCollapseItem = memo(function SidePanelFilterStackCollapseItem({ title, header, children, asChild }: {title?: React.ReactNode, header?: React.ReactNode, children?: React.ReactNode, asChild?: boolean}) {
+export const SidePanelFilterStackCollapseItem = memo(function FilterStackCollapseItem({ title, header, children, asChild }: {title?: React.ReactNode, header?: React.ReactNode, children?: React.ReactNode, asChild?: boolean}) {
     const [open, setOpen] = useState(false)
-
-    console.log("open", open)
 
     return (
         <Box>
             <Flex alignItems="baseline">
                 <Box flex="1 0 75px" fontSize="sm" textAlign="right" pr="3">{title}</Box>
-                <Box flex="1 1 100%" asChild={asChild} onClick={() => setOpen(o => !o)}>{header}</Box>
+                <Box flex="1 1 calc(100% - 75px)" asChild={asChild} onClick={() => setOpen(o => !o)}>{header}</Box>
             </Flex>
-            <Collapsible.Root lazyMount open={open} onOpenChange={d => setOpen(d.open)}>
-                <Collapsible.Content borderTopWidth="1px" borderBottomWidth="1px" px="2" py="1" mt="2">
-                    {children}
-                </Collapsible.Content>
-            </Collapsible.Root>
+            {open && <Box borderTopWidth="1px" borderBottomWidth="1px" px="2" py="1" mt="2">
+                {children}
+            </Box>}
         </Box>
     )
 })

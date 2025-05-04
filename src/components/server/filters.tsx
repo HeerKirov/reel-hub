@@ -1,3 +1,4 @@
+import React from "react"
 import NextLink from "next/link"
 import { Box, Button, IconButton, Link, Popover, Portal, SystemStyleObject } from "@chakra-ui/react"
 import { RiArrowLeftDoubleLine, RiArrowLeftSLine, RiArrowRightDoubleLine, RiArrowRightSLine } from "react-icons/ri"
@@ -61,4 +62,18 @@ export function LinkGroupFilter({ items, searchParams, searchParamName, ...attrs
             ))}
         </Box>
     )
+}
+
+export function PublishTimeFilterHeader({ publishTime, mode = "month" }: {publishTime?: string, mode?: "month" | "season" }) {
+    if(publishTime) {
+        const [year, month] = publishTime.split("-")
+        const str = month ? mode === "season" ? `${year}年${month}-${parseInt(month) + 2}月` : `${year}年${month}月` : `${year}年`
+        return (
+            <Link variant="underline" fontWeight="700" color="blue.fg">{str}</Link>
+        )
+    }else{
+        return (
+            <Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>
+        )
+    }
 }
