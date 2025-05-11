@@ -1,6 +1,6 @@
 import React from "react"
 import NextLink from "next/link"
-import { Box, Breadcrumb, CloseButton, Drawer, Flex, IconButton, Portal, Stack, Text } from "@chakra-ui/react"
+import { Box, Breadcrumb, CloseButton, Drawer, Flex, Heading, IconButton, Portal, Stack, Text } from "@chakra-ui/react"
 import { RiFilter2Line } from "react-icons/ri"
 import { NAVIGATIONS } from "@/constants/ui"
 import { ResponsiveIf } from "@/components/logical"
@@ -125,4 +125,33 @@ export const SidePanel = {
         )
     },
     FilterStackCollapseItem: SidePanelFilterStackCollapseItem
+}
+
+export type DetailPageLayoutProps = {
+    breadcrumb?: {url?: string, detail?: string, detailIcon?: React.ReactNode}
+    header?: React.ReactNode
+    side?: React.ReactNode
+    content?: React.ReactNode
+    bottom?: React.ReactNode
+}
+
+export function DetailPageLayout(props: DetailPageLayoutProps) {
+    return (
+        <>
+            {props.breadcrumb && <NavigationBreadcrumb {...props.breadcrumb}/>}
+
+            {props.header && <Heading as="h1" size="3xl" mb={{base: "3", sm: "2"}} textAlign={{base: "center", sm: "left"}}>{props.header}</Heading>}
+
+            <Flex flexWrap={{base: "wrap", sm: "nowrap"}} alignItems="flex-start" gap="3">
+                <Box flex="1 0 auto" order={{base: 0, sm: 1}} width={{base: "100%", sm: "200px", md: "220px", lg: "240px", xl: "260px"}} borderWidth="1px" rounded="md">
+                    {props.side}
+                </Box>
+                <Box flex="1 1 100%">
+                    {props.content}
+                </Box>
+            </Flex>
+
+            {props.bottom}
+        </>
+    )
 }

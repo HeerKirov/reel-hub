@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 export type SearchBoxProps = {
     value?: string | null
     placeholder?: string
-    onUpdateValue?: (value: string) => void
+    onValueChange?: (value: string) => void
     searchParamName?: string
 } & SystemStyleObject
 
@@ -15,7 +15,7 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
-    const { value, placeholder = "搜索…", onUpdateValue, searchParamName, ...attrs } = props
+    const { value, placeholder = "搜索…", onValueChange, searchParamName, ...attrs } = props
     const [text, setText] = useState(value || "")
 
     useEffect(() => {
@@ -29,7 +29,7 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
 
     const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if(e.key === "Enter") {
-            onUpdateValue?.(text)
+            onValueChange?.(text)
             if(searchParamName) {
                 const p = new URLSearchParams(searchParams.toString())
                 if(text) {
@@ -52,7 +52,7 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
 
 export type PublishTimePickerProps = {
     value?: string | null
-    onUpdateValue?: (value: string) => void
+    onValueChange?: (value: string) => void
     searchParamName?: string
     mode?: "month" | "season"
 } & SystemStyleObject
@@ -83,7 +83,7 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
         setMonth(selectedMonth)
         if(selectedMonth !== currentMonth) {
             const newValue = typeof selectedMonth === "number" ? `${currentYear}-${selectedMonth}` : `${currentYear}`
-            props.onUpdateValue?.(newValue)
+            props.onValueChange?.(newValue)
             if(props.searchParamName) {
                 const p = new URLSearchParams(searchParams.toString())
                 p.set(props.searchParamName, newValue)
