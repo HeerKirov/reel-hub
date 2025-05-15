@@ -143,7 +143,7 @@ export function DetailPageLayout(props: DetailPageLayoutProps) {
             {props.header && <Heading as="h1" size="3xl" mb={{base: "3", sm: "2"}} textAlign={{base: "center", sm: "left"}}>{props.header}</Heading>}
 
             <Flex flexWrap={{base: "wrap", sm: "nowrap"}} alignItems="flex-start" gap="3">
-                <Box flex="1 0 auto" order={{base: 0, sm: 1}} width={{base: "100%", sm: "200px", md: "220px", lg: "240px", xl: "260px"}} borderWidth="1px" rounded="md">
+                <Box flex="1 0 auto" order={{base: 0, sm: 1}} width={{base: "100%", sm: "200px", md: "220px", lg: "240px", xl: "260px"}} borderWidth="1px" rounded="md" overflow="hidden">
                     {props.side}
                 </Box>
                 <Box flex="1 1 100%">

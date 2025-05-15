@@ -4,6 +4,7 @@ import { RiChatQuoteFill, RiPushpin2Fill } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
+import {PiGenderIntersexBold, PiKnifeFill} from "react-icons/pi";
 
 export default async function AnimationDatabaseDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -21,19 +22,26 @@ export default async function AnimationDatabaseDetail({ params }: { params: Prom
 function Side() {
     return (
         <>
-            <Image roundedTop="md" aspectRatio={5 / 7} width="100%" src="/ex7.jpg" alt="title"/>
-            <Table.Root size="sm" mb="1">
+            <Image aspectRatio={5 / 7} width="100%" src="/ex7.jpg" alt="title"/>
+            <Table.Root size="sm">
                 <Table.Body>
                     <Table.Row>
-                        <Table.Cell textWrap="nowrap">标题</Table.Cell>
+                        <Table.Cell textWrap="nowrap" textAlign="right">标题</Table.Cell>
                         <Table.Cell>时光流逝，饭菜依旧美味</Table.Cell>
                     </Table.Row>
                     <Table.Row>
-                        <Table.Cell textWrap="nowrap">其他标题</Table.Cell>
+                        <Table.Cell textWrap="nowrap" textAlign="right">其他标题</Table.Cell>
                         <Table.Cell>
                             <Text>日々は過ぎれど飯うまし</Text>
                             <Text>岁月流逝饭菜依旧美味</Text>
                         </Table.Cell>
+                    </Table.Row><Table.Row>
+                    <Table.Cell textWrap="nowrap" textAlign="right">地区</Table.Cell>
+                    <Table.Cell>日本</Table.Cell>
+                </Table.Row>
+                    <Table.Row>
+                        <Table.Cell borderBottomWidth="0" textWrap="nowrap" textAlign="right">放送时间</Table.Cell>
+                        <Table.Cell borderBottomWidth="0">2025年4月</Table.Cell>
                     </Table.Row>
                 </Table.Body>
             </Table.Root>
@@ -66,7 +74,28 @@ function Content() {
                 </Tag.Root>)}
             </HStack>
             <WrappedText text={description} />
-            <Table.Root my="2" width={{base: "full", sm: "auto"}} size="sm">
+            <Box display="flex" flexWrap={{base: "wrap", md: "nowrap"}} justifyContent="space-between" textAlign="center">
+                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
+                    TV
+                    <p>每集24分钟</p>
+                </Box>
+                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
+                    放送中
+                    <p>5/12话</p>
+                </Box>
+                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
+                    <p>原创</p>
+                </Box>
+                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color="green.fg">
+                    <Icon><PiGenderIntersexBold/></Icon>
+                    <p>全年龄</p>
+                </Box>
+                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color="green.fg">
+                    <Icon><PiKnifeFill/></Icon>
+                    <p>无限制</p>
+                </Box>
+            </Box>
+            <Table.Root mb="2" width={{base: "full", sm: "auto"}} size="sm">
                 <Table.Body>
                     {staff.map(staff => <Table.Row key={staff.name}>
                         <Table.Cell>{staff.name}</Table.Cell>
@@ -80,7 +109,7 @@ function Content() {
                     </Table.Row>)}
                 </Table.Body>
             </Table.Root>
-            <Flex width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", sm: "nowrap"}}>
+            <Flex width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", md: "nowrap"}}>
                 <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
                     <Text color="blue.fg"><Icon><RiPushpin2Fill/></Icon> 已订阅</Text>
                     <Flex mt="2">
