@@ -1,6 +1,6 @@
 import NextLink from "next/link"
-import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge } from "@chakra-ui/react"
-import { RiChatQuoteFill, RiPushpin2Fill } from "react-icons/ri"
+import {Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, SimpleGrid, Button} from "@chakra-ui/react"
+import {RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill} from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
@@ -11,11 +11,19 @@ export default async function AnimationDatabaseDetail({ params }: { params: Prom
     return (
         <DetailPageLayout
             breadcrumb={{url: "/anime/database", detail: "时光流逝，饭菜依旧美味"}}
-            header="时光流逝，饭菜依旧美味"
+            header={<Header id={id} title="时光流逝，饭菜依旧美味"/>}
             side={<Side/>}
             content={<Content/>}
-            bottom={"bottom"}
         />
+    )
+}
+
+function Header({ id, title }: {id: string, title: string}) {
+    return (
+        <>
+            <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild><NextLink href={`/anime/database/${id}/edit`}><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink></Button>
+            {title}
+        </>
     )
 }
 
@@ -61,6 +69,10 @@ function Content() {
         {name: "动画制作", members: ["P.A.WORKS"]},
     ]
     const description = "《岁月流逝饭菜依旧美味》（日文：日々は過ぎれど飯うまし），是由P.A.WORKS制作，川面真也&春水融担任监督、比企能博担任系列构成的一部原创动画作品。\n于2025年4月12日在日本TOKYO MX等电视台放送，并有漫画等衍生作品。"
+    const relations = [
+        {title: "测试相关动画", image: "/ex7.jpg", id: 2, type: "同系列"},
+        {title: "测试相关动画2", image: "/ex7.jpg", id: 4, type: "前作"},
+    ]
     return (
         <>
             <HStack my="2">
@@ -132,6 +144,18 @@ function Content() {
                     <Text mt="1" color="fg.muted" fontSize="sm">这是一部份评论的内容……</Text>
                 </Box>
             </Flex>
+            <Box borderTopWidth="1px" mt="4" pb="2">
+                <Text my="2">相关动画</Text>
+                <SimpleGrid gap="2" columns={{base: 1, sm: 2, md: 4}}>
+                    {relations.map(relation => <Flex key={relation.id}>
+                        <Image aspectRatio={1} rounded="lg" width="75px" src={relation.image} alt={relation.id.toString()}/>
+                        <Box py="1" pl="2">
+                            <Link asChild><NextLink href={`/anime/database/${relation.id}`}>{relation.title}</NextLink></Link>
+                            <p><Badge mt="1" color="fg.muted">{relation.type}</Badge></p>
+                        </Box>
+                    </Flex>)}
+                </SimpleGrid>
+            </Box>
         </>
     )
 }

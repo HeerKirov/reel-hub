@@ -1,8 +1,9 @@
 "use client"
-import { ChangeEvent, KeyboardEvent, memo, useCallback, useEffect, useMemo, useState } from "react"
+import { ChangeEvent, KeyboardEvent, memo, useCallback, useMemo, useState } from "react"
 import { Icon, Input, InputGroup, Link, SimpleGrid, SystemStyleObject } from "@chakra-ui/react"
 import { RiArrowLeftBoxFill, RiCloseFill, RiSearch2Line } from "react-icons/ri"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useEffectState } from "@/helpers/hooks"
 
 export type SearchBoxProps = {
     value?: string | null
@@ -16,12 +17,7 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
     const searchParams = useSearchParams()
 
     const { value, placeholder = "搜索…", onValueChange, searchParamName, ...attrs } = props
-    const [text, setText] = useState(value || "")
-
-    useEffect(() => {
-        if(value !== text) setText(value || "")
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value])
+    const [text, setText] = useEffectState(value || "")
 
     const onChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         setText(e.target.value)
