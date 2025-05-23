@@ -1,9 +1,10 @@
 "use client"
-import { ChangeEvent, KeyboardEvent, memo, useCallback, useMemo, useState } from "react"
-import { Icon, Input, InputGroup, Link, SimpleGrid, SystemStyleObject } from "@chakra-ui/react"
+import { ChangeEvent, memo, useCallback, useMemo, useState } from "react"
+import { Icon, InputGroup, Link, SimpleGrid, SystemStyleObject } from "@chakra-ui/react"
 import { RiArrowLeftBoxFill, RiCloseFill, RiSearch2Line } from "react-icons/ri"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffectState } from "@/helpers/hooks"
+import { CompositionInput } from "./form"
 
 export type SearchBoxProps = {
     value?: string | null
@@ -23,25 +24,23 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
         setText(e.target.value)
     }, [])
 
-    const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if(e.key === "Enter") {
-            onValueChange?.(text)
-            if(searchParamName) {
-                const p = new URLSearchParams(searchParams.toString())
-                if(text) {
-                    p.set(searchParamName, text)
-                }else{
-                    p.delete(searchParamName)
-                }
-                if(p.has("page")) p.delete("page")
-                router.push(`?${p.toString()}`)
+    const onEnter = useCallback((value: string) => {
+        onValueChange?.(value)
+        if(searchParamName) {
+            const p = new URLSearchParams(searchParams.toString())
+            if(value) {
+                p.set(searchParamName, value)
+            }else{
+                p.delete(searchParamName)
             }
+            if(p.has("page")) p.delete("page")
+            router.push(`?${p.toString()}`)
         }
-    }
+    }, [onValueChange, searchParamName])
 
     return (
         <InputGroup endElement={<RiSearch2Line/>} {...attrs}>
-            <Input variant="flushed" placeholder={placeholder} value={text} onChange={onChange} onKeyDown={onKeyDown}/>
+            <CompositionInput variant="flushed" placeholder={placeholder} value={text} onChange={onChange} onEnter={onEnter}/>
         </InputGroup>
     )
 })
@@ -104,16 +103,14 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
                 <Link key={year} variant="underline" color={currentYear === year ? "blue.fg" : "fg.subtle"} fontWeight="700" onClick={() => selectYear(year)}>{year}年</Link>
             ))}
             {!!props.value && <Link variant="underline" color="fg.subtle" fontWeight="700" onClick={clear}><Icon><RiCloseFill/></Icon> 清除</Link>}
-        </SimpleGrid> : <>
-            <SimpleGrid columns={2} gap="2" py="1">
-                <Link variant="underline" color="blue.fg" fontWeight="700" justifyContent="center" onClick={() => setStep("y")}><RiArrowLeftBoxFill/> {currentYear}年</Link>
-                <Link variant="underline" color={currentMonth === "any" ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth("any")}>任意月份</Link>
-                {months.map(month => (
-                    <Link key={month} variant="underline" color={currentMonth === month ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth(month)}>
-                        {props.mode === "season" ? `${month} - ${month + 2}月` : `${month}月`}
-                    </Link>
-                ))}
-            </SimpleGrid>
-        </>
+        </SimpleGrid> : <SimpleGrid columns={2} gap="2" py="1">
+            <Link variant="underline" color="blue.fg" fontWeight="700" justifyContent="center" onClick={() => setStep("y")}><RiArrowLeftBoxFill/> {currentYear}年</Link>
+            <Link variant="underline" color={currentMonth === "any" ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth("any")}>任意月份</Link>
+            {months.map(month => (
+                <Link key={month} variant="underline" color={currentMonth === month ? "blue.fg" : "fg.subtle"} fontWeight="700" justifyContent="center" onClick={() => selectMonth(month)}>
+                    {props.mode === "season" ? `${month} - ${month + 2}月` : `${month}月`}
+                </Link>
+            ))}
+        </SimpleGrid>
     )
 })
