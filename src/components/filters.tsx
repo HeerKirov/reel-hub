@@ -1,10 +1,10 @@
 "use client"
-import { ChangeEvent, memo, useCallback, useMemo, useState } from "react"
+import { memo, useCallback, useMemo, useState } from "react"
 import { Icon, InputGroup, Link, SimpleGrid, SystemStyleObject } from "@chakra-ui/react"
 import { RiArrowLeftBoxFill, RiCloseFill, RiSearch2Line } from "react-icons/ri"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffectState } from "@/helpers/hooks"
-import { CompositionInput } from "./form"
+import { Input } from "@/components/form"
 
 export type SearchBoxProps = {
     value?: string | null
@@ -19,10 +19,6 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
 
     const { value, placeholder = "搜索…", onValueChange, searchParamName, ...attrs } = props
     const [text, setText] = useEffectState(value || "")
-
-    const onChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        setText(e.target.value)
-    }, [])
 
     const onEnter = useCallback((value: string) => {
         onValueChange?.(value)
@@ -40,7 +36,7 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
 
     return (
         <InputGroup endElement={<RiSearch2Line/>} {...attrs}>
-            <CompositionInput variant="flushed" placeholder={placeholder} value={text} onChange={onChange} onEnter={onEnter}/>
+            <Input variant="flushed" placeholder={placeholder} value={text} onValueChange={setText} onEnter={onEnter}/>
         </InputGroup>
     )
 })

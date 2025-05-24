@@ -1,8 +1,9 @@
 "use client"
-import React, { ChangeEvent, KeyboardEvent, memo, useEffect, useState } from "react"
+import React, { memo, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Box, Button, Flex, Input } from "@chakra-ui/react"
+import { Box, Button, Flex } from "@chakra-ui/react"
 import { RiArrowRightLine } from "react-icons/ri"
+import { Input } from "@/components/form"
 
 export const PageRouterPopover = memo(function PageRouterPopover(props: {page: number, total: number, pageParamName: string}) {
     const router = useRouter()
@@ -17,19 +18,9 @@ export const PageRouterPopover = memo(function PageRouterPopover(props: {page: n
         router.push(`?${p.toString()}`)
     }
 
-    const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setPage(e.target.value)
-    }
-
-    const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if(e.key === "Enter") {
-            onClick()
-        }
-    }
-
     return (
         <>
-            <Input type="number" placeholder="页码" size="sm" min="1" max={props.total} value={page} onChange={onChange} onKeyDown={onKeyDown}/>
+            <Input type="number" placeholder="页码" size="sm" min="1" max={props.total} value={page} onValueChange={setPage} onEnter={onClick}/>
             <Button type="submit" variant="outline" size="sm" onClick={onClick}><RiArrowRightLine/> 跳转</Button>
         </>
     )

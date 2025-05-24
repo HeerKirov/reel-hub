@@ -1,32 +1,37 @@
 "use client"
-import React, { memo, useState, useCallback, KeyboardEvent } from "react"
-import { Box, Input, InputProps, RatingGroup, SystemStyleObject, Tag, Text } from "@chakra-ui/react"
-import { ValueChangeDetails } from "@zag-js/rating-group"
-import { useEffectState } from "@/helpers/hooks"
+import React, { memo, useRef, useCallback, KeyboardEvent, useMemo } from "react"
+import { Input as ChakraInput, InputProps as ChakraInputProps, RatingGroup, SystemStyleObject, Text, Select as ChakraSelect, Portal, createListCollection } from "@chakra-ui/react"
+import { ValueChangeDetails as RatingValueChangeDetails } from "@zag-js/rating-group"
+import { ValueChangeDetails as SelectValueChangeDetails } from "@zag-js/select"
 
-export type CompositionInputProps = {
+export type InputProps = {
+    onValueChange?: (value: string) => void
     onEnter?: (value: string) => void
-} & InputProps
+} & ChakraInputProps
 
-export const CompositionInput = memo(function CompositionInput({ onEnter, onKeyDown, ...props }: CompositionInputProps) {
-    const [isComposing, setIsComposing] = useState(false)
+export const Input = memo(function CompositionInput({ onValueChange, onEnter, onKeyDown, ...props }: InputProps) {
+    const composingRef = useRef(false)
 
     const handleCompositionStart = useCallback(() => {
-        setIsComposing(true)
+        composingRef.current = true
     }, [])
 
     const handleCompositionEnd = useCallback(() => {
-        setIsComposing(false)
+        composingRef.current = false
     }, [])
 
+    const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        onValueChange?.(e.target.value)
+    }, [onValueChange])
+
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" && !isComposing && onEnter) {
+        if (e.key === "Enter" && !composingRef.current && onEnter) {
             onEnter(e.currentTarget.value)
         }
         onKeyDown?.(e)
-    }, [isComposing, onEnter, onKeyDown])
+    }, [onEnter, onKeyDown])
 
-    return <Input {...props} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onKeyDown={handleKeyDown}/>
+    return <ChakraInput {...props} onChange={onChange} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onKeyDown={handleKeyDown}/>
 })
 
 export type StarlightProps = {
@@ -36,7 +41,7 @@ export type StarlightProps = {
 }
 
 export const Starlight = memo(function Starlight({ value, onValueChange, disabled }: StarlightProps) {
-    const change = (details: ValueChangeDetails) => onValueChange?.(details.value * 2)
+    const change = (details: RatingValueChangeDetails) => onValueChange?.(details.value * 2)
 
     return (
         <RatingGroup.Root allowHalf count={5} value={value ? value / 2 : undefined} colorPalette="orange" disabled={disabled} onValueChange={change}>
@@ -47,103 +52,48 @@ export const Starlight = memo(function Starlight({ value, onValueChange, disable
     )
 })
 
-export type DynamicInputListProps = {
-    value?: string[] | null
-    placeholder?: string
-    onValueChange?: (value: string[]) => void
+export type SelectItem<T extends string> = {
+    label: string
+    value: T
 }
 
-export const DynamicInputList = memo(function DynamicInputList({ value, onValueChange, placeholder }: DynamicInputListProps) {
-    const [list, setList] = useEffectState<string[]>(value ?? [])
-    const [newText, setNewText] = useState<string>("")
-
-    const onChange = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        setList([
-            ...list.slice(0, index),
-            e.target.value,
-            ...list.slice(index + 1)
-        ])
-    }
-
-    const onBlur = useCallback(() => {
-        onValueChange?.(list.filter(i => i.trim()))
-    }, [list, onValueChange])
-    
-    const onChangeNewText = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setNewText(e.target.value)
-    }, [])
-
-    const onBlurNewText = () => {
-        if(newText.trim()) {
-            setList([...list, newText])
-            setNewText("")
-            onValueChange?.([...list, newText])
-        }
-    }
-
-    const handleEnter = useCallback((value: string) => {
-        if(value.trim()) {
-            setList([...list, value])
-            setNewText("")
-            onValueChange?.([...list, value])
-        }
-    }, [list, onValueChange])
-
-    return (
-        <>
-            {list.map((item, index) => (
-                <CompositionInput key={index} value={item} onChange={onChange(index)} onBlur={onBlur} onEnter={onBlur}/>
-            ))}
-            <CompositionInput value={newText} placeholder={placeholder} onChange={onChangeNewText} onBlur={onBlurNewText} onEnter={handleEnter}/>
-        </>
-    )
-})
-
-export type TagEditorProps = {
-    value?: string[] | null
+export type SelectProps<T extends string> = {
+    value?: T
+    items: SelectItem<T>[]
+    onValueChange?: (value: T) => void
     placeholder?: string
-    onValueChange?: (value: string[]) => void
-    variant?: "outline" | "surface"
-    noDuplicate?: boolean
 } & SystemStyleObject
 
-export const TagEditor = memo(function TagEditor({ value, onValueChange, placeholder, variant, noDuplicate = false, ...attrs }: TagEditorProps) {
-    const [list, setList] = useEffectState<string[]>(value ?? [])
-    const [newText, setNewText] = useState<string>("")
+export function Select<T extends string>({ value, items, onValueChange, placeholder, ...attrs }: SelectProps<T>) {
+    const collection = useMemo(() => createListCollection({ items }), [items])
 
-    const removeItem = (index: number) => {
-        const newList = [...list.slice(0, index), ...list.slice(index + 1)]
-        setList(newList)
-        onValueChange?.(newList)
-    }
+    const onValueChangeEvent = useCallback((e: SelectValueChangeDetails<T>) => {
+        const selectedValue = e.value[0] as T
+        onValueChange?.(selectedValue)
+    }, [onValueChange])
+    
+    return <ChakraSelect.Root collection={collection as any} value={value ? [value] : undefined} onValueChange={onValueChangeEvent} {...attrs}>
+        <ChakraSelect.HiddenSelect/>
+        <ChakraSelect.Control>
+            <ChakraSelect.Trigger>
+                <ChakraSelect.ValueText placeholder={placeholder}/>
+            </ChakraSelect.Trigger>
+            <ChakraSelect.IndicatorGroup>
+                <ChakraSelect.Indicator/>
+            </ChakraSelect.IndicatorGroup>
+        </ChakraSelect.Control>
+        <Portal>
+            <ChakraSelect.Positioner>
+                <ChakraSelect.Content>
+                    {items.map(item => (
+                        <ChakraSelect.Item item={item} key={item.value}>
+                            {item.label}
+                            <ChakraSelect.ItemIndicator/>
+                        </ChakraSelect.Item>
+                    ))}
+                </ChakraSelect.Content>
+            </ChakraSelect.Positioner>
+        </Portal>
+    </ChakraSelect.Root>
+}
 
-    const onChangeNewText = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setNewText(e.target.value)
-    }
-
-    const handleEnter = useCallback((value: string) => {
-        const trimmedText = value.trim()
-        if (!trimmedText) return
-        
-        if (noDuplicate && list.includes(trimmedText)) {
-            setNewText("")
-            return
-        }
-        const newList = [...list, trimmedText]
-        setList(newList)
-        setNewText("")
-        onValueChange?.(newList)
-    }, [list, noDuplicate, onValueChange])
-
-    return (
-        <Box border="1px solid" borderColor="border" rounded="md" bg="bg" display="flex" alignItems="center" gap="1" px="2" {...attrs}>
-            {list.map((item, index) => (
-                <Tag.Root key={index} variant={variant}>
-                    <Tag.Label>{item}</Tag.Label>
-                    <Tag.EndElement><Tag.CloseTrigger onClick={() => removeItem(index)}/></Tag.EndElement>
-                </Tag.Root>
-            ))}
-            <CompositionInput variant="flushed" borderWidth="0" _focus={{boxShadow: "none"}} placeholder={placeholder} value={newText} onChange={onChangeNewText} onEnter={handleEnter} size="sm" width="full"/>
-        </Box>
-    )
-})
