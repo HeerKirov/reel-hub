@@ -14,11 +14,234 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum ProjectType {
+  Anime
+  Game
+  Movie
+  Novel
+  Manga
+}
+
+enum OriginalType {
+  Original
+  Game
+  Novel
+  Manga
+  Other
+}
+
+enum BoardcastType {
+  TvAndWeb
+  OvaAndOad
+  Movie
+  Other
+}
+
+enum OnlineType {
+  SinglePlayer
+  MultiPlayer
+  OnlineGame
+}
+
+enum RecordStatus {
+  Watching // 进行中
+  Completed // 已结束
+  OnHold // 暂停
+  Dropped // 弃坑
+}
+
+enum FollowType {
+  //追番
+  Follow
+  //补番,
+  CatchUp
+  //重看
+  Rewatch
+}
+
+enum ShoppingType {
+  //本体
+  Main
+  //DLC
+  DLC
+  //内购
+  InAppPurchase
+  //订阅
+  Subscription
+  //其他
+  Other
+}
+
+model Project {
+  id                 String   @id @default(nanoid())
+  title              String   @db.VarChar(256)
+  subtitles          String[] @db.Text
+  description        String   @db.Text
+  keywords           String[] @db.Text
+  type               ProjectType
+  publish_time       DateTime @db.Date
+  rating_s           Int?
+  rating_v           Int?
+  region             String?
+  relations          Json
+  relations_topology Json
+  resources          Json
+  create_time        DateTime
+  update_time        DateTime
+  creator            String   @db.VarChar(24)
+  updator            String   @db.VarChar(24)
+
+  // Anime specific fields
+  original_type             OriginalType?
+  boardcast_type            BoardcastType?
+  episode_duration          Int?
+  episode_total_num         Int?
+  episode_published_num     Int?
+  episode_published_records Json?
+  episode_publish_plan      Json?
+
+  // Game specific fields
+  platform    String[] @db.VarChar(64)
+  online_type OnlineType?
+
+  // Relations
+  staffs         ProjectStaffRelation[]
+  tags           ProjectTagRelation[]
+  boughtRecords  Bought[]
+  records        Record[]
+  comments       Comment[]
+  RecordProgress RecordProgress[]
+}
+
+model Staff {
+  id          Int      @id
+  name        String   @db.VarChar(256) @unique
+  other_names String   @db.Text
+  create_time DateTime
+  update_time DateTime
+  creator     String   @db.VarChar(24)
+  projects ProjectStaffRelation[]
+}
+
+model ProjectStaffRelation {
+  project_id String
+  staff_id   Int
+  staff_type String @db.VarChar(256)
+
+  project Project @relation(fields: [project_id], references: [id])
+  staff   Staff   @relation(fields: [staff_id], references: [id])
+
+  @@id([project_id, staff_id, staff_type])
+}
+
+model Tag {
+  id          Int      @id
+  type        ProjectType
+  name        String   @db.VarChar(256)
+  description String   @db.Text
+  create_time DateTime
+  update_time DateTime
+  creator     String   @db.VarChar(24)
+  updator     String   @db.VarChar(24)
+
+  projects ProjectTagRelation[]
+
+  @@unique([type, name])
+}
+
+model ProjectTagRelation {
+  project_id String
+  tag_id     Int
+
+  project Project @relation(fields: [project_id], references: [id])
+  tag     Tag     @relation(fields: [tag_id], references: [id])
+
+  @@id([project_id, tag_id])
+}
+
+model Bought {
+  id          Int      @id @default(autoincrement())
+  owner_id    String   @db.VarChar(24)
+  project_id  String
+  buy_type    ShoppingType
+  description String   @db.Text
+  cost        Decimal  @db.Decimal(10, 2)
+  currency    String   @db.VarChar(8)
+  buy_time    DateTime
+  create_time DateTime
+  update_time DateTime
+
+  project Project @relation(fields: [project_id], references: [id])
+
+  @@unique([owner_id, project_id])
+}
+
+model Record {
+  id          Int       @id @default(autoincrement())
+  owner_id    String    @db.VarChar(24)
+  project_id  String
+  special_attention   Boolean
+  status      RecordStatus
+  progress_count Int
+  start_time  DateTime
+  end_time    DateTime?
+  last_activity_time DateTime?
+  last_activity_event Json @default("{}")
+  create_time DateTime
+  update_time DateTime
+
+  project    Project          @relation(fields: [project_id], references: [id])
+  progresses RecordProgress[]
+
+  @@unique([owner_id, project_id])
+}
+
+model RecordProgress {
+  id          Int       @id @default(autoincrement())
+  project_id  String
+  record_id   Int
+  ordinal     Int
+  status      RecordStatus
+  start_time  DateTime?
+  end_time    DateTime?
+  create_time DateTime
+  update_time DateTime
+
+  // Anime specific fields
+  episode_watched_num     Int?
+  episode_watched_records Json?
+  follow_type             FollowType?
+
+  // Game specific fields
+  platform String[] @db.VarChar(64)
+
+  project Project @relation(fields: [project_id], references: [id])
+  record  Record  @relation(fields: [record_id], references: [id])
+}
+
+model Comment {
+  id              Int      @id @default(autoincrement())
+  owner_id        String   @db.VarChar(24)
+  project_id      String
+  score           Int?
+  title           String?  @db.Text
+  article         String?  @db.Text
+  create_time     DateTime
+  update_time     DateTime
+
+  project Project @relation(fields: [project_id], references: [id])
+
+  @@unique([owner_id, project_id])
+}
+
+model Statistic {
+  id          Int      @id @default(autoincrement())
+  owner_id    String   @db.VarChar(24)
+  type      String @db.VarChar(256)
+  key       String? @db.VarChar(256)
+  content   Json
+  create_time DateTime
+  update_time DateTime
+
+  @@unique([owner_id, type, key])
 }

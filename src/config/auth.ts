@@ -21,7 +21,7 @@ export const authOptions: AuthOptions = {
                 return {
                     id: profile["id"],
                     name: profile["displayName"],
-                    image: profile["avatar"],
+                    image: profile["avatar"] ? `${config.AUTH.URL}${profile["avatar"]}` : null,
                     permissions: []
                 }
             },
