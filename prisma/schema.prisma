@@ -15,61 +15,61 @@ datasource db {
 }
 
 enum ProjectType {
-  Anime
-  Game
-  Movie
-  Novel
-  Manga
+  ANIME
+  GAME
+  MOVIE
+  NOVEL
+  MANGA
 }
 
 enum OriginalType {
-  Original
-  Game
-  Novel
-  Manga
-  Other
+  ORIGINAL
+  GAME
+  NOVEL
+  MANGA
+  OTHER
 }
 
 enum BoardcastType {
-  TvAndWeb
-  OvaAndOad
-  Movie
-  Other
+  TV_AND_WEB
+  OVA_AND_OAD
+  MOVIE
+  OTHER
 }
 
 enum OnlineType {
-  SinglePlayer
-  MultiPlayer
-  OnlineGame
+  SINGLE_PLAYER
+  MULTI_PLAYER
+  ONLINE_GAME
 }
 
 enum RecordStatus {
-  Watching // 进行中
-  Completed // 已结束
-  OnHold // 暂停
-  Dropped // 弃坑
+  WATCHING // 进行中
+  COMPLETED // 已结束
+  ON_HOLD // 暂停
+  DROPPED // 弃坑
 }
 
 enum FollowType {
   //追番
-  Follow
+  FOLLOW
   //补番,
-  CatchUp
+  CATCH_UP
   //重看
-  Rewatch
+  REWATCH
 }
 
 enum ShoppingType {
   //本体
-  Main
+  MAIN
   //DLC
   DLC
   //内购
-  InAppPurchase
+  IN_APP_PURCHASE
   //订阅
-  Subscription
+  SUBSCRIPTION
   //其他
-  Other
+  OTHER
 }
 
 model Project {
@@ -79,30 +79,30 @@ model Project {
   description        String   @db.Text
   keywords           String[] @db.Text
   type               ProjectType
-  publish_time       DateTime @db.Date
-  rating_s           Int?
-  rating_v           Int?
+  publishTime        DateTime? @db.Date
+  ratingS            Int?
+  ratingV            Int?
   region             String?
   relations          Json
-  relations_topology Json
+  relationsTopology  Json
   resources          Json
-  create_time        DateTime
-  update_time        DateTime
+  createTime         DateTime
+  updateTime         DateTime
   creator            String   @db.VarChar(24)
   updator            String   @db.VarChar(24)
 
   // Anime specific fields
-  original_type             OriginalType?
-  boardcast_type            BoardcastType?
-  episode_duration          Int?
-  episode_total_num         Int?
-  episode_published_num     Int?
-  episode_published_records Json?
-  episode_publish_plan      Json?
+  originalType             OriginalType?
+  boardcastType            BoardcastType?
+  episodeDuration          Int?
+  episodeTotalNum          Int?
+  episodePublishedNum      Int?
+  episodePublishedRecords  Json?
+  episodePublishPlan       Json?
 
   // Game specific fields
   platform    String[] @db.VarChar(64)
-  online_type OnlineType?
+  onlineType  OnlineType?
 
   // Relations
   staffs         ProjectStaffRelation[]
@@ -111,27 +111,29 @@ model Project {
   records        Record[]
   comments       Comment[]
   RecordProgress RecordProgress[]
+
+  @@index([type, publishTime])
 }
 
 model Staff {
   id          Int      @id
   name        String   @db.VarChar(256) @unique
-  other_names String   @db.Text
-  create_time DateTime
-  update_time DateTime
+  otherNames  String   @db.Text
+  createTime  DateTime
+  updateTime  DateTime
   creator     String   @db.VarChar(24)
   projects ProjectStaffRelation[]
 }
 
 model ProjectStaffRelation {
-  project_id String
-  staff_id   Int
-  staff_type String @db.VarChar(256)
+  projectId String
+  staffId   Int
+  staffType String @db.VarChar(256)
 
-  project Project @relation(fields: [project_id], references: [id])
-  staff   Staff   @relation(fields: [staff_id], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  staff   Staff   @relation(fields: [staffId], references: [id])
 
-  @@id([project_id, staff_id, staff_type])
+  @@id([projectId, staffId, staffType])
 }
 
 model Tag {
@@ -139,8 +141,8 @@ model Tag {
   type        ProjectType
   name        String   @db.VarChar(256)
   description String   @db.Text
-  create_time DateTime
-  update_time DateTime
+  createTime  DateTime
+  updateTime  DateTime
   creator     String   @db.VarChar(24)
   updator     String   @db.VarChar(24)
 
@@ -150,98 +152,98 @@ model Tag {
 }
 
 model ProjectTagRelation {
-  project_id String
-  tag_id     Int
+  projectId String
+  tagId     Int
 
-  project Project @relation(fields: [project_id], references: [id])
-  tag     Tag     @relation(fields: [tag_id], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  tag     Tag     @relation(fields: [tagId], references: [id])
 
-  @@id([project_id, tag_id])
+  @@id([projectId, tagId])
 }
 
 model Bought {
   id          Int      @id @default(autoincrement())
-  owner_id    String   @db.VarChar(24)
-  project_id  String
-  buy_type    ShoppingType
+  ownerId     String   @db.VarChar(24)
+  projectId   String
+  buyType     ShoppingType
   description String   @db.Text
   cost        Decimal  @db.Decimal(10, 2)
   currency    String   @db.VarChar(8)
-  buy_time    DateTime
-  create_time DateTime
-  update_time DateTime
+  buyTime     DateTime
+  createTime  DateTime
+  updateTime  DateTime
 
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 
-  @@unique([owner_id, project_id])
+  @@unique([ownerId, projectId])
 }
 
 model Record {
   id          Int       @id @default(autoincrement())
-  owner_id    String    @db.VarChar(24)
-  project_id  String
-  special_attention   Boolean
+  ownerId     String    @db.VarChar(24)
+  projectId   String
+  specialAttention Boolean
   status      RecordStatus
-  progress_count Int
-  start_time  DateTime
-  end_time    DateTime?
-  last_activity_time DateTime?
-  last_activity_event Json @default("{}")
-  create_time DateTime
-  update_time DateTime
+  progressCount Int
+  startTime   DateTime
+  endTime     DateTime?
+  lastActivityTime DateTime?
+  lastActivityEvent Json @default("{}")
+  createTime DateTime
+  updateTime DateTime
 
-  project    Project          @relation(fields: [project_id], references: [id])
+  project    Project          @relation(fields: [projectId], references: [id])
   progresses RecordProgress[]
 
-  @@unique([owner_id, project_id])
+  @@unique([ownerId, projectId])
 }
 
 model RecordProgress {
-  id          Int       @id @default(autoincrement())
-  project_id  String
-  record_id   Int
-  ordinal     Int
-  status      RecordStatus
-  start_time  DateTime?
-  end_time    DateTime?
-  create_time DateTime
-  update_time DateTime
+  id         Int       @id @default(autoincrement())
+  projectId  String
+  recordId   Int
+  ordinal    Int
+  status     RecordStatus
+  startTime  DateTime?
+  endTime    DateTime?
+  createTime DateTime
+  updateTime DateTime
 
   // Anime specific fields
-  episode_watched_num     Int?
-  episode_watched_records Json?
-  follow_type             FollowType?
+  episodeWatchedNum     Int?
+  episodeWatchedRecords Json?
+  followType             FollowType?
 
   // Game specific fields
   platform String[] @db.VarChar(64)
 
-  project Project @relation(fields: [project_id], references: [id])
-  record  Record  @relation(fields: [record_id], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  record  Record  @relation(fields: [recordId], references: [id])
 }
 
 model Comment {
   id              Int      @id @default(autoincrement())
-  owner_id        String   @db.VarChar(24)
-  project_id      String
+  ownerId         String   @db.VarChar(24)
+  projectId       String
   score           Int?
   title           String?  @db.Text
   article         String?  @db.Text
-  create_time     DateTime
-  update_time     DateTime
+  createTime      DateTime
+  updateTime      DateTime
 
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 
-  @@unique([owner_id, project_id])
+  @@unique([ownerId, projectId])
 }
 
 model Statistic {
   id          Int      @id @default(autoincrement())
-  owner_id    String   @db.VarChar(24)
-  type      String @db.VarChar(256)
-  key       String? @db.VarChar(256)
-  content   Json
-  create_time DateTime
-  update_time DateTime
+  ownerId     String   @db.VarChar(24)
+  type        String   @db.VarChar(256)
+  key         String?  @db.VarChar(256)
+  content     Json
+  createTime  DateTime
+  updateTime  DateTime
 
-  @@unique([owner_id, type, key])
+  @@unique([ownerId, type, key])
 }
