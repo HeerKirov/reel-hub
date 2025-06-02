@@ -40,7 +40,7 @@ export const projectListSchemaTemplate = z.object({
     subtitles: z.array(z.string()),
     description: z.string(),
     keywords: z.array(z.string()),
-    publish_time: z.string().nullable(),
+    publishTime: z.string().nullable(),
     ratingS: z.number().nullable(),
     ratingV: z.number().nullable(),
     region: z.string().nullable(),

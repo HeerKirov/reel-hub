@@ -6,6 +6,13 @@ export const arrays = {
             returns[mapper(item)] = item
         }
         return returns
+    },
+    associate<T, K extends string | number, V>(arr: T[], mapper: (i: T) => K, mapper2: (t: T) => V): Record<K, V> {
+        const returns: Record<K, V> = {} as any
+        for(const item of arr) {
+            returns[mapper(item)] = mapper2(item)
+        }
+        return returns
     }
 }
 

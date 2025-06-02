@@ -1,19 +1,29 @@
 import NextLink from "next/link"
-import {Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, SimpleGrid, Button} from "@chakra-ui/react"
-import {RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill} from "react-icons/ri"
+import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, SimpleGrid, Button } from "@chakra-ui/react"
+import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
+import { RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
-import {PiGenderIntersexBold, PiKnifeFill} from "react-icons/pi";
+import * as animeService from "@/services/anime"
+import { AnimeDetailSchema } from "@/schemas/anime"
+import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE, VALUE_TO_REGION } from "@/constants/project"
+import emptyCover from "@/assets/empty.jpg"
 
 export default async function AnimationDatabaseDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
+
+    const data = await animeService.retrieve(id)
+    if(!data) {
+        throw new Error("404 Not Found")
+    }
+
     return (
         <DetailPageLayout
-            breadcrumb={{url: "/anime/database", detail: "时光流逝，饭菜依旧美味"}}
-            header={<Header id={id} title="时光流逝，饭菜依旧美味"/>}
-            side={<Side/>}
-            content={<Content/>}
+            breadcrumb={{url: "/anime/database", detail: data.title || "(未命名)"}}
+            header={<Header id={id} title={data.title || "(未命名)"}/>}
+            side={<Side data={data}/>}
+            content={<Content data={data}/>}
         />
     )
 }
@@ -27,29 +37,28 @@ function Header({ id, title }: {id: string, title: string}) {
     )
 }
 
-function Side() {
+function Side({ data }: {data: AnimeDetailSchema}) {
     return (
         <>
-            <Image aspectRatio={5 / 7} width="100%" src="/ex7.jpg" alt="title"/>
+            <Image aspectRatio={5 / 7} width="100%" src={data.resources.cover ?? emptyCover.src} alt={data.title || "(未命名)"}/>
             <Table.Root size="sm">
                 <Table.Body>
                     <Table.Row>
                         <Table.Cell textWrap="nowrap" textAlign="right">标题</Table.Cell>
-                        <Table.Cell>时光流逝，饭菜依旧美味</Table.Cell>
+                        <Table.Cell>{data.title || "(未命名)"}</Table.Cell>
                     </Table.Row>
                     <Table.Row>
                         <Table.Cell textWrap="nowrap" textAlign="right">其他标题</Table.Cell>
                         <Table.Cell>
-                            <Text>日々は過ぎれど飯うまし</Text>
-                            <Text>岁月流逝饭菜依旧美味</Text>
+                            {data.subtitles.map(subtitle => <Text key={subtitle}>{subtitle}</Text>)}
                         </Table.Cell>
                     </Table.Row><Table.Row>
                     <Table.Cell textWrap="nowrap" textAlign="right">地区</Table.Cell>
-                    <Table.Cell>日本</Table.Cell>
+                    <Table.Cell>{data.region !== null ? VALUE_TO_REGION[data.region].label : "(无)"}</Table.Cell>
                 </Table.Row>
                     <Table.Row>
                         <Table.Cell borderBottomWidth="0" textWrap="nowrap" textAlign="right">放送时间</Table.Cell>
-                        <Table.Cell borderBottomWidth="0">2025年4月</Table.Cell>
+                        <Table.Cell borderBottomWidth="0">{data.publishTime}</Table.Cell>
                     </Table.Row>
                 </Table.Body>
             </Table.Root>
@@ -57,8 +66,7 @@ function Side() {
     )
 }
 
-function Content() {
-    const keywords = ["PA饭"]
+function Content({ data }: {data: AnimeDetailSchema}) {
     const tags = ["轻百合", "社团活动", "美食"]
     const staff = [
         {name: "角色&故事原案", members: ["あっと"]},
@@ -68,7 +76,6 @@ function Content() {
         {name: "角色设计、总作画监督", members: ["满田一"]},
         {name: "动画制作", members: ["P.A.WORKS"]},
     ]
-    const description = "《岁月流逝饭菜依旧美味》（日文：日々は過ぎれど飯うまし），是由P.A.WORKS制作，川面真也&春水融担任监督、比企能博担任系列构成的一部原创动画作品。\n于2025年4月12日在日本TOKYO MX等电视台放送，并有漫画等衍生作品。"
     const relations = [
         {title: "测试相关动画", image: "/ex7.jpg", id: 2, type: "同系列"},
         {title: "测试相关动画2", image: "/ex7.jpg", id: 4, type: "前作"},
@@ -76,7 +83,7 @@ function Content() {
     return (
         <>
             <HStack my="2">
-                {keywords.map(k => <Tag.Root key={k} size="lg" variant="outline">
+                {data.keywords.map(k => <Tag.Root key={k} size="lg" variant="outline">
                     <Tag.Label>{k}</Tag.Label>
                 </Tag.Root>)}
                 {tags.map(tag => <Tag.Root key={tag} size="lg" asChild>
@@ -85,10 +92,10 @@ function Content() {
                     </NextLink>
                 </Tag.Root>)}
             </HStack>
-            <WrappedText text={description} />
+            <WrappedText text={data.description} />
             <Box display="flex" flexWrap={{base: "wrap", md: "nowrap"}} justifyContent="space-between" textAlign="center">
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
-                    TV
+                    {data.boardcastType !== null ? VALUE_TO_BOARDCAST_TYPE[data.boardcastType].label : "(未知放送类型)"}
                     <p>每集24分钟</p>
                 </Box>
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
@@ -96,15 +103,15 @@ function Content() {
                     <p>5/12话</p>
                 </Box>
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
-                    <p>原创</p>
+                    <p>{data.originalType !== null ? VALUE_TO_ORIGINAL_TYPE[data.originalType].label : "(未知改编类型)"}</p>
                 </Box>
-                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color="green.fg">
+                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={data.ratingS !== null ? `${RATING_SEX_ITEMS[data.ratingS].color}.fg` : undefined}>
                     <Icon><PiGenderIntersexBold/></Icon>
-                    <p>全年龄</p>
+                    <p>{data.ratingS !== null ? RATING_SEX_ITEMS[data.ratingS].label : "(无)"}</p>
                 </Box>
-                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color="green.fg">
+                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={data.ratingV !== null ? `${RATING_VIOLENCE_ITEMS[data.ratingV].color}.fg` : undefined}>
                     <Icon><PiKnifeFill/></Icon>
-                    <p>无限制</p>
+                    <p>{data.ratingV !== null ? RATING_VIOLENCE_ITEMS[data.ratingV].label : "(无)"}</p>
                 </Box>
             </Box>
             <Table.Root mb="2" width={{base: "full", sm: "auto"}} size="sm">

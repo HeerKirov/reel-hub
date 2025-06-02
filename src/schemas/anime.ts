@@ -8,8 +8,8 @@ export const BOARDCAST_TYPE = [BoardcastType.MOVIE, BoardcastType.OTHER, Boardca
 
 export const animeListFilter = z.object({
     search: z.string().optional(),
-    page: z.number().optional().default(1),
-    size: z.number().optional().default(10)
+    page: z.number().optional(),
+    size: z.number().optional()
 })
 
 export type AnimeListFilter = z.infer<typeof animeListFilter>
@@ -25,9 +25,9 @@ const animeModifySchema = z.object({
     originalType: z.enum(ORIGINAL_TYPE).optional(),
     boardcastType: z.enum(BOARDCAST_TYPE).optional(),
     episodeDuration: z.number().optional(),
-    episodeTotalNum: z.number().optional().default(1),
-    episodePublishedNum: z.number().optional().default(0),
-    episodePublishPlan: z.array(episodePublishRecord).default([])
+    episodeTotalNum: z.number().optional(),
+    episodePublishedNum: z.number().optional(),
+    episodePublishPlan: z.array(episodePublishRecord).optional()
 })
 
 export const animeCreateForm = projectCreateFormTemplate.and(animeModifySchema)
@@ -49,3 +49,7 @@ const animeSelfSchema = z.object({
 export const animeListSchema = projectListSchemaTemplate.and(animeSelfSchema)
 
 export const animeDetailSchema = projectDetailSchemaTemplate.and(animeSelfSchema)
+
+export type AnimeListSchema = z.infer<typeof animeListSchema>
+
+export type AnimeDetailSchema = z.infer<typeof animeDetailSchema>

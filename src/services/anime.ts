@@ -1,3 +1,4 @@
+"use server"
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
 import { ProjectType } from "@/prisma/generated"
@@ -15,14 +16,14 @@ export async function list(filter: AnimeListFilter) {
         orderBy: {
             publishTime: "desc"
         },
-        skip: (filter.page - 1) * filter.size,
-        take: filter.size
+        skip: ((filter.page ?? 1) - 1) * (filter.size ?? 15),
+        take: filter.size ?? 15
     })
     return r.map(i => animeListSchema.parse(i))
 }
 
-export function count(filter: AnimeListFilter): Promise<number> {
-    return prisma.project.count({
+export async function count(filter: AnimeListFilter): Promise<number> {
+    return await prisma.project.count({
         where: {
             type: ProjectType.ANIME,
             title: filter.search ? {contains: filter.search} : undefined,
@@ -53,10 +54,18 @@ export async function create(form: AnimeCreateForm) {
             subtitles: form.subtitles,
             description: form.description || "",
             keywords: form.keywords,
+            type: ProjectType.ANIME,
             publishTime: form.publishTime,
             ratingS: form.ratingS,
             ratingV: form.ratingV,
-            type: ProjectType.ANIME,
+            region: form.region,
+            relations: form.relations ?? {},
+            relationsTopology: {},
+            resources: {},
+            createTime: now,
+            updateTime: now,
+            creator: userId,
+            updator: userId,
             originalType: form.originalType,
             boardcastType: form.boardcastType,
             episodeDuration: form.episodeDuration,
@@ -64,17 +73,14 @@ export async function create(form: AnimeCreateForm) {
             episodePublishedNum: form.episodePublishedNum,
             episodePublishPlan: form.episodePublishPlan,
             episodePublishedRecords: [],
-            resources: {},
-            relations: form.relations ?? {},
-            relationsTopology: {},
-            createTime: now,
-            updateTime: now,
-            creator: userId,
-            updator: userId,
             platform: [],
             onlineType: null
         }
     })
 
     return r.id
+}
+
+export async function remove(id: string) {
+    await prisma.project.delete({where: {id}})
 }

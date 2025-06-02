@@ -43,6 +43,9 @@ export const authOptions: AuthOptions = {
             if(session.user && token.permissions) {
                 session.user["permissions"] = token.permissions as {name: string, args: Record<string, unknown>}[]
             }
+            if(token.sub) {
+                session.user.id = token.sub
+            }
             return session
         }
     },

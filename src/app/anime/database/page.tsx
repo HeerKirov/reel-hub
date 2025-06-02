@@ -5,7 +5,10 @@ import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter, PublishTimeFilterHeader } from "@/components/server/filters"
 import { PublishTimePicker, SearchBox } from "@/components/filters"
+import * as animeService from "@/services/anime"
+import { AnimeListSchema } from "@/schemas/anime"
 import { hasPermission } from "@/helpers/next"
+import emptyCover from "@/assets/empty.jpg"
 
 type SearchParams = { page?: string, search?: string, ratingSex?: string, ratingViolence?: string, publishTime?: string }
 
@@ -14,6 +17,11 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
     const isAdmin = await hasPermission("admin")
+
+    const [list, total] = await Promise.all([
+        animeService.list({page, size: 15, search: searchParams.search}),
+        animeService.count({search: searchParams.search})
+    ])
 
     return (
         <ListPageLayout
@@ -26,9 +34,9 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
                 {isAdmin && <Button variant="ghost" size="sm" asChild><NextLink href="/anime/database/new"><RiAddLine/> 新建</NextLink></Button>}
             </>}
             filter={<FilterPanel searchParams={searchParams} />}
-            content={<ContentGrid />}
-            totalRecord={100}
-            totalPage={30}
+            content={<ContentGrid list={list}/>}
+            totalRecord={total}
+            totalPage={Math.ceil(total / 15)}
             currentPage={page}
         />
     )
@@ -99,23 +107,15 @@ function FilterPanel({ searchParams }: {searchParams: SearchParams}) {
     )
 }
 
-function ContentGrid({ ...attrs }: SystemStyleObject) {
-    const list: {id: number, title: string, image?: string}[] = [
-        {id: 1, title: "顶尖恶路", image: "/ex1.webp"},
-        {id: 2, title: "金牌得主", image: "/ex4.webp"},
-        {id: 3, title: "Slow Loop", image: "/ex2.webp"},
-        {id: 4, title: "海猫鸣泣之时", image: "/ex5.jpeg"},
-        {id: 5, title: "机动战士高达GQuuuuuuX", image: "/ex6.jpg"},
-    ]
-
+function ContentGrid({ list, ...attrs }: {list: AnimeListSchema[]} & SystemStyleObject) {
     return (
         <SimpleGrid gap="3" {...attrs} columns={{base: 3, sm: 4, xl: 5}}>
             {list.map(item => <Box key={item.id}>
                 <NextLink href={`/anime/database/${item.id}`}>
                     <Box  rounded="md" borderWidth="1px" overflow="hidden">
-                        <Image aspectRatio={5 / 7} width="100%" src={item.image} alt={item.title}/>
+                        <Image aspectRatio={5 / 7} width="100%" src={item.resources.cover ?? emptyCover.src} alt={item.title || "(未命名)"}/>
                     </Box>
-                    <Text pb="2">{item.title}</Text>
+                    <Text pb="2">{item.title || "(未命名)"}</Text>
                 </NextLink>
             </Box>)}
         </SimpleGrid>
