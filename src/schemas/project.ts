@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { RATING_SEX, RATING_VIOLENCE, REGION } from "@/constants/project"
 
 export type ProjectRelationInnerType = Record<string, string[]>
 
@@ -10,27 +11,15 @@ export const projectRelationItemSchema = z.object({
     resources: z.record(z.string(), z.string())
 })
 
-export const projectCreateFormTemplate = z.object({
-    title: z.string().min(1),
-    subtitles: z.array(z.string()).optional(),
-    description: z.string().optional(),
-    keywords: z.array(z.string()).optional(),
-    publishTime: z.string().optional(),
-    ratingS: z.number().optional(),
-    ratingV: z.number().optional(),
-    region: z.string().optional(),
-    relations: z.record(z.string(), z.array(z.string())).optional()
-})
-
-export const projectUpdateFormTemplate = z.object({
+export const projectFormTemplate = z.object({
     title: z.string().min(1).optional(),
     subtitles: z.array(z.string()).optional(),
     description: z.string().optional(),
     keywords: z.array(z.string()).optional(),
-    publishTime: z.string().optional(),
-    ratingS: z.number().optional(),
-    ratingV: z.number().optional(),
-    region: z.string().optional(),
+    publishTime: z.string().nullable().optional(),
+    ratingS: z.enum(RATING_SEX).nullable().optional(),
+    ratingV: z.enum(RATING_VIOLENCE).nullable().optional(),
+    region: z.enum(REGION).nullable().optional(),
     relations: z.record(z.string(), z.array(z.string())).optional()
 })
 
@@ -41,9 +30,9 @@ export const projectListSchemaTemplate = z.object({
     description: z.string(),
     keywords: z.array(z.string()),
     publishTime: z.string().nullable(),
-    ratingS: z.number().nullable(),
-    ratingV: z.number().nullable(),
-    region: z.string().nullable(),
+    ratingS: z.enum(RATING_SEX).nullable(),
+    ratingV: z.enum(RATING_VIOLENCE).nullable(),
+    region: z.enum(REGION).nullable(),
     resources: z.record(z.string(), z.string()),
     createTime: z.date(),
     updateTime: z.date(),

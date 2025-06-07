@@ -6,14 +6,14 @@ import { PiFileArrowUpBold, PiGenderIntersexBold, PiInfoBold, PiKnifeFill } from
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input } from "@/components/form"
 import { TagEditor, DynamicInputList, RatingEditor } from "@/components/editor"
-import { AnimeCreateForm, AnimeDetailSchema } from "@/schemas/anime"
+import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
 import { BoardcastType, OriginalType } from "@/prisma/generated"
 import { EditorWithTabLayout } from "@/components/layout"
-import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS, RATING_SEX_ITEMS, RATING_SEX_TO_INDEX, RATING_VIOLENCE_ITEMS, RATING_VIOLENCE_TO_INDEX, REGION_ITEMS } from "@/constants/project"
+import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS } from "@/constants/project"
 
 export type EditorProps = {
     data?: AnimeDetailSchema
-    onSubmit?: (data: AnimeCreateForm) => void
+    onSubmit?: (data: AnimeForm) => void
     onDelete?: () => void
 }
 
@@ -24,12 +24,12 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [description, setDescription] = useState<string>(data?.description ?? "")
     const [keywords, setKeywords] = useState<string[]>(data?.keywords ?? [])
     const [tags, setTags] = useState<string[]>([])
-    const [ratingSex, setRatingSex] = useState<string | undefined>(data?.ratingS ? RATING_SEX_ITEMS[data.ratingS].value : undefined)
-    const [ratingViolence, setRatingViolence] = useState<string | undefined>(data?.ratingV ? RATING_VIOLENCE_ITEMS[data.ratingV].value : undefined)
-    const [region, setRegion] = useState<string | undefined>(data?.region ?? undefined)
-    const [originalType, setOriginalType] = useState<OriginalType | undefined>(data?.originalType ?? undefined)
-    const [boardcastType, setBoardcastType] = useState<BoardcastType | undefined>(data?.boardcastType ?? undefined)
-    const [episodeDuration, setEpisodeDuration] = useState<number>(data?.episodeDuration ?? 0)
+    const [ratingS, setRatingS] = useState<RatingSex | null>(data?.ratingS ?? null)
+    const [ratingV, setRatingV] = useState<RatingViolence | null>(data?.ratingV ?? null)
+    const [region, setRegion] = useState<Region | null>(data?.region ?? null)
+    const [originalType, setOriginalType] = useState<OriginalType | null>(data?.originalType ?? null)
+    const [boardcastType, setBoardcastType] = useState<BoardcastType | null>(data?.boardcastType ?? null)
+    const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? null)
     const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 0)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
 
@@ -41,21 +41,22 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
 
     const tabs = [
         {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfo 
-            title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} ratingSex={ratingSex} ratingViolence={ratingViolence} region={region} originalType={originalType} boardcastType={boardcastType} 
-            setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} setRatingSex={setRatingSex} setRatingViolence={setRatingViolence} setRegion={setRegion} setOriginalType={setOriginalType} setBoardcastType={setBoardcastType}
+            title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
+            ratingS={ratingS} ratingV={ratingV} region={region} originalType={originalType} boardcastType={boardcastType} 
+            setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
+            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setOriginalType={setOriginalType} setBoardcastType={setBoardcastType}
         />},
         {label: "资源", icon: <PiFileArrowUpBold/>, content: <Resource/>},
     ]
 
     const onSave = () => {
-        const ratingS = ratingSex ? RATING_SEX_TO_INDEX[ratingSex] : undefined
-        const ratingV = ratingViolence ? RATING_VIOLENCE_TO_INDEX[ratingViolence] : undefined
         onSubmit?.({
             title,
             subtitles,
             description,
             keywords,
-            ratingS, ratingV,
+            ratingS,
+            ratingV,
             region,
             originalType,
             boardcastType,
@@ -80,24 +81,24 @@ type BasicInfoProps = {
     description: string
     keywords: string[]
     tags: string[]
-    ratingSex: string | undefined
-    ratingViolence: string | undefined
-    region: string | undefined
-    originalType: OriginalType | undefined
-    boardcastType: BoardcastType | undefined
+    ratingS: RatingSex | null
+    ratingV: RatingViolence | null
+    region: Region | null
+    originalType: OriginalType | null
+    boardcastType: BoardcastType | null
     setTitle: (title: string) => void
     setSubtitles: (subtitles: string[]) => void
     setDescription: (description: string) => void
     setKeywords: (keywords: string[]) => void
     setTags: (tags: string[]) => void
-    setRatingSex: (ratingSex: string | undefined) => void
-    setRatingViolence: (ratingViolence: string | undefined) => void
-    setRegion: (region: string | undefined) => void
-    setOriginalType: (originalType: OriginalType | undefined) => void
-    setBoardcastType: (boardcastType: BoardcastType | undefined) => void
+    setRatingS: (ratingSex: RatingSex | null) => void
+    setRatingV: (ratingViolence: RatingViolence | null) => void
+    setRegion: (region: Region | null) => void
+    setOriginalType: (originalType: OriginalType | null) => void
+    setBoardcastType: (boardcastType: BoardcastType | null) => void
 }
 
-const BasicInfo = memo(function BasicInfo({ title, subtitles, description, keywords, tags, ratingSex, ratingViolence, region, originalType, boardcastType, setTitle, setSubtitles, setDescription, setKeywords, setTags, setRatingSex, setRatingViolence, setRegion, setOriginalType, setBoardcastType }: BasicInfoProps) {
+const BasicInfo = memo(function BasicInfo(props: BasicInfoProps) {
     const search = async (text: string): Promise<string[]> => {
         return ["科幻", "奇幻", "剧情", "空气系"].filter(i => i.includes(text))
     }
@@ -110,19 +111,19 @@ const BasicInfo = memo(function BasicInfo({ title, subtitles, description, keywo
                         <Field.Label>
                             标题 <Field.RequiredIndicator />
                         </Field.Label>
-                        <Input placeholder="标题" value={title} onValueChange={setTitle} />
+                        <Input placeholder="标题" value={props.title} onValueChange={props.setTitle} />
                     </Field.Root>
                     <Field.Root>
                         <Field.Label>
                             其他标题
                         </Field.Label>
-                        <DynamicInputList placeholder="其他标题"  value={subtitles} onValueChange={setSubtitles} />
+                        <DynamicInputList placeholder="其他标题"  value={props.subtitles} onValueChange={props.setSubtitles} />
                     </Field.Root>
                     <Field.Root required>
                         <Field.Label>
                             简介
                         </Field.Label>
-                        <Textarea autoresize placeholder="用不长的文字简要介绍此动画" value={description} onChange={e => setDescription(e.target.value)} />
+                        <Textarea autoresize placeholder="用不长的文字简要介绍此动画" value={props.description} onChange={e => props.setDescription(e.target.value)} />
                     </Field.Root>
                 </Flex>
                 <Box flex="1" border="1px solid" borderColor="border" rounded="md"/>
@@ -132,43 +133,43 @@ const BasicInfo = memo(function BasicInfo({ title, subtitles, description, keywo
                     <Field.Label>
                         关键词
                     </Field.Label>
-                    <TagEditor value={keywords} onValueChange={setKeywords} placeholder="关键词" variant="outline" width="full" noDuplicate/>
+                    <TagEditor value={props.keywords} onValueChange={props.setKeywords} placeholder="关键词" variant="outline" width="full" noDuplicate/>
                 </Field.Root>
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
                     <Field.Label>
                         标签
                     </Field.Label>
-                    <TagEditor value={tags} onValueChange={setTags} placeholder="标签" variant="surface" width="full" noDuplicate search={search}/>
+                    <TagEditor value={props.tags} onValueChange={props.setTags} placeholder="标签" variant="surface" width="full" noDuplicate search={search}/>
                 </Field.Root>
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
                     <Field.Label>
                         <Icon><PiGenderIntersexBold/></Icon>分级
                     </Field.Label>
-                    <RatingEditor value={ratingSex} options={RATING_SEX_ITEMS} onValueChange={setRatingSex} width="full"/>
+                    <RatingEditor value={props.ratingS} options={RATING_SEX_ITEMS} onValueChange={props.setRatingS} width="full"/>
                 </Field.Root>
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
                     <Field.Label>
                         <Icon><PiKnifeFill/></Icon>分级
                     </Field.Label>
-                    <RatingEditor value={ratingViolence} options={RATING_VIOLENCE_ITEMS} onValueChange={setRatingViolence} width="full"/>
+                    <RatingEditor value={props.ratingV} options={RATING_VIOLENCE_ITEMS} onValueChange={props.setRatingV} width="full"/>
                 </Field.Root>
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
                     <Field.Label>
                         地区
                     </Field.Label>
-                    <Select value={region} onValueChange={setRegion} items={REGION_ITEMS} placeholder="地区"/>
+                    <Select value={props.region} onValueChange={props.setRegion} items={REGION_ITEMS} placeholder="地区"/>
                 </Field.Root>
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
                     <Field.Label>
                         原作类型
                     </Field.Label>
-                    <Select value={originalType} onValueChange={setOriginalType} items={ORIGINAL_TYPE_ITEMS} placeholder="原作类型"/>
+                    <Select value={props.originalType} onValueChange={props.setOriginalType} items={ORIGINAL_TYPE_ITEMS} placeholder="原作类型"/>
                 </Field.Root>
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
                     <Field.Label>
                         放送类型
                     </Field.Label>
-                    <Select value={boardcastType} onValueChange={setBoardcastType} items={BOARDCAST_TYPE_ITEMS} placeholder="放送类型"/>
+                    <Select value={props.boardcastType} onValueChange={props.setBoardcastType} items={BOARDCAST_TYPE_ITEMS} placeholder="放送类型"/>
                 </Field.Root>
             </Flex>
         </Flex>

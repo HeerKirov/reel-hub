@@ -58,7 +58,7 @@ export type SelectItem<T extends string> = {
 }
 
 export type SelectProps<T extends string> = {
-    value?: T
+    value?: T | null
     items: SelectItem<T>[]
     onValueChange?: (value: T) => void
     placeholder?: string
@@ -72,7 +72,7 @@ export function Select<T extends string>({ value, items, onValueChange, placehol
         onValueChange?.(selectedValue)
     }, [onValueChange])
     
-    return <ChakraSelect.Root collection={collection as any} value={value ? [value] : undefined} onValueChange={onValueChangeEvent} {...attrs}>
+    return <ChakraSelect.Root collection={collection as any} value={value !== null && value !== undefined ? [value] : []} onValueChange={onValueChangeEvent} {...attrs}>
         <ChakraSelect.HiddenSelect/>
         <ChakraSelect.Control>
             <ChakraSelect.Trigger>

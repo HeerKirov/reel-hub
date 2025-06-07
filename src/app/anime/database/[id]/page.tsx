@@ -7,7 +7,7 @@ import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
 import * as animeService from "@/services/anime"
 import { AnimeDetailSchema } from "@/schemas/anime"
-import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE, VALUE_TO_REGION } from "@/constants/project"
+import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import emptyCover from "@/assets/empty.jpg"
 
 export default async function AnimationDatabaseDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -80,6 +80,10 @@ function Content({ data }: {data: AnimeDetailSchema}) {
         {title: "测试相关动画", image: "/ex7.jpg", id: 2, type: "同系列"},
         {title: "测试相关动画2", image: "/ex7.jpg", id: 4, type: "前作"},
     ]
+
+    const ratingS = data.ratingS !== null ? VALUE_TO_RATING_SEX[data.ratingS] : null
+    const ratingV = data.ratingV !== null ? VALUE_TO_RATING_VIOLENCE[data.ratingV] : null
+
     return (
         <>
             <HStack my="2">
@@ -96,7 +100,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
             <Box display="flex" flexWrap={{base: "wrap", md: "nowrap"}} justifyContent="space-between" textAlign="center">
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
                     {data.boardcastType !== null ? VALUE_TO_BOARDCAST_TYPE[data.boardcastType].label : "(未知放送类型)"}
-                    <p>每集24分钟</p>
+                    <p>每集{data.episodeDuration ?? "??"}分钟</p>
                 </Box>
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
                     放送中
@@ -105,13 +109,13 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
                     <p>{data.originalType !== null ? VALUE_TO_ORIGINAL_TYPE[data.originalType].label : "(未知改编类型)"}</p>
                 </Box>
-                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={data.ratingS !== null ? `${RATING_SEX_ITEMS[data.ratingS].color}.fg` : undefined}>
+                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={ratingS !== null ? `${ratingS.color}.fg` : undefined}>
                     <Icon><PiGenderIntersexBold/></Icon>
-                    <p>{data.ratingS !== null ? RATING_SEX_ITEMS[data.ratingS].label : "(无)"}</p>
+                    <p>{ratingS !== null ? ratingS.label : "(无)"}</p>
                 </Box>
-                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={data.ratingV !== null ? `${RATING_VIOLENCE_ITEMS[data.ratingV].color}.fg` : undefined}>
+                <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={ratingV !== null ? `${ratingV.color}.fg` : undefined}>
                     <Icon><PiKnifeFill/></Icon>
-                    <p>{data.ratingV !== null ? RATING_VIOLENCE_ITEMS[data.ratingV].label : "(无)"}</p>
+                    <p>{ratingV !== null ? ratingV.label : "(无)"}</p>
                 </Box>
             </Box>
             <Table.Root mb="2" width={{base: "full", sm: "auto"}} size="sm">
