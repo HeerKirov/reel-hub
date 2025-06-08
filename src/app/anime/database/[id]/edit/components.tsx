@@ -1,7 +1,7 @@
 "use client"
 import React from "react"
 import { useRouter } from "next/navigation"
-import * as animeService from "@/services/anime"
+import { updateProjectAnime, deleteProjectAnime } from "@/services/anime"
 import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
 import { Editor } from "../../components-editor"
 
@@ -9,12 +9,12 @@ export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}
     const router = useRouter()
 
     const onSubmit = async (form: AnimeForm) => {
-        await animeService.update(data.id, form)
+        await updateProjectAnime(data.id, form)
         router.push(`/anime/database/${data.id}`)
     }
 
     const onDelete = async () => {
-        await animeService.remove(data.id)
+        await deleteProjectAnime(data.id)
         router.push("/anime/database")
     }
 

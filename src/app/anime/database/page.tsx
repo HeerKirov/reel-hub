@@ -5,7 +5,7 @@ import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter, PublishTimeFilterHeader } from "@/components/server/filters"
 import { PublishTimePicker, SearchBox } from "@/components/filters"
-import * as animeService from "@/services/anime"
+import { listProjectAnime, countProjectAnime } from "@/services/anime"
 import { AnimeListSchema } from "@/schemas/anime"
 import { hasPermission } from "@/helpers/next"
 import emptyCover from "@/assets/empty.jpg"
@@ -19,8 +19,8 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
     const isAdmin = await hasPermission("admin")
 
     const [list, total] = await Promise.all([
-        animeService.list({page, size: 15, search: searchParams.search}),
-        animeService.count({search: searchParams.search})
+        listProjectAnime({page, size: 15, search: searchParams.search}),
+        countProjectAnime({search: searchParams.search})
     ])
 
     return (

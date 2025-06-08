@@ -23,9 +23,9 @@ CREATE TYPE "ShoppingType" AS ENUM ('MAIN', 'DLC', 'IN_APP_PURCHASE', 'SUBSCRIPT
 CREATE TABLE "Project" (
     "id" TEXT NOT NULL,
     "title" VARCHAR(256) NOT NULL,
-    "subtitles" TEXT[],
+    "subtitles" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "keywords" TEXT[],
+    "keywords" TEXT NOT NULL,
     "type" "ProjectType" NOT NULL,
     "publishTime" DATE,
     "ratingS" INTEGER,
@@ -53,12 +53,14 @@ CREATE TABLE "Project" (
 
 -- CreateTable
 CREATE TABLE "Staff" (
-    "id" INTEGER NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" VARCHAR(256) NOT NULL,
-    "otherNames" TEXT NOT NULL,
+    "otherNames" VARCHAR(256) NOT NULL,
+    "description" TEXT NOT NULL,
     "createTime" TIMESTAMP(3) NOT NULL,
     "updateTime" TIMESTAMP(3) NOT NULL,
     "creator" VARCHAR(24) NOT NULL,
+    "updator" VARCHAR(24) NOT NULL,
 
     CONSTRAINT "Staff_pkey" PRIMARY KEY ("id")
 );
@@ -74,7 +76,7 @@ CREATE TABLE "ProjectStaffRelation" (
 
 -- CreateTable
 CREATE TABLE "Tag" (
-    "id" INTEGER NOT NULL,
+    "id" SERIAL NOT NULL,
     "type" "ProjectType" NOT NULL,
     "name" VARCHAR(256) NOT NULL,
     "description" TEXT NOT NULL,

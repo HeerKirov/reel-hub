@@ -1,5 +1,5 @@
 import { arrays } from "@/helpers/primitive"
-import { BoardcastType, OriginalType } from "@/prisma/generated"
+import { BoardcastType, OriginalType, ProjectType } from "@/prisma/generated"
 
 type SelectItem<T> = {
     label: string
@@ -20,6 +20,8 @@ export const RATING_SEX = ["all", "r12", "r15", "r17", "r18"] as const
 export const RATING_VIOLENCE = ["no", "a", "b", "c", "d"] as const
 
 export const REGION = ["jp", "us", "cn", "kr", "other"] as const
+
+export const PROJECT_TYPE = [ProjectType.ANIME, ProjectType.GAME, ProjectType.MANGA, ProjectType.MOVIE, ProjectType.NOVEL] as const
 
 export const RATING_SEX_ITEMS: SelectItemWithDesc<RatingSex>[] = [
     {label: "全年龄", value: "all", color: "green", desc: ["无任何性暗示、性倾向、色情内容", "没有任何性暗示倾向的恋爱、接触、轻微裸露行为不会视作限制内容", "可以较为放心地提供给家长和儿童观看"]},

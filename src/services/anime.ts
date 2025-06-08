@@ -2,80 +2,90 @@
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
 import { ProjectType } from "@/prisma/generated"
-import { AnimeForm, animeDetailSchema, AnimeListFilter, animeListSchema } from "@/schemas/anime"
+import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
+import { RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 import { ProjectRelationInnerType } from "@/schemas/project"
 import { getRelations } from "./project"
-import { RATING_SEX_ITEMS, RATING_SEX_TO_INDEX, RATING_VIOLENCE_ITEMS, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 
-export async function list(filter: AnimeListFilter) {
+export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
+    const validate = animeListFilter.safeParse(filter)
+    if(!validate.success) throw new Error(validate.error.message)
+
     const r = await prisma.project.findMany({
         where: {
             type: ProjectType.ANIME,
-            title: filter.search ? {contains: filter.search} : undefined,
-            subtitles: filter.search ? {has: filter.search} : undefined
+            OR: validate.data.search ? [
+                {title: {contains: validate.data.search}},
+                {subtitles: {contains: validate.data.search}},
+                {keywords: {contains: validate.data.search}}
+            ] : undefined
         },
         orderBy: {
             publishTime: "desc"
         },
-        skip: ((filter.page ?? 1) - 1) * (filter.size ?? 15),
-        take: filter.size ?? 15
+        skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+        take: validate.data.size ?? 15
     })
-    return r.map(i => animeListSchema.parse(i))
+
+    return r.map(parseAnimeListSchema)
 }
 
-export async function count(filter: AnimeListFilter): Promise<number> {
+export async function countProjectAnime(filter: AnimeListFilter): Promise<number> {
+    const validate = animeListFilter.safeParse(filter)
+    if(!validate.success) throw new Error(validate.error.message)
+
     return await prisma.project.count({
         where: {
             type: ProjectType.ANIME,
-            title: filter.search ? {contains: filter.search} : undefined,
-            subtitles: filter.search ? {has: filter.search} : undefined
+            OR: validate.data.search ? [
+                {title: {contains: validate.data.search}},
+                {subtitles: {contains: validate.data.search}},
+                {keywords: {contains: validate.data.search}}
+            ] : undefined
         }
     })
 }
 
-export async function retrieve(id: string) {
+export async function retrieveProjectAnime(id: string): Promise<AnimeDetailSchema | null> {
     const r = await prisma.project.findUnique({where: {id}})
     if(!r) return null
     
     const { relations, relationsTopology } = await getRelations(r.relations as ProjectRelationInnerType, r.relationsTopology as ProjectRelationInnerType)
     
-    return animeDetailSchema.parse({
-        ...r,
-        ratingS: r.ratingS !== null ? RATING_SEX_ITEMS[r.ratingS].value : null,
-        ratingV: r.ratingV !== null ? RATING_VIOLENCE_ITEMS[r.ratingV].value : null,
-        relations,
-        relationsTopology
-    })
+    return parseAnimeDetailSchema(r, relations, relationsTopology)
 }
 
-export async function create(form: AnimeForm) {
+export async function createProjectAnime(form: AnimeForm) {
     const userId = await getUserId()
     const now = new Date()
 
+    const validate = animeForm.safeParse(form)
+    if(!validate.success) throw new Error(validate.error.message)
+
     const r = await prisma.project.create({
         data: {
-            title: form.title ?? "",
-            subtitles: form.subtitles,
-            description: form.description || "",
-            keywords: form.keywords,
+            title: validate.data.title ?? "",
+            subtitles: validate.data.subtitles?.join(",") ?? "",
+            description: validate.data.description || "",
+            keywords: validate.data.keywords?.join(",") ?? "",
             type: ProjectType.ANIME,
-            publishTime: form.publishTime ?? null,
-            ratingS: form.ratingS !== undefined && form.ratingS !== null ? RATING_SEX_TO_INDEX[form.ratingS] : null,
-            ratingV: form.ratingV !== undefined && form.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[form.ratingV] : null,
-            region: form.region ?? null,
-            relations: form.relations ?? {},
+            publishTime: validate.data.publishTime ?? null,
+            ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
+            ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
+            region: validate.data.region ?? null,
+            relations: validate.data.relations ?? {},
             relationsTopology: {},
             resources: {},
             createTime: now,
             updateTime: now,
             creator: userId,
             updator: userId,
-            originalType: form.originalType ?? null,
-            boardcastType: form.boardcastType ?? null,
-            episodeDuration: form.episodeDuration ?? null,
-            episodeTotalNum: form.episodeTotalNum ?? 1,
-            episodePublishedNum: form.episodePublishedNum ?? 0,
-            episodePublishPlan: form.episodePublishPlan ?? [],
+            originalType: validate.data.originalType ?? null,
+            boardcastType: validate.data.boardcastType ?? null,
+            episodeDuration: validate.data.episodeDuration ?? null,
+            episodeTotalNum: validate.data.episodeTotalNum ?? 1,
+            episodePublishedNum: validate.data.episodePublishedNum ?? 0,
+            episodePublishPlan: validate.data.episodePublishPlan ?? [],
             episodePublishedRecords: [],
             platform: [],
             onlineType: null
@@ -85,39 +95,41 @@ export async function create(form: AnimeForm) {
     return r.id
 }
 
-export async function update(id: string, form: AnimeForm) {
+export async function updateProjectAnime(id: string, form: AnimeForm) {
     const userId = await getUserId()
     const now = new Date()
-    const ratingS = form.ratingS !== undefined && form.ratingS !== null ? RATING_SEX_TO_INDEX[form.ratingS] : form.ratingS
-    const ratingV = form.ratingV !== undefined && form.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[form.ratingV] : form.ratingV
+
+    const validate = animeForm.safeParse(form)
+    if(!validate.success) throw new Error(validate.error.message)
+
     const r = await prisma.project.update({
         where: { id },
         data: {
-            title: form.title,
-            subtitles: form.subtitles,
-            description: form.description,
-            keywords: form.keywords,
-            publishTime: form.publishTime,
-            ratingS,
-            ratingV,
-            region: form.region,
-            relations: form.relations,
+            title: validate.data.title,
+            subtitles: validate.data.subtitles?.join(",") ?? "",
+            description: validate.data.description,
+            keywords: validate.data.keywords?.join(",") ?? "",
+            publishTime: validate.data.publishTime,
+            ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
+            ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
+            region: validate.data.region,
+            relations: validate.data.relations,
             relationsTopology: {},
             resources: {},
             updateTime: now,
             updator: userId,
-            originalType: form.originalType,
-            boardcastType: form.boardcastType,
-            episodeDuration: form.episodeDuration,
-            episodeTotalNum: form.episodeTotalNum,
-            episodePublishedNum: form.episodePublishedNum,
-            episodePublishPlan: form.episodePublishPlan,
+            originalType: validate.data.originalType,
+            boardcastType: validate.data.boardcastType,
+            episodeDuration: validate.data.episodeDuration,
+            episodeTotalNum: validate.data.episodeTotalNum,
+            episodePublishedNum: validate.data.episodePublishedNum,
+            episodePublishPlan: validate.data.episodePublishPlan,
             episodePublishedRecords: undefined
         }
     })
 }
 
-export async function remove(id: string) {
+export async function deleteProjectAnime(id: string) {
     await prisma.project.delete({where: {id}})
     await prisma.projectStaffRelation.deleteMany({where: {projectId: id}})
     await prisma.projectTagRelation.deleteMany({where: {projectId: id}})

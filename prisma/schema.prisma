@@ -75,9 +75,9 @@ enum ShoppingType {
 model Project {
   id                 String   @id @default(nanoid())
   title              String   @db.VarChar(256)
-  subtitles          String[] @db.Text
+  subtitles          String   @db.Text
   description        String   @db.Text
-  keywords           String[] @db.Text
+  keywords           String   @db.Text
   type               ProjectType
   publishTime        DateTime? @db.Date
   ratingS            Int?
@@ -116,12 +116,15 @@ model Project {
 }
 
 model Staff {
-  id          Int      @id
+  id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(256) @unique
-  otherNames  String   @db.Text
+  otherNames  String   @db.VarChar(256)
+  description String   @db.Text
   createTime  DateTime
   updateTime  DateTime
   creator     String   @db.VarChar(24)
+  updator     String   @db.VarChar(24)
+
   projects ProjectStaffRelation[]
 }
 
@@ -137,7 +140,7 @@ model ProjectStaffRelation {
 }
 
 model Tag {
-  id          Int      @id
+  id          Int      @id @default(autoincrement())
   type        ProjectType
   name        String   @db.VarChar(256)
   description String   @db.Text

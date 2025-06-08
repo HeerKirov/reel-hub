@@ -5,7 +5,7 @@ import { RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
-import * as animeService from "@/services/anime"
+import { retrieveProjectAnime } from "@/services/anime"
 import { AnimeDetailSchema } from "@/schemas/anime"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import emptyCover from "@/assets/empty.jpg"
@@ -13,7 +13,7 @@ import emptyCover from "@/assets/empty.jpg"
 export default async function AnimationDatabaseDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
 
-    const data = await animeService.retrieve(id)
+    const data = await retrieveProjectAnime(id)
     if(!data) {
         throw new Error("404 Not Found")
     }
