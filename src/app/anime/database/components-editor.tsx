@@ -7,9 +7,10 @@ import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input } from "@/components/form"
 import { TagEditor, DynamicInputList, RatingEditor } from "@/components/editor"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
-import { BoardcastType, OriginalType } from "@/prisma/generated"
+import { BoardcastType, OriginalType } from "@/constants/anime"
 import { EditorWithTabLayout } from "@/components/layout"
-import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS } from "@/constants/project"
+import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS } from "@/constants/project"
+import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 
 export type EditorProps = {
     data?: AnimeDetailSchema
@@ -30,7 +31,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [originalType, setOriginalType] = useState<OriginalType | null>(data?.originalType ?? null)
     const [boardcastType, setBoardcastType] = useState<BoardcastType | null>(data?.boardcastType ?? null)
     const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? null)
-    const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 0)
+    const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 1)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
 
     const breadcrumb = {

@@ -1,9 +1,8 @@
 "use server"
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
-import { ProjectType } from "@/prisma/generated"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
-import { RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
+import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 import { ProjectRelationInnerType } from "@/schemas/project"
 import { getRelations } from "./project"
 
@@ -47,7 +46,17 @@ export async function countProjectAnime(filter: AnimeListFilter): Promise<number
 }
 
 export async function retrieveProjectAnime(id: string): Promise<AnimeDetailSchema | null> {
-    const r = await prisma.project.findUnique({where: {id}})
+    const r = await prisma.project.findUnique({
+        where: {id}, 
+        include: {
+            staffs: {
+                include: {staff: true}
+              },
+              tags: {
+                include: {tag: true}
+              }
+        }
+    })
     if(!r) return null
     
     const { relations, relationsTopology } = await getRelations(r.relations as ProjectRelationInnerType, r.relationsTopology as ProjectRelationInnerType)

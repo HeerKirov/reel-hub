@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectDetailSchema, projectListSchema, ProjectModel, ProjectRelationType } from "./project"
 import { BOARDCAST_TYPE, ORIGINAL_TYPE } from "@/constants/anime"
-import { Project } from "@/prisma/generated"
+import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
 
 export const animeListFilter = z.object({
     search: z.string().optional(),
@@ -49,7 +49,7 @@ export function parseAnimeListSchema(data: Project): AnimeListSchema {
     }
 }
 
-export function parseAnimeDetailSchema(data: Project, relations: ProjectRelationType, relationsTopology: ProjectRelationType): AnimeDetailSchema {
+export function parseAnimeDetailSchema(data: Project & {staffs: (ProjectStaffRelation & {staff: Staff})[], tags: (ProjectTagRelation & {tag: Tag})[]}, relations: ProjectRelationType, relationsTopology: ProjectRelationType): AnimeDetailSchema {
     const i = data as ProjectModel
     return {
         ...parseProjectDetailSchema(data, relations, relationsTopology),

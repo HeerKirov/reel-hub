@@ -1,13 +1,8 @@
 import { arrays } from "@/helpers/primitive"
 import { BoardcastType, OriginalType, ProjectType } from "@/prisma/generated"
+import { SelectItemWithDesc, SelectItem } from "./general"
 
-type SelectItem<T> = {
-    label: string
-    value: T
-    color: string
-}
-
-type SelectItemWithDesc<T> = SelectItem<T> & {desc: string[]}
+export { ProjectType }
 
 export type RatingSex = "all" | "r12" | "r15" | "r17" | "r18"
 
@@ -47,20 +42,6 @@ export const REGION_ITEMS: SelectItem<Region>[] = [
     {label: "其他", value: "other", color: "purple"}
 ]
 
-export const ORIGINAL_TYPE_ITEMS: SelectItem<OriginalType>[] = [
-    {label: "原创", value: OriginalType.ORIGINAL, color: "orange"},
-    {label: "漫画改编", value: OriginalType.MANGA, color: "pink"},
-    {label: "小说改编", value: OriginalType.NOVEL, color: "cyan"},
-    {label: "游戏改编", value: OriginalType.GAME, color: "green"},
-    {label: "其他", value: OriginalType.OTHER, color: "purple"}
-]
-
-export const BOARDCAST_TYPE_ITEMS: SelectItem<BoardcastType>[] = [
-    {label: "TV&WEB", value: BoardcastType.TV_AND_WEB, color: "cyan"},
-    {label: "剧场版动画", value: BoardcastType.MOVIE, color: "purple"},
-    {label: "OVA&OAD", value: BoardcastType.OVA_AND_OAD, color: "orange"}
-]
-
 export const RATING_SEX_TO_INDEX = arrays.associate(RATING_SEX_ITEMS.map((i, index) => ({index, value: i.value})), ({ value }) => value, ({ index }) => index)
 
 export const RATING_VIOLENCE_TO_INDEX = arrays.associate(RATING_VIOLENCE_ITEMS.map((i, index) => ({index, value: i.value})), ({ value }) => value, ({ index }) => index)
@@ -71,6 +52,3 @@ export const VALUE_TO_RATING_VIOLENCE = arrays.associateBy(RATING_VIOLENCE_ITEMS
 
 export const VALUE_TO_REGION = arrays.associateBy(REGION_ITEMS, i => i.value)
 
-export const VALUE_TO_ORIGINAL_TYPE = arrays.associateBy(ORIGINAL_TYPE_ITEMS, i => i.value)
-
-export const VALUE_TO_BOARDCAST_TYPE = arrays.associateBy(BOARDCAST_TYPE_ITEMS, i => i.value)

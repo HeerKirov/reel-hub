@@ -9,6 +9,8 @@ import { listProjectAnime, countProjectAnime } from "@/services/anime"
 import { AnimeListSchema } from "@/schemas/anime"
 import { hasPermission } from "@/helpers/next"
 import emptyCover from "@/assets/empty.jpg"
+import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS } from "@/constants/project"
+import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 
 type SearchParams = { page?: string, search?: string, ratingSex?: string, ratingViolence?: string, publishTime?: string }
 
@@ -43,38 +45,24 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
 }
 
 function FilterPanel({ searchParams }: {searchParams: SearchParams}) {
-    const publishTypeItems = [
+    const boardcastTypeItems = [
         {label: "全部", value: "", color: "blue"},
-        {label: "TV动画", value: "tv", color: "cyan"},
-        {label: "剧场版动画", value: "movie", color: "purple"},
-        {label: "OVA&OAD", value: "ova", color: "orange"}
+        ...BOARDCAST_TYPE_ITEMS
     ]
 
     const originalTypeItems = [
         {label: "全部", value: "", color: "blue"},
-        {label: "原创", value: "original", color: "orange"},
-        {label: "漫画", value: "manga", color: "pink"},
-        {label: "小说", value: "novel", color: "cyan"},
-        {label: "游戏", value: "game", color: "green"},
-        {label: "其他", value: "other", color: "purple"}
+        ...ORIGINAL_TYPE_ITEMS
     ]
 
     const ratingSexItems = [
         {label: "全部", value: "", color: "blue"},
-        {label: "全年龄", value: "all", color: "green"},
-        {label: "R12", value: "r12", color: "cyan"},
-        {label: "R15", value: "r15", color: "purple"},
-        {label: "R17", value: "r17", color: "orange"},
-        {label: "R18", value: "r18", color: "red"}
+        ...RATING_SEX_ITEMS
     ]
 
     const ratingViolenceItems = [
         {label: "全部", value: "", color: "blue"},
-        {label: "无限制", value: "no", color: "green"},
-        {label: "A", value: "a", color: "cyan"},
-        {label: "B", value: "b", color: "purple"},
-        {label: "C", value: "c", color: "orange"},
-        {label: "D", value: "d", color: "red"}
+        ...RATING_VIOLENCE_ITEMS
     ]
 
     return (
@@ -82,7 +70,7 @@ function FilterPanel({ searchParams }: {searchParams: SearchParams}) {
             <SearchBox value={searchParams.search} searchParamName="search"/>
             <SidePanel.FilterStack>
                 <SidePanel.FilterStackItem title="放送类型" asChild>
-                    <LinkGroupFilter items={publishTypeItems} searchParams={searchParams} searchParamName="publishType"/>
+                    <LinkGroupFilter items={boardcastTypeItems} searchParams={searchParams} searchParamName="boardcastType"/>
                 </SidePanel.FilterStackItem>
                 <SidePanel.FilterStackItem title="原作类型" asChild>
                     <LinkGroupFilter items={originalTypeItems} searchParams={searchParams} searchParamName="originalType"/>

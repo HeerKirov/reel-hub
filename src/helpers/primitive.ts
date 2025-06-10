@@ -13,7 +13,25 @@ export const arrays = {
             returns[mapper(item)] = mapper2(item)
         }
         return returns
-    }
+    },
+    groupBy<K extends string | number, T>(arr: T[], mapper: (i: T) => K): Record<K, T[]> {
+        const returns: Record<K, T[]> = {} as any
+        for(const item of arr) {
+            const key = mapper(item)
+            if(!returns[key]) returns[key] = []
+            returns[key].push(item)
+        }
+        return returns
+    },
+    groupByTo<K extends string | number, T, V>(arr: T[], mapper: (i: T) => K, mapper2: (i: T) => V): Record<K, V[]> {
+        const returns: Record<K, V[]> = {} as any
+        for(const item of arr) {
+            const key = mapper(item)
+            if(!returns[key]) returns[key] = []
+            returns[key].push(mapper2(item))
+        }
+        return returns
+    },
 }
 
 export const records = {

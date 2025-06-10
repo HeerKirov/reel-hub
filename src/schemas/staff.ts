@@ -42,7 +42,7 @@ export function parseStaffSchema(data: Staff): StaffSchema {
     return {
         id: i.id,
         name: i.name,
-        otherNames: i.otherNames.split(","),
+        otherNames: i.otherNames.split("|"),
         description: i.description,
     }
 }

@@ -7,8 +7,10 @@ import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
 import { retrieveProjectAnime } from "@/services/anime"
 import { AnimeDetailSchema } from "@/schemas/anime"
-import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
+import { VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
+import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import emptyCover from "@/assets/empty.jpg"
+import { BoardcastType } from "@/constants/anime"
 
 export default async function AnimationDatabaseDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -47,18 +49,19 @@ function Side({ data }: {data: AnimeDetailSchema}) {
                         <Table.Cell textWrap="nowrap" textAlign="right">标题</Table.Cell>
                         <Table.Cell>{data.title || "(未命名)"}</Table.Cell>
                     </Table.Row>
-                    <Table.Row>
+                    {data.subtitles.length > 0 && <Table.Row>
                         <Table.Cell textWrap="nowrap" textAlign="right">其他标题</Table.Cell>
                         <Table.Cell>
                             {data.subtitles.map(subtitle => <Text key={subtitle}>{subtitle}</Text>)}
                         </Table.Cell>
-                    </Table.Row><Table.Row>
-                    <Table.Cell textWrap="nowrap" textAlign="right">地区</Table.Cell>
-                    <Table.Cell>{data.region !== null ? VALUE_TO_REGION[data.region].label : "(无)"}</Table.Cell>
-                </Table.Row>
+                    </Table.Row>}
+                    <Table.Row>
+                        <Table.Cell textWrap="nowrap" textAlign="right">地区</Table.Cell>
+                        <Table.Cell>{data.region !== null ? VALUE_TO_REGION[data.region].label : "(无)"}</Table.Cell>
+                    </Table.Row>
                     <Table.Row>
                         <Table.Cell borderBottomWidth="0" textWrap="nowrap" textAlign="right">放送时间</Table.Cell>
-                        <Table.Cell borderBottomWidth="0">{data.publishTime}</Table.Cell>
+                        <Table.Cell borderBottomWidth="0">{data.publishTime ?? "(无)"}</Table.Cell>
                     </Table.Row>
                 </Table.Body>
             </Table.Root>
@@ -67,15 +70,7 @@ function Side({ data }: {data: AnimeDetailSchema}) {
 }
 
 function Content({ data }: {data: AnimeDetailSchema}) {
-    const tags = ["轻百合", "社团活动", "美食"]
-    const staff = [
-        {name: "角色&故事原案", members: ["あっと"]},
-        {name: "原作", members: ["team apa"]},
-        {name: "监督", members: ["川面真也", "春水融"]},
-        {name: "系列构成", members: ["比企能博"]},
-        {name: "角色设计、总作画监督", members: ["满田一"]},
-        {name: "动画制作", members: ["P.A.WORKS"]},
-    ]
+    const { tags, staffs } = data
     const relations = [
         {title: "测试相关动画", image: "/ex7.jpg", id: 2, type: "同系列"},
         {title: "测试相关动画2", image: "/ex7.jpg", id: 4, type: "前作"},
@@ -90,49 +85,50 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                 {data.keywords.map(k => <Tag.Root key={k} size="lg" variant="outline">
                     <Tag.Label>{k}</Tag.Label>
                 </Tag.Root>)}
-                {tags.map(tag => <Tag.Root key={tag} size="lg" asChild>
-                    <NextLink href={`/anime/database/tags/${tag}`}>
-                        <Tag.Label>{tag}</Tag.Label>
+                {tags.map(tag => <Tag.Root key={tag.id} size="lg" asChild>
+                    <NextLink href={`/anime/database/tags/${tag.name}`}>
+                        <Tag.Label>{tag.name}</Tag.Label>
                     </NextLink>
                 </Tag.Root>)}
             </HStack>
             <WrappedText text={data.description} />
             <Box display="flex" flexWrap={{base: "wrap", md: "nowrap"}} justifyContent="space-between" textAlign="center">
-                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
+                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2" color={data.boardcastType !== null ? `${VALUE_TO_BOARDCAST_TYPE[data.boardcastType].color}.fg` : undefined}>
                     {data.boardcastType !== null ? VALUE_TO_BOARDCAST_TYPE[data.boardcastType].label : "(未知放送类型)"}
-                    <p>每集{data.episodeDuration ?? "??"}分钟</p>
+                    <Text fontWeight="700">每集{data.episodeDuration ?? "?"}分钟</Text>
                 </Box>
                 <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
-                    放送中
-                    <p>5/12话</p>
+                    {data.episodePublishedNum >= data.episodeTotalNum ? "已完结" : "放送中"}
+                    <Text fontWeight="700">{data.episodePublishedNum >= data.episodeTotalNum ? `共${data.episodeTotalNum}话` : `${data.episodePublishedNum}/${data.episodeTotalNum}话`}</Text>
                 </Box>
-                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2">
-                    <p>{data.originalType !== null ? VALUE_TO_ORIGINAL_TYPE[data.originalType].label : "(未知改编类型)"}</p>
+                <Box flexBasis={{base: "33.333%", md: "20%"}} borderBottomWidth="1px" p="2" color={data.originalType !== null ? `${VALUE_TO_ORIGINAL_TYPE[data.originalType].color}.fg` : undefined}>
+                    <Text>改编类型</Text>
+                    <Text fontWeight="700">{data.originalType !== null ? VALUE_TO_ORIGINAL_TYPE[data.originalType].label : "(未知改编类型)"}</Text>
                 </Box>
                 <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={ratingS !== null ? `${ratingS.color}.fg` : undefined}>
                     <Icon><PiGenderIntersexBold/></Icon>
-                    <p>{ratingS !== null ? ratingS.label : "(无)"}</p>
+                    <Text fontWeight="700">{ratingS !== null ? ratingS.label : "(无)"}</Text>
                 </Box>
                 <Box flexBasis={{base: "50%", md: "20%"}} borderBottomWidth="1px" p="2" color={ratingV !== null ? `${ratingV.color}.fg` : undefined}>
                     <Icon><PiKnifeFill/></Icon>
-                    <p>{ratingV !== null ? ratingV.label : "(无)"}</p>
+                    <Text fontWeight="700">{ratingV !== null ? ratingV.label : "(无)"}</Text>
                 </Box>
             </Box>
             <Table.Root mb="2" width={{base: "full", sm: "auto"}} size="sm">
                 <Table.Body>
-                    {staff.map(staff => <Table.Row key={staff.name}>
-                        <Table.Cell>{staff.name}</Table.Cell>
+                    {staffs.map(staff => <Table.Row key={staff.type}>
+                        <Table.Cell>{staff.type}</Table.Cell>
                         <Table.Cell>
                             <HStack>
-                                {staff.members.map(member => <Link key={member} colorPalette="blue" asChild>
-                                    <NextLink href={`/anime/database/staff/${member}`}>{member}</NextLink>
+                                {staff.members.map(member => <Link key={member.id} colorPalette="blue" asChild>
+                                    <NextLink href={`/anime/database/staff/${member.name}`}>{member.name}</NextLink>
                                 </Link>)}
                             </HStack>
                         </Table.Cell>
                     </Table.Row>)}
                 </Table.Body>
             </Table.Root>
-            <Flex width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", md: "nowrap"}}>
+            <Flex mt="4" width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", md: "nowrap"}}>
                 <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
                     <Text color="blue.fg"><Icon><RiPushpin2Fill/></Icon> 已订阅</Text>
                     <Flex mt="2">
