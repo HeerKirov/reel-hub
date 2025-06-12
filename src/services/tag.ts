@@ -1,3 +1,4 @@
+"use server"
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
 import { TagCreateFormSchema, TagListFilter, tagCreateFormSchema, TagSchema, tagListFilter, tagUpdateFormSchema, TagUpdateFormSchema, parseTagSchema } from "@/schemas/tag"
@@ -5,7 +6,7 @@ import { TagCreateFormSchema, TagListFilter, tagCreateFormSchema, TagSchema, tag
 export async function listTags(filter: TagListFilter): Promise<TagSchema[]> {
     const validate = tagListFilter.safeParse(filter)
     if(!validate.success) throw new Error(validate.error.message)
-    
+
     const r = await prisma.tag.findMany({
         where: {
             type: validate.data.type,

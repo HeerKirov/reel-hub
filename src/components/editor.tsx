@@ -1,8 +1,9 @@
 "use client"
 import React, { memo, useState, useCallback } from "react"
-import { Box, SystemStyleObject, Tag, Link } from "@chakra-ui/react"
+import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton } from "@chakra-ui/react"
 import { useEffectState } from "@/helpers/hooks"
 import { Input } from "@/components/form"
+import { PiTrashBold } from "react-icons/pi"
 
 export type DynamicInputListProps = {
     value?: string[] | null
@@ -204,3 +205,72 @@ export function RatingEditor<T>({ value, options, onValueChange, ...attrs }: Rat
         )}
     </Box>
 }
+
+export type StaffEditorProps = {
+    value?: {type: string, members: string[]}[]
+    onValueChange?: (value: {type: string, members: string[]}[]) => void
+    search?: (text: string) => Promise<string[]>
+} & SystemStyleObject
+
+export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange, search, ...attrs }: StaffEditorProps) {
+    const [staffs, setStaffs] = useEffectState<{type: string, members: string[]}[]>(value)
+    const [newType, setNewType] = useState("")
+
+    const onMembersChange = useCallback((type: string) => (members: string[]) => {
+        const newStaffs = staffs.map(staff => {
+            if(staff.type === type) {
+                return {...staff, members}
+            }
+            return staff
+        })
+        setStaffs(newStaffs)
+        onValueChange?.(newStaffs)
+    }, [staffs, onValueChange])
+
+    const onDeleteType = (type: string) => () => {
+        const newStaffs = staffs.filter(s => s.type !== type);
+        setStaffs(newStaffs)
+        onValueChange?.(newStaffs)
+    }
+
+    const handleEnter = useCallback((value: string) => {
+        if(value.trim()) {
+            const newStaffs = [...staffs, {type: value, members: []}]
+            setStaffs(newStaffs)
+            setNewType("")
+            onValueChange?.(newStaffs)
+        }
+    }, [staffs, onValueChange])
+
+    return (
+        <Box display="flex" flexDirection="column" gap="2" {...attrs}>
+            {staffs.map((staff, index) => (
+                <Box key={index} display="flex" gap="4">
+                    <Box flex="2" color="fg.muted" fontWeight={700} display="flex" alignItems="center" justifyContent="flex-end">{staff.type}</Box>
+                    <TagEditor flex="8"
+                            value={staff.members} 
+                            onValueChange={onMembersChange(staff.type)}
+                            placeholder="添加STAFF" 
+                            variant="surface" 
+                            width="full" 
+                            noDuplicate 
+                            search={search}
+                        />
+                    <IconButton variant="ghost" size="sm" onClick={onDeleteType(staff.type)}><PiTrashBold/></IconButton>
+                </Box>
+            ))}
+            <Box display="flex" gap="4">
+                <Box flex="2">
+                    <Input 
+                        value={newType} 
+                        onValueChange={setNewType} 
+                        placeholder="新STAFF类型" 
+                        onEnter={handleEnter}
+                    />
+                </Box>
+                <Box flex="8" />
+                <Box flex="0 0 auto" /> {/* 为了保持对齐 */}
+            </Box>
+        </Box>
+    )
+})

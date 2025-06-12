@@ -6,11 +6,13 @@ import { ORIGINAL_TYPE, BOARDCAST_TYPE } from "@/constants/anime"
 import { arrays } from "@/helpers/primitive"
 import { parseStaffSchema } from "./staff"
 
-export type ProjectRelationInnerType = Record<string, string[]>
+export type ProjectRelationModel = z.infer<typeof projectRelationModel>
 
 export type ProjectRelationType = Record<string, z.infer<typeof projectRelationItemSchema>[]>
 
 export type ProjectModel = z.infer<typeof projectModel>
+
+export const projectRelationModel = z.record(z.string(), z.array(z.string()))
 
 export const projectModel = z.object({
     id: z.string(),
@@ -23,8 +25,8 @@ export const projectModel = z.object({
     ratingS: z.number().nullable(),
     ratingV: z.number().nullable(),
     region: z.string().nullable(),
-    relations: z.record(z.string(), z.array(z.string())),
-    relationsTopology: z.record(z.string(), z.array(z.string())),
+    relations: projectRelationModel,
+    relationsTopology: projectRelationModel,
     resources: z.record(z.string(), z.string()),
     createTime: z.date(),
     updateTime: z.date(),
@@ -70,7 +72,12 @@ export const projectCommonForm = z.object({
     ratingS: z.enum(RATING_SEX).nullable().optional(),
     ratingV: z.enum(RATING_VIOLENCE).nullable().optional(),
     region: z.enum(REGION).nullable().optional(),
-    relations: z.record(z.string(), z.array(z.string())).optional()
+    relations: projectRelationModel.optional(),
+    tags: z.array(z.string()).optional(),
+    staffs: z.array(z.object({
+        type: z.string(),
+        members: z.array(z.string())
+    })).optional()
 })
 
 export const projectListSchema = z.object({

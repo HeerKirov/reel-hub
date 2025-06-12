@@ -10,7 +10,18 @@ import { AnimeDetailSchema } from "@/schemas/anime"
 import { VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import emptyCover from "@/assets/empty.jpg"
-import { BoardcastType } from "@/constants/anime"
+import { RelationDisplay } from "@/components/app/project-display"
+
+export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
+    const { id } = await params
+    const data = await retrieveProjectAnime(id)
+    if(!data) {
+        throw new Error("404 Not Found")
+    }
+    return {
+        title: data.title || "(未命名)"
+    }
+}
 
 export default async function AnimationDatabaseDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -70,12 +81,7 @@ function Side({ data }: {data: AnimeDetailSchema}) {
 }
 
 function Content({ data }: {data: AnimeDetailSchema}) {
-    const { tags, staffs } = data
-    const relations = [
-        {title: "测试相关动画", image: "/ex7.jpg", id: 2, type: "同系列"},
-        {title: "测试相关动画2", image: "/ex7.jpg", id: 4, type: "前作"},
-    ]
-
+    const { tags, staffs, relationsTopology } = data
     const ratingS = data.ratingS !== null ? VALUE_TO_RATING_SEX[data.ratingS] : null
     const ratingV = data.ratingV !== null ? VALUE_TO_RATING_VIOLENCE[data.ratingV] : null
 
@@ -86,7 +92,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                     <Tag.Label>{k}</Tag.Label>
                 </Tag.Root>)}
                 {tags.map(tag => <Tag.Root key={tag.id} size="lg" asChild>
-                    <NextLink href={`/anime/database/tags/${tag.name}`}>
+                    <NextLink href={`/anime/database/tags/${encodeURIComponent(tag.name)}`}>
                         <Tag.Label>{tag.name}</Tag.Label>
                     </NextLink>
                 </Tag.Root>)}
@@ -121,7 +127,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                         <Table.Cell>
                             <HStack>
                                 {staff.members.map(member => <Link key={member.id} colorPalette="blue" asChild>
-                                    <NextLink href={`/anime/database/staff/${member.name}`}>{member.name}</NextLink>
+                                    <NextLink href={`/anime/database/staff/${encodeURIComponent(member.name)}`}>{member.name}</NextLink>
                                 </Link>)}
                             </HStack>
                         </Table.Cell>
@@ -151,18 +157,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                     <Text mt="1" color="fg.muted" fontSize="sm">这是一部份评论的内容……</Text>
                 </Box>
             </Flex>
-            <Box borderTopWidth="1px" mt="4" pb="2">
-                <Text my="2">相关动画</Text>
-                <SimpleGrid gap="2" columns={{base: 1, sm: 2, md: 4}}>
-                    {relations.map(relation => <Flex key={relation.id}>
-                        <Image aspectRatio={1} rounded="lg" width="75px" src={relation.image} alt={relation.id.toString()}/>
-                        <Box py="1" pl="2">
-                            <Link asChild><NextLink href={`/anime/database/${relation.id}`}>{relation.title}</NextLink></Link>
-                            <p><Badge mt="1" color="fg.muted">{relation.type}</Badge></p>
-                        </Box>
-                    </Flex>)}
-                </SimpleGrid>
-            </Box>
+            <RelationDisplay relations={relationsTopology}/>
         </>
     )
 }

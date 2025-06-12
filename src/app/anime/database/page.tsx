@@ -1,4 +1,5 @@
 import NextLink from "next/link"
+import type { Metadata } from "next"
 import { Box, Text, Image, SimpleGrid, SystemStyleObject, Button, Icon, Link, IconButton } from "@chakra-ui/react"
 import { RiAddLine, RiPriceTag3Line, RiUser2Line } from "react-icons/ri"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
@@ -13,6 +14,10 @@ import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS } from "@/constants/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 
 type SearchParams = { page?: string, search?: string, ratingSex?: string, ratingViolence?: string, publishTime?: string }
+
+export const metadata: Metadata = {
+    title: "数据库"
+}
 
 export default async function AnimationDatabase(props: {searchParams: Promise<SearchParams>}) {
     const searchParams = await props.searchParams

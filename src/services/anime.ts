@@ -3,8 +3,9 @@ import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
-import { ProjectRelationInnerType } from "@/schemas/project"
-import { getRelations } from "./project"
+import { ProjectRelationModel } from "@/schemas/project"
+import { getRelations, saveStaffs, saveTags } from "./project"
+import { cache } from "react"
 
 export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
     const validate = animeListFilter.safeParse(filter)
@@ -45,7 +46,7 @@ export async function countProjectAnime(filter: AnimeListFilter): Promise<number
     })
 }
 
-export async function retrieveProjectAnime(id: string): Promise<AnimeDetailSchema | null> {
+export const retrieveProjectAnime = cache(async function(id: string): Promise<AnimeDetailSchema | null> {
     const r = await prisma.project.findUnique({
         where: {id}, 
         include: {
@@ -59,10 +60,10 @@ export async function retrieveProjectAnime(id: string): Promise<AnimeDetailSchem
     })
     if(!r) return null
     
-    const { relations, relationsTopology } = await getRelations(r.relations as ProjectRelationInnerType, r.relationsTopology as ProjectRelationInnerType)
+    const { relations, relationsTopology } = await getRelations(r.relations as ProjectRelationModel, r.relationsTopology as ProjectRelationModel)
     
     return parseAnimeDetailSchema(r, relations, relationsTopology)
-}
+})
 
 export async function createProjectAnime(form: AnimeForm) {
     const userId = await getUserId()
@@ -101,6 +102,9 @@ export async function createProjectAnime(form: AnimeForm) {
         }
     })
 
+    if(form.tags !== undefined) await saveTags(r.id, ProjectType.ANIME, form.tags)
+    if(form.staffs !== undefined) await saveStaffs(r.id, form.staffs)
+
     return r.id
 }
 
@@ -136,6 +140,9 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
             episodePublishedRecords: undefined
         }
     })
+
+    if(form.tags !== undefined) await saveTags(id, ProjectType.ANIME, form.tags)
+    if(form.staffs !== undefined) await saveStaffs(id, form.staffs)
 }
 
 export async function deleteProjectAnime(id: string) {

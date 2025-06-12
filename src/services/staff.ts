@@ -1,3 +1,4 @@
+"use server"
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
 import { StaffCreateFormSchema, StaffListFilter, staffCreateFormSchema, StaffSchema, staffListFilter, staffUpdateFormSchema, StaffUpdateFormSchema, parseStaffSchema } from "@/schemas/staff"

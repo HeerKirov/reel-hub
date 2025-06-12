@@ -6,8 +6,12 @@ import { NavigationSideBar, Wrapper } from "./components"
 import "./globals.css"
 
 export const metadata: Metadata = {
-    title: "REEL HUB",
-    description: "reel hub.",
+    title: {
+        template: "%s | REEL HUB",
+        default: "REEL HUB",
+    },
+    description: "Hub for ACGN entertainment.",
+    authors: {url: "https://github.com/HeerKirov", name: "Heer Kirov"}
 }
 
 export default function RootLayout({ children }: Readonly<{children: React.ReactNode}>) {

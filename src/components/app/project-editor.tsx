@@ -1,16 +1,18 @@
 "use client"
-import { memo, useState } from "react"
+import { memo, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { RiFileAddLine } from "react-icons/ri"
-import { PiFileArrowUpBold, PiGenderIntersexBold, PiInfoBold, PiKnifeFill } from "react-icons/pi"
+import { PiFileArrowUpBold, PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input } from "@/components/form"
-import { TagEditor, DynamicInputList, RatingEditor } from "@/components/editor"
+import { TagEditor, DynamicInputList, RatingEditor, StaffEditor } from "@/components/editor"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
 import { BoardcastType, OriginalType } from "@/constants/anime"
 import { EditorWithTabLayout } from "@/components/layout"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS } from "@/constants/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
+import { listTags } from "@/services/tag"
+import { listStaffs } from "@/services/staff"
 
 export type EditorProps = {
     data?: AnimeDetailSchema
@@ -24,7 +26,8 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [subtitles, setSubtitles] = useState<string[]>(data?.subtitles ?? [])
     const [description, setDescription] = useState<string>(data?.description ?? "")
     const [keywords, setKeywords] = useState<string[]>(data?.keywords ?? [])
-    const [tags, setTags] = useState<string[]>([])
+    const [tags, setTags] = useState<string[]>(data?.tags.map(t => t.name) ?? [])
+    const [staffs, setStaffs] = useState<{type: string, members: string[]}[]>(data?.staffs.map(s => ({type: s.type, members: s.members.map(m => m.name)})) ?? [])
     const [ratingS, setRatingS] = useState<RatingSex | null>(data?.ratingS ?? null)
     const [ratingV, setRatingV] = useState<RatingViolence | null>(data?.ratingV ?? null)
     const [region, setRegion] = useState<Region | null>(data?.region ?? null)
@@ -33,7 +36,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? null)
     const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 1)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
-
+    
     const breadcrumb = {
         url: "/anime/database",
         detail: data?.title ?? "新建",
@@ -41,29 +44,22 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     }
 
     const tabs = [
-        {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfo 
+        {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfoTab 
             title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
             ratingS={ratingS} ratingV={ratingV} region={region} originalType={originalType} boardcastType={boardcastType} 
             setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
             setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setOriginalType={setOriginalType} setBoardcastType={setBoardcastType}
         />},
         {label: "资源", icon: <PiFileArrowUpBold/>, content: <Resource/>},
+        {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab staffs={staffs} setStaffs={setStaffs}/>},
     ]
 
     const onSave = () => {
         onSubmit?.({
-            title,
-            subtitles,
-            description,
-            keywords,
-            ratingS,
-            ratingV,
-            region,
-            originalType,
-            boardcastType,
-            episodeDuration,
-            episodeTotalNum,
-            episodePublishedNum,
+            title, subtitles, description, keywords,
+            ratingS, ratingV, region, tags, staffs,
+            originalType, boardcastType,
+            episodeDuration, episodeTotalNum, episodePublishedNum,
         })
     }
 
@@ -76,7 +72,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     )    
 }
 
-type BasicInfoProps = {
+interface BasicInfoTabProps {
     title: string
     subtitles: string[]
     description: string
@@ -99,10 +95,11 @@ type BasicInfoProps = {
     setBoardcastType: (boardcastType: BoardcastType | null) => void
 }
 
-const BasicInfo = memo(function BasicInfo(props: BasicInfoProps) {
-    const search = async (text: string): Promise<string[]> => {
-        return ["科幻", "奇幻", "剧情", "空气系"].filter(i => i.includes(text))
-    }
+const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
+    const search = useCallback(async (text: string): Promise<string[]> => {
+        const tags = await listTags({search: text, type: "ANIME"})
+        return tags.map(t => t.name)
+    }, [])
 
     return (
         <Flex direction="column" gap="1">
@@ -186,6 +183,33 @@ const Resource = memo(function Resource() {
                         <Field.Label>
                             资源
                         </Field.Label>
+                    </Field.Root>
+                </Flex>
+            </Flex>
+        </Flex>
+    )
+})
+
+interface StaffTabProps {
+    staffs: {type: string, members: string[]}[]
+    setStaffs:(staffs: {type: string, members: string[]}[]) => void
+}
+
+const StaffTab = memo(function StaffTab(props: StaffTabProps) {
+    const search = useCallback(async (text: string): Promise<string[]> => {
+        const staffs = await listStaffs({search: text})
+        return staffs.map(t => t.name)
+    }, [])
+
+    return (
+        <Flex direction="column" gap="1">
+            <Flex gap="4">
+                <Flex direction="column" flex="1" gap="1">
+                    <Field.Root>
+                        <Field.Label>
+                            STAFF
+                        </Field.Label>
+                        <StaffEditor value={props.staffs} onValueChange={props.setStaffs} width="full" search={search}/>
                     </Field.Root>
                 </Flex>
             </Flex>

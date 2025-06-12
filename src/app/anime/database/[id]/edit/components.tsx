@@ -3,7 +3,7 @@ import React from "react"
 import { useRouter } from "next/navigation"
 import { updateProjectAnime, deleteProjectAnime } from "@/services/anime"
 import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
-import { Editor } from "../../components-editor"
+import { Editor } from "@/components/app/project-editor"
 
 export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}) {
     const router = useRouter()
