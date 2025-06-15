@@ -3,24 +3,24 @@ import React, { memo, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Box, Button, Flex } from "@chakra-ui/react"
 import { RiArrowRightLine } from "react-icons/ri"
-import { Input } from "@/components/form"
+import { NumberInput } from "@/components/form"
 
 export const PageRouterPopover = memo(function PageRouterPopover(props: {page: number, total: number, pageParamName: string}) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [page, setPage] = useState<string>(String(props.page))
+    const [page, setPage] = useState<number>(props.page)
 
-    useEffect(() => setPage(String(props.page)), [props.page])
+    useEffect(() => setPage(props.page), [props.page])
 
     const onClick = () => {
         const p = new URLSearchParams(searchParams.toString())
-        p.set(props.pageParamName, page)
+        p.set(props.pageParamName, String(page))
         router.push(`?${p.toString()}`)
     }
 
     return (
         <>
-            <Input type="number" placeholder="页码" size="sm" min="1" max={props.total} value={page} onValueChange={setPage} onEnter={onClick}/>
+            <NumberInput placeholder="页码" size="sm" min="1" max={props.total} value={page} onValueChange={setPage} onEnter={onClick}/>
             <Button type="submit" variant="outline" size="sm" onClick={onClick}><RiArrowRightLine/> 跳转</Button>
         </>
     )

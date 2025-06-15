@@ -3,11 +3,11 @@ import React, { memo, useMemo } from "react"
 import { Box, SystemStyleObject, useBreakpointValue } from "@chakra-ui/react"
 import { useIsClient } from "@/helpers/hooks"
 
-export type ResponsiveIfProps = {
+export interface ResponsiveIfProps extends SystemStyleObject {
     show: {base?: boolean, sm?: boolean, md?: boolean, lg?: boolean, xl?: boolean} | [boolean, boolean, boolean, boolean, boolean]
     children?: React.ReactNode
     asChild?: boolean
-} & SystemStyleObject
+}
 
 export const ResponsiveIf = memo(function ResponsiveIf(props: ResponsiveIfProps) {
     const { show, children, display, asChild, ...attrs } = props

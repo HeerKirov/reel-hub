@@ -36,7 +36,7 @@ export function NavigationBreadcrumb(props: {url?: string, detail?: string, deta
     )
 }
 
-export type ListPageLayoutProps<PARAMS extends Record<string, string>> = {
+export interface ListPageLayoutProps<PARAMS extends Record<string, string>> {
     searchParams: PARAMS
     breadcrumb?: {url?: string, detail?: string, detailIcon?: React.ReactNode}
     bar?: React.ReactNode
@@ -127,7 +127,7 @@ export const SidePanel = {
     FilterStackCollapseItem: SidePanelFilterStackCollapseItem
 }
 
-export type DetailPageLayoutProps = {
+export interface DetailPageLayoutProps {
     breadcrumb?: {url?: string, detail?: string, detailIcon?: React.ReactNode}
     header?: React.ReactNode
     side?: React.ReactNode

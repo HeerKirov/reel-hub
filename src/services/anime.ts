@@ -96,7 +96,7 @@ export async function createProjectAnime(form: AnimeForm) {
             episodeTotalNum: validate.data.episodeTotalNum ?? 1,
             episodePublishedNum: validate.data.episodePublishedNum ?? 0,
             episodePublishPlan: validate.data.episodePublishPlan ?? [],
-            episodePublishedRecords: [],
+            episodePublishedRecords: validate.data.episodePublishedRecords ?? [],
             platform: [],
             onlineType: null
         }
@@ -137,7 +137,7 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
             episodeTotalNum: validate.data.episodeTotalNum,
             episodePublishedNum: validate.data.episodePublishedNum,
             episodePublishPlan: validate.data.episodePublishPlan,
-            episodePublishedRecords: undefined
+            episodePublishedRecords: validate.data.episodePublishedRecords
         }
     })
 

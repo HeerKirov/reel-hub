@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectDetailSchema, projectListSchema, ProjectModel, ProjectRelationType } from "./project"
+import { episodePublishRecordSchema, parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectDetailSchema, projectListSchema, ProjectModel, ProjectRelationType } from "./project"
 import { BOARDCAST_TYPE, ORIGINAL_TYPE } from "@/constants/anime"
 import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
 
@@ -9,19 +9,12 @@ export const animeListFilter = z.object({
     size: z.number().optional()
 })
 
-export const episodePublishRecordSchema = z.object({
-    index: z.number(),
-    publishTime: z.date(),
-    actualEpisodeNum: z.number().nullable(),
-    episodeTitle: z.string().nullable()
-})
-
 const animeSelfSchema = z.object({
     originalType: z.enum(ORIGINAL_TYPE).nullable(),
     boardcastType: z.enum(BOARDCAST_TYPE).nullable(),
     episodeDuration: z.number().nullable(),
     episodeTotalNum: z.number(),
-    episodePublishedNum: z.number()
+    episodePublishedNum: z.number(),
 })
 
 export const animeForm = projectCommonForm.extend({
@@ -30,12 +23,16 @@ export const animeForm = projectCommonForm.extend({
     episodeDuration: z.number().nullable().optional(),
     episodeTotalNum: z.number().optional(),
     episodePublishedNum: z.number().optional(),
+    episodePublishedRecords: z.array(episodePublishRecordSchema).optional(),
     episodePublishPlan: z.array(episodePublishRecordSchema).optional()
 })
 
 export const animeListSchema = projectListSchema.and(animeSelfSchema)
 
-export const animeDetailSchema = projectDetailSchema.and(animeSelfSchema)
+export const animeDetailSchema = projectDetailSchema.and(animeSelfSchema.extend({
+    episodePublishPlan: z.array(episodePublishRecordSchema).nullable(),
+    episodePublishedRecords: z.array(episodePublishRecordSchema).nullable()
+}))
 
 export function parseAnimeListSchema(data: Project): AnimeListSchema {
     const i = data as ProjectModel
@@ -58,6 +55,8 @@ export function parseAnimeDetailSchema(data: Project & {staffs: (ProjectStaffRel
         episodeDuration: i.episodeDuration,
         episodeTotalNum: i.episodeTotalNum ?? 1,
         episodePublishedNum: i.episodePublishedNum ?? 0,
+        episodePublishPlan: i.episodePublishPlan ?? [],
+        episodePublishedRecords: i.episodePublishedRecords ?? []
     }
 }
 

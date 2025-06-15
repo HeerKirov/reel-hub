@@ -227,6 +227,17 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         onValueChange?.(newStaffs)
     }, [staffs, onValueChange])
 
+    const onTypeChange = useCallback((oldType: string) => (newType: string) => {
+        const newStaffs = staffs.map(staff => {
+            if(staff.type === oldType) {
+                return {...staff, type: newType}
+            }
+            return staff
+        })
+        setStaffs(newStaffs)
+        onValueChange?.(newStaffs)
+    }, [staffs, onValueChange])
+
     const onDeleteType = (type: string) => () => {
         const newStaffs = staffs.filter(s => s.type !== type);
         setStaffs(newStaffs)
@@ -245,9 +256,9 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
     return (
         <Box display="flex" flexDirection="column" gap="2" {...attrs}>
             {staffs.map((staff, index) => (
-                <Box key={index} display="flex" gap="4">
-                    <Box flex="2" color="fg.muted" fontWeight={700} display="flex" alignItems="center" justifyContent="flex-end">{staff.type}</Box>
-                    <TagEditor flex="8"
+                <Box key={index} display="flex" gap="2">
+                    <Input flex="1 0 140px" value={staff.type} onValueChange={onTypeChange(staff.type)} placeholder="STAFF类型" />
+                    <TagEditor flex="1 1 100%"
                             value={staff.members} 
                             onValueChange={onMembersChange(staff.type)}
                             placeholder="添加STAFF" 
@@ -256,20 +267,13 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
                             noDuplicate 
                             search={search}
                         />
-                    <IconButton variant="ghost" size="sm" onClick={onDeleteType(staff.type)}><PiTrashBold/></IconButton>
+                    <IconButton flex="0 0 auto" variant="ghost" size="sm" onClick={onDeleteType(staff.type)}><PiTrashBold/></IconButton>
                 </Box>
             ))}
             <Box display="flex" gap="4">
-                <Box flex="2">
-                    <Input 
-                        value={newType} 
-                        onValueChange={setNewType} 
-                        placeholder="新STAFF类型" 
-                        onEnter={handleEnter}
-                    />
-                </Box>
-                <Box flex="8" />
-                <Box flex="0 0 auto" /> {/* 为了保持对齐 */}
+                <Input flex="1 0 140px" value={newType} onValueChange={setNewType} placeholder="新STAFF类型" onEnter={handleEnter}/>
+                <Box flex="1 1 100%" />
+                <Box flex="0 0 auto" />
             </Box>
         </Box>
     )

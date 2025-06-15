@@ -4,7 +4,7 @@ import { RiCloseLine, RiDeleteBinLine, RiSaveLine } from "react-icons/ri"
 import { Box, Button, Flex, Heading, Popover, Portal } from "@chakra-ui/react"
 import { NavigationBreadcrumb } from "./server/layout"
 
-export type EditorWithTabLayoutProps = {
+export interface EditorWithTabLayoutProps {
     breadcrumb?: {url?: string, detail?: string, detailIcon?: React.ReactNode}
     tabs?: {label: string, icon?: React.ReactNode, content: React.ReactNode}[]
     header?: React.ReactNode

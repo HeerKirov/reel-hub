@@ -1,10 +1,10 @@
 "use client"
 import { memo, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
-import { RiFileAddLine } from "react-icons/ri"
+import { RiFileAddLine, RiTvLine } from "react-icons/ri"
 import { PiFileArrowUpBold, PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
-import { Select, Input } from "@/components/form"
+import { Select, Input, NumberInput } from "@/components/form"
 import { TagEditor, DynamicInputList, RatingEditor, StaffEditor } from "@/components/editor"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
 import { BoardcastType, OriginalType } from "@/constants/anime"
@@ -13,6 +13,7 @@ import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Reg
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 import { listTags } from "@/services/tag"
 import { listStaffs } from "@/services/staff"
+import { EpisodePublishRecord } from "@/schemas/project"
 
 export type EditorProps = {
     data?: AnimeDetailSchema
@@ -36,6 +37,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? null)
     const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 1)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
+    const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
     
     const breadcrumb = {
         url: "/anime/database",
@@ -46,11 +48,16 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const tabs = [
         {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfoTab 
             title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
-            ratingS={ratingS} ratingV={ratingV} region={region} originalType={originalType} boardcastType={boardcastType} 
+            ratingS={ratingS} ratingV={ratingV} region={region}
             setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
-            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setOriginalType={setOriginalType} setBoardcastType={setBoardcastType}
+            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion}
         />},
-        {label: "资源", icon: <PiFileArrowUpBold/>, content: <Resource/>},
+        {label: "动画信息", icon: <RiTvLine/>, content: <AnimeInfoTab
+            originalType={originalType} boardcastType={boardcastType} episodePublishPlan={episodePublishPlan}
+            episodeDuration={episodeDuration} episodeTotalNum={episodeTotalNum} episodePublishedNum={episodePublishedNum}
+            setOriginalType={setOriginalType} setBoardcastType={setBoardcastType} setEpisodePublishPlan={setEpisodePublishPlan}
+            setEpisodeDuration={setEpisodeDuration} setEpisodeTotalNum={setEpisodeTotalNum} setEpisodePublishedNum={setEpisodePublishedNum} 
+        />},
         {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab staffs={staffs} setStaffs={setStaffs}/>},
     ]
 
@@ -59,7 +66,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             title, subtitles, description, keywords,
             ratingS, ratingV, region, tags, staffs,
             originalType, boardcastType,
-            episodeDuration, episodeTotalNum, episodePublishedNum,
+            episodeDuration, episodeTotalNum, episodePublishedNum, episodePublishPlan
         })
     }
 
@@ -81,8 +88,7 @@ interface BasicInfoTabProps {
     ratingS: RatingSex | null
     ratingV: RatingViolence | null
     region: Region | null
-    originalType: OriginalType | null
-    boardcastType: BoardcastType | null
+    
     setTitle: (title: string) => void
     setSubtitles: (subtitles: string[]) => void
     setDescription: (description: string) => void
@@ -91,8 +97,6 @@ interface BasicInfoTabProps {
     setRatingS: (ratingSex: RatingSex | null) => void
     setRatingV: (ratingViolence: RatingViolence | null) => void
     setRegion: (region: Region | null) => void
-    setOriginalType: (originalType: OriginalType | null) => void
-    setBoardcastType: (boardcastType: BoardcastType | null) => void
 }
 
 const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
@@ -157,34 +161,6 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
                     </Field.Label>
                     <Select value={props.region} onValueChange={props.setRegion} items={REGION_ITEMS} placeholder="地区"/>
                 </Field.Root>
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
-                    <Field.Label>
-                        原作类型
-                    </Field.Label>
-                    <Select value={props.originalType} onValueChange={props.setOriginalType} items={ORIGINAL_TYPE_ITEMS} placeholder="原作类型"/>
-                </Field.Root>
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
-                    <Field.Label>
-                        放送类型
-                    </Field.Label>
-                    <Select value={props.boardcastType} onValueChange={props.setBoardcastType} items={BOARDCAST_TYPE_ITEMS} placeholder="放送类型"/>
-                </Field.Root>
-            </Flex>
-        </Flex>
-    )
-})
-
-const Resource = memo(function Resource() {
-    return (
-        <Flex direction="column" gap="1">
-            <Flex gap="4">
-                <Flex direction="column" flex="1" gap="1">
-                    <Field.Root required>
-                        <Field.Label>
-                            资源
-                        </Field.Label>
-                    </Field.Root>
-                </Flex>
             </Flex>
         </Flex>
     )
@@ -212,6 +188,65 @@ const StaffTab = memo(function StaffTab(props: StaffTabProps) {
                         <StaffEditor value={props.staffs} onValueChange={props.setStaffs} width="full" search={search}/>
                     </Field.Root>
                 </Flex>
+            </Flex>
+        </Flex>
+    )
+})
+
+interface AnimeInfoTabProps {
+    originalType: OriginalType | null
+    boardcastType: BoardcastType | null
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+    episodePublishPlan: EpisodePublishRecord[]
+    setOriginalType: (originalType: OriginalType | null) => void
+    setBoardcastType: (boardcastType: BoardcastType | null) => void
+    setEpisodeDuration: (episodeDuration: number | null) => void
+    setEpisodeTotalNum: (episodeTotalNum: number) => void
+    setEpisodePublishedNum: (episodePublishedNum: number) => void
+    setEpisodePublishPlan: (episodePublishPlan: EpisodePublishRecord[]) => void
+}
+
+const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
+    const setEpisodeTotalNum = useCallback((value: number | null) => props.setEpisodeTotalNum(value ?? 0), [props.setEpisodeTotalNum])
+    const setEpisodePublishedNum = useCallback((value: number | null) => props.setEpisodePublishedNum(value ?? 0), [props.setEpisodePublishedNum])
+
+    return (
+        <Flex direction="column" gap="1">
+            <Flex gap="4">
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        原作类型
+                    </Field.Label>
+                    <Select value={props.originalType} onValueChange={props.setOriginalType} items={ORIGINAL_TYPE_ITEMS} placeholder="原作类型"/>
+                </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        放送类型
+                    </Field.Label>
+                    <Select value={props.boardcastType} onValueChange={props.setBoardcastType} items={BOARDCAST_TYPE_ITEMS} placeholder="放送类型"/>
+                </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        单集时长
+                    </Field.Label>
+                    <NumberInput width="full" value={props.episodeDuration} onValueChange={props.setEpisodeDuration} min={0}/>
+                </Field.Root>
+            </Flex>
+            <Flex gap="4">
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
+                    <Field.Label>
+                        总集数
+                    </Field.Label>
+                    <NumberInput width="full" value={props.episodeTotalNum} onValueChange={setEpisodeTotalNum} min={0}/>
+                </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
+                    <Field.Label>
+                        已发布集数
+                    </Field.Label>
+                    <NumberInput width="full" value={props.episodePublishedNum} onValueChange={setEpisodePublishedNum} min={0}/>
+                </Field.Root>
             </Flex>
         </Flex>
     )

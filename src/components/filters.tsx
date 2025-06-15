@@ -6,12 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffectState } from "@/helpers/hooks"
 import { Input } from "@/components/form"
 
-export type SearchBoxProps = {
+export interface SearchBoxProps extends SystemStyleObject {
     value?: string | null
     placeholder?: string
     onValueChange?: (value: string) => void
     searchParamName?: string
-} & SystemStyleObject
+}
 
 export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
     const router = useRouter()
@@ -41,12 +41,12 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
     )
 })
 
-export type PublishTimePickerProps = {
+export interface PublishTimePickerProps extends SystemStyleObject {
     value?: string | null
     onValueChange?: (value: string) => void
     searchParamName?: string
     mode?: "month" | "season"
-} & SystemStyleObject
+}
 
 export const PublishTimePicker = memo(function PublishTimePicker(props: PublishTimePickerProps) {
     const router = useRouter()

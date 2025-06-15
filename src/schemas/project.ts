@@ -10,7 +10,38 @@ export type ProjectRelationModel = z.infer<typeof projectRelationModel>
 
 export type ProjectRelationType = Record<string, z.infer<typeof projectRelationItemSchema>[]>
 
+export type EpisodePublishRecord = z.infer<typeof episodePublishRecordSchema>
+
 export type ProjectModel = z.infer<typeof projectModel>
+
+export const episodePublishRecordSchema = z.object({
+    index: z.number(),
+    publishTime: z.date(),
+    actualEpisodeNum: z.number().nullable(),
+    episodeTitle: z.string().nullable()
+})
+
+export const projectRelationItemSchema = z.object({
+    id: z.string(),
+    title: z.string(),
+    resources: z.record(z.string(), z.string())
+})
+
+export const projectTagItemSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    description: z.string()
+})
+
+export const projectStaffItemSchema = z.object({
+    type: z.string(),
+    members: z.array(z.object({
+        id: z.number(),
+        name: z.string(),
+        otherNames: z.array(z.string()),
+        description: z.string()
+    }))
+})
 
 export const projectRelationModel = z.record(z.string(), z.array(z.string()))
 
@@ -37,30 +68,10 @@ export const projectModel = z.object({
     episodeDuration: z.number().nullable(),
     episodeTotalNum: z.number().nullable(),
     episodePublishedNum: z.number().nullable(),
+    episodePublishedRecords: z.array(episodePublishRecordSchema).nullable(),
+    episodePublishPlan: z.array(episodePublishRecordSchema).nullable(),
     platform: z.array(z.string()),
     onlineType: z.enum(ONLINE_TYPE).nullable()
-})
-
-export const projectRelationItemSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    resources: z.record(z.string(), z.string())
-})
-
-export const projectTagItemSchema = z.object({
-    id: z.number(),
-    name: z.string(),
-    description: z.string()
-})
-
-export const projectStaffItemSchema = z.object({
-    type: z.string(),
-    members: z.array(z.object({
-        id: z.number(),
-        name: z.string(),
-        otherNames: z.array(z.string()),
-        description: z.string()
-    }))
 })
 
 export const projectCommonForm = z.object({
