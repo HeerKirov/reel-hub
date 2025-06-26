@@ -52,3 +52,65 @@ export const VALUE_TO_RATING_VIOLENCE = arrays.associateBy(RATING_VIOLENCE_ITEMS
 
 export const VALUE_TO_REGION = arrays.associateBy(REGION_ITEMS, i => i.value)
 
+// RelationType 定义
+export type RelationType = "PREV" | "NEXT" | "FANWAI" | "MAIN_ARTICLE" | "RUMOR" | "TRUE_PASS" | "SERIES"
+
+export const RELATION_TYPE_NAMES: Record<RelationType, string> = {
+    PREV: "前作",
+    NEXT: "续作",
+    FANWAI: "番外",
+    MAIN_ARTICLE: "正篇",
+    RUMOR: "外传",
+    TRUE_PASS: "正传",
+    SERIES: "同系列"
+}
+
+// RelationType 的级别定义
+export const RELATION_TYPE_LEVELS: Record<RelationType, number> = {
+    PREV: 4,
+    NEXT: 4,
+    FANWAI: 3,
+    MAIN_ARTICLE: 3,
+    RUMOR: 2,
+    TRUE_PASS: 2,
+    SERIES: 1
+}
+
+// RelationType 的反向关系
+export const RELATION_TYPE_REVERSE: Record<RelationType, RelationType> = {
+    PREV: "NEXT",
+    NEXT: "PREV",
+    FANWAI: "MAIN_ARTICLE",
+    MAIN_ARTICLE: "FANWAI",
+    RUMOR: "TRUE_PASS",
+    TRUE_PASS: "RUMOR",
+    SERIES: "SERIES"
+}
+
+// RelationType 的合并规则
+export function mergeRelationTypes(a: RelationType, b: RelationType): RelationType {
+    if (a === b) return a
+    if (a === "SERIES" || b === "SERIES" || RELATION_TYPE_LEVELS[a] === RELATION_TYPE_LEVELS[b]) {
+        return "SERIES"
+    }
+    if (a === "RUMOR" || b === "RUMOR") return "RUMOR"
+    if (a === "TRUE_PASS" || b === "TRUE_PASS") return "TRUE_PASS"
+    if (a === "PREV" || b === "PREV") return "PREV"
+    if (a === "NEXT" || b === "NEXT") return "NEXT"
+    
+    throw new Error("This case may not occurred.")
+}
+
+// 字符串转 RelationType 的辅助函数
+export function stringToRelationType(str: string): RelationType {
+    const upperStr = str.toUpperCase()
+    if (upperStr === "PREV" || upperStr === "NEXT" || upperStr === "FANWAI" || 
+        upperStr === "MAIN_ARTICLE" || upperStr === "RUMOR" || upperStr === "TRUE_PASS" || upperStr === "SERIES") {
+        return upperStr as RelationType
+    }
+    throw new Error(`Invalid relation type: ${str}`)
+}
+
+// 获取所有 RelationType 值的数组
+export const RELATION_TYPE_VALUES: RelationType[] = ["PREV", "NEXT", "FANWAI", "MAIN_ARTICLE", "RUMOR", "TRUE_PASS", "SERIES"]
+

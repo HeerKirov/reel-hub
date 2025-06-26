@@ -1,9 +1,11 @@
 "use client"
-import React, { memo, useState, useCallback } from "react"
+import React, { memo, useState, useCallback, useEffect } from "react"
 import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton } from "@chakra-ui/react"
 import { useEffectState } from "@/helpers/hooks"
 import { Input } from "@/components/form"
 import { PiTrashBold } from "react-icons/pi"
+import { ProjectRelationType } from "@/schemas/project"
+import { RelationType, RELATION_TYPE_NAMES, RELATION_TYPE_VALUES, ProjectType } from "@/constants/project"
 
 export type DynamicInputListProps = {
     value?: string[] | null
@@ -278,3 +280,338 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         </Box>
     )
 })
+
+export type RelationEditorProps = {
+    value?: Partial<ProjectRelationType>
+    onValueChange?: (value: Partial<ProjectRelationType>) => void
+    search?: (text: string) => Promise<{id: string, type: ProjectType, title: string}[]>
+} & SystemStyleObject
+
+export const RelationEditor = memo(function RelationEditor({ value = {}, onValueChange, search, ...attrs }: RelationEditorProps) {
+    const [relations, setRelations] = useState<Partial<ProjectRelationType>>(value)
+    const [selectedType, setSelectedType] = useState<RelationType>("PREV")
+    const [searchText, setSearchText] = useState("")
+    const [searchResults, setSearchResults] = useState<{id: string, type: ProjectType, title: string}[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [isDraggingOver, setIsDraggingOver] = useState(false)
+
+    // 更新关系数据
+    const updateRelations = useCallback((newRelations: Partial<ProjectRelationType>) => {
+        setRelations(newRelations)
+        onValueChange?.(newRelations)
+    }, [onValueChange])
+
+    // 添加项目到指定类型
+    const addProjectToType = useCallback((type: RelationType, project: {id: string, type: ProjectType, title: string}) => {
+        const currentList = relations[type] || []
+        if (currentList.some(item => item.id === project.id)) return // 避免重复添加
+        
+        // 转换为 ProjectRelationType 中的项目格式
+        const projectItem = {
+            id: project.id,
+            title: project.title,
+            resources: {}
+        }
+        const newList = [...currentList, projectItem]
+        const newRelations = { ...relations, [type]: newList }
+        updateRelations(newRelations)
+    }, [relations, updateRelations])
+
+    // 从指定类型移除项目
+    const removeProjectFromType = useCallback((type: RelationType, projectId: string) => {
+        const currentList = relations[type] || []
+        const newList = currentList.filter(item => item.id !== projectId)
+        const newRelations = { ...relations, [type]: newList }
+        updateRelations(newRelations)
+    }, [relations, updateRelations])
+
+    // 移动项目到新类型
+    const moveProjectToType = useCallback((fromType: RelationType, toType: RelationType, projectId: string) => {
+        const fromList = relations[fromType] || []
+        const project = fromList.find(item => item.id === projectId)
+        if (!project) return
+
+        const newFromList = fromList.filter(item => item.id !== projectId)
+        const toList = relations[toType] || []
+        const newToList = [...toList, project]
+        
+        const newRelations = { 
+            ...relations, 
+            [fromType]: newFromList,
+            [toType]: newToList
+        }
+        updateRelations(newRelations)
+    }, [relations, updateRelations])
+
+    // 执行搜索
+    const executeSearch = useCallback(async (text: string) => {
+        if (!search || !text.trim()) {
+            setSearchResults([])
+            return
+        }
+
+        setIsSearching(true)
+        try {
+            const results = await search(text)
+            setSearchResults(results || [])
+        } catch (error) {
+            console.error('Search failed:', error)
+            setSearchResults([])
+        } finally {
+            setIsSearching(false)
+        }
+    }, [search])
+
+    // 搜索防抖效果
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            executeSearch(searchText)
+        }, 500)
+
+        return () => clearTimeout(timeoutId)
+    }, [searchText])
+
+    // 处理搜索文本变化
+    const handleSearchTextChange = useCallback((text: string) => {
+        setSearchText(text)
+    }, [])
+
+    // 处理拖拽开始
+    const handleDragStart = useCallback((e: React.DragEvent, projectId: string, type: RelationType) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ projectId, type }))
+    }, [])
+
+    // 处理搜索结果拖拽开始
+    const handleSearchResultDragStart = useCallback((e: React.DragEvent, project: {id: string, type: ProjectType, title: string}) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ 
+            projectId: project.id, 
+            type: 'SEARCH_RESULT',
+            projectData: project 
+        }))
+    }, [])
+
+    // 处理拖拽结束
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingOver(false)
+    }, [])
+
+    // 处理拖拽悬停
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDraggingOver(true)
+    }, [])
+
+    // 处理拖拽离开
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDraggingOver(false)
+    }, [])
+
+    // 处理拖拽放置
+    const handleDrop = useCallback((e: React.DragEvent, targetType: RelationType) => {
+        e.preventDefault()
+        setIsDraggingOver(false)
+        
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'))
+            const { projectId, type: sourceType, projectData } = data
+            
+            if (sourceType === 'SEARCH_RESULT') {
+                // 从搜索结果拖拽到左侧
+                if (projectData) {
+                    addProjectToType(targetType, projectData)
+                }
+            } else if (sourceType === targetType) {
+                // 同类型不处理
+                return
+            } else {
+                // 从左侧拖拽到其他类型
+                moveProjectToType(sourceType, targetType, projectId)
+            }
+        } catch (error) {
+            console.error('Drop data parsing failed:', error)
+        }
+    }, [moveProjectToType, addProjectToType])
+
+    // 处理搜索区域拖拽放置
+    const handleSearchAreaDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDraggingOver(false)
+        
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'))
+            const { projectId, type: sourceType } = data
+            
+            if (sourceType === 'SEARCH_RESULT') {
+                // 从搜索结果拖拽到搜索区域，不做任何操作
+                return
+            }
+            
+            removeProjectFromType(sourceType, projectId)
+        } catch (error) {
+            console.error('Drop data parsing failed:', error)
+        }
+    }, [removeProjectFromType])
+
+    // 处理双击添加
+    const handleDoubleClick = useCallback((project: {id: string, type: ProjectType, title: string}) => {
+        addProjectToType(selectedType, project)
+    }, [selectedType, addProjectToType])
+
+    // 获取当前选中类型的项目数量
+    const getCurrentTypeCount = useCallback((type: RelationType) => {
+        return relations[type]?.length || 0
+    }, [relations])
+
+    return (
+        <Box display="flex" flexWrap={{base: "wrap", md: "nowrap"}} gap="4" {...attrs}>
+            <Box display="flex" gap="4" width="full">
+                <Box display="flex" flexDirection="column" gap="2" minWidth="120px">
+                    {RELATION_TYPE_VALUES.map(type => (
+                        <Button
+                            key={type}
+                            variant={selectedType === type ? "solid" : "outline"}
+                            colorPalette={selectedType === type ? "blue" : undefined}
+                            size="sm"
+                            onClick={() => setSelectedType(type)}
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            onDragOver={(e) => {
+                                e.preventDefault()
+                            }}
+                            onDrop={(e) => handleDrop(e, type)}
+                        >
+                            <Box>{RELATION_TYPE_NAMES[type]}</Box>
+                            <Tag.Root size="sm" variant="solid" colorPalette="gray">
+                                <Tag.Label>{getCurrentTypeCount(type)}</Tag.Label>
+                            </Tag.Root>
+                        </Button>
+                    ))}
+                </Box>
+
+                <Box flex="1" border="1px solid" borderColor="border" rounded="md" p="3" minHeight="200px"
+                     onDragOver={(e) => {
+                         e.preventDefault()
+                     }}
+                     onDrop={(e) => handleDrop(e, selectedType)}
+                >
+                    <Box fontSize="sm" fontWeight="bold" mb="2" color="fg.muted">
+                        {RELATION_TYPE_NAMES[selectedType]} ({getCurrentTypeCount(selectedType)})
+                    </Box>
+                    <Box display="flex" flexDirection="column" gap="2">
+                        {(relations[selectedType] || []).map((project, index) => (
+                            <Box
+                                key={project.id}
+                                p="2"
+                                border="1px solid"
+                                borderColor="border"
+                                rounded="md"
+                                bg="bg.subtle"
+                                cursor="grab"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, project.id, selectedType)}
+                                onDragEnd={handleDragEnd}
+                                _hover={{ bg: "bg.muted" }}
+                            >
+                                <Box fontWeight="bold" fontSize="sm">{project.title}</Box>
+                            </Box>
+                        ))}
+                        {(relations[selectedType] || []).length === 0 && (
+                            <Box textAlign="center" color="fg.muted" fontSize="sm" py="8">
+                                暂无项目
+                            </Box>
+                        )}
+                    </Box>
+                </Box>
+            </Box>
+
+            <Box display="flex" flexDirection="column" gap="4" width={{base: "full", md: "70%"}}>
+                {/* 搜索框 */}
+                <Box>
+                    <Input
+                        placeholder="搜索项目..."
+                        value={searchText}
+                        onValueChange={handleSearchTextChange}
+                    />
+                </Box>
+
+                {/* 搜索结果 */}
+                <Box 
+                    border="1px solid" 
+                    borderColor="border" 
+                    rounded="md" 
+                    p="3" 
+                    minHeight="200px"
+                    position="relative"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleSearchAreaDrop}
+                >
+                    {/* 拖拽覆盖层 */}
+                    {isDraggingOver && (
+                        <Box
+                            position="absolute"
+                            top="0"
+                            left="0"
+                            right="0"
+                            bottom="0"
+                            bg="blackAlpha.200"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            rounded="md"
+                            zIndex="1"
+                        >
+                            <Box textAlign="center" color="fg" fontWeight="bold">
+                                拖拽到此处移除项目
+                            </Box>
+                        </Box>
+                    )}
+
+                    <Box fontSize="sm" fontWeight="bold" mb="2" color="fg.muted">
+                        搜索结果
+                    </Box>
+                    
+                    {isSearching ? (
+                        <Box textAlign="center" color="fg.muted" fontSize="sm" py="8">
+                            搜索中...
+                        </Box>
+                    ) : (
+                        <Box display="flex" flexDirection="column" gap="2">
+                            {searchResults.map(project => (
+                                <Box
+                                    key={project.id}
+                                    p="2"
+                                    border="1px solid"
+                                    borderColor="border"
+                                    rounded="md"
+                                    bg="bg.subtle"
+                                    cursor="grab"
+                                    draggable
+                                    onDragStart={(e) => handleSearchResultDragStart(e, project)}
+                                    onDragEnd={handleDragEnd}
+                                    onDoubleClick={() => handleDoubleClick(project)}
+                                    _hover={{ bg: "bg.muted" }}
+                                >
+                                    <Box fontWeight="bold" fontSize="sm">{project.title}</Box>
+                                </Box>
+                            ))}
+                            {searchResults.length === 0 && searchText && !isSearching && (
+                                <Box textAlign="center" color="fg.muted" fontSize="sm" py="8">
+                                    未找到项目
+                                </Box>
+                            )}
+                            {!searchText && (
+                                <Box textAlign="center" color="fg.muted" fontSize="sm" py="8">
+                                    输入关键词开始搜索
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+                </Box>
+            </Box>
+        </Box>
+    )
+})
+

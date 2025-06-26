@@ -1,19 +1,20 @@
 "use client"
 import { memo, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
-import { RiFileAddLine, RiTvLine } from "react-icons/ri"
-import { PiFileArrowUpBold, PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
+import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
+import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input, NumberInput } from "@/components/form"
-import { TagEditor, DynamicInputList, RatingEditor, StaffEditor } from "@/components/editor"
-import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
-import { BoardcastType, OriginalType } from "@/constants/anime"
+import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
-import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS } from "@/constants/project"
+import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
+import { EpisodePublishRecord, ProjectRelationModel, ProjectRelationType } from "@/schemas/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
+import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS, ProjectType } from "@/constants/project"
+import { BoardcastType, OriginalType } from "@/constants/anime"
 import { listTags } from "@/services/tag"
 import { listStaffs } from "@/services/staff"
-import { EpisodePublishRecord } from "@/schemas/project"
+import { listProject } from "@/services/project"
 
 export type EditorProps = {
     data?: AnimeDetailSchema
@@ -38,6 +39,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 1)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
     const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
+    const [relations, setRelations] = useState<Partial<ProjectRelationType>>(data?.relations ?? {})
     
     const breadcrumb = {
         url: "/anime/database",
@@ -59,14 +61,17 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             setEpisodeDuration={setEpisodeDuration} setEpisodeTotalNum={setEpisodeTotalNum} setEpisodePublishedNum={setEpisodePublishedNum} 
         />},
         {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab staffs={staffs} setStaffs={setStaffs}/>},
+        {label: "关联", icon: <RiLink/>, content: <RelationTab projectType={ProjectType.ANIME} relations={relations} setRelations={setRelations}/>},
     ]
 
     const onSave = () => {
+        const finalRelations: Partial<ProjectRelationModel> = Object.fromEntries(Object.entries(relations).map(([key, value]) => [key, value.map(r => r.id)]))
         onSubmit?.({
             title, subtitles, description, keywords,
             ratingS, ratingV, region, tags, staffs,
             originalType, boardcastType,
-            episodeDuration, episodeTotalNum, episodePublishedNum, episodePublishPlan
+            episodeDuration, episodeTotalNum, episodePublishedNum, episodePublishPlan,
+            relations: finalRelations
         })
     }
 
@@ -249,5 +254,25 @@ const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
                 </Field.Root>
             </Flex>
         </Flex>
+    )
+})
+
+interface RelationTabProps {
+    projectType: ProjectType
+    relations: Partial<ProjectRelationType>
+    setRelations: (relations: Partial<ProjectRelationType>) => void
+}
+
+const RelationTab = memo(function RelationTab(props: RelationTabProps) {
+    const search = async (text: string) => {
+        return await listProject({search: text, type: props.projectType})
+    }
+
+    return (
+        <RelationEditor
+            value={props.relations}
+            onValueChange={props.setRelations}
+            search={search}
+        />
     )
 })

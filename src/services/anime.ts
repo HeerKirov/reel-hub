@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 import { ProjectRelationModel } from "@/schemas/project"
-import { getRelations, saveStaffs, saveTags } from "./project"
+import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
 import { cache } from "react"
 
 export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
@@ -83,7 +83,7 @@ export async function createProjectAnime(form: AnimeForm) {
             ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
             ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
             region: validate.data.region ?? null,
-            relations: validate.data.relations ?? {},
+            relations: {},
             relationsTopology: {},
             resources: {},
             createTime: now,
@@ -104,6 +104,7 @@ export async function createProjectAnime(form: AnimeForm) {
 
     if(form.tags !== undefined) await saveTags(r.id, ProjectType.ANIME, form.tags)
     if(form.staffs !== undefined) await saveStaffs(r.id, form.staffs)
+    if(form.relations !== undefined) await updateRelations(r.id, form.relations)
 
     return r.id
 }
@@ -126,8 +127,6 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
             ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
             ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
             region: validate.data.region,
-            relations: validate.data.relations,
-            relationsTopology: {},
             resources: {},
             updateTime: now,
             updator: userId,
@@ -143,14 +142,22 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
 
     if(form.tags !== undefined) await saveTags(id, ProjectType.ANIME, form.tags)
     if(form.staffs !== undefined) await saveStaffs(id, form.staffs)
+    if(form.relations !== undefined) await updateRelations(id, form.relations)
 }
 
-export async function deleteProjectAnime(id: string) {
+export async function deleteProjectAnime(id: string): Promise<boolean> {
+    const r = await prisma.project.findUnique({where: {id}})
+    if(!r) return false
+
+    if(Object.keys(r.relationsTopology as ProjectRelationModel).length > 0) await removeProjectInTopology(id, r.relationsTopology as ProjectRelationModel)
+
     await prisma.project.delete({where: {id}})
     await prisma.projectStaffRelation.deleteMany({where: {projectId: id}})
     await prisma.projectTagRelation.deleteMany({where: {projectId: id}})
-    await prisma.bought.deleteMany({where: {projectId: id}})
     await prisma.record.deleteMany({where: {projectId: id}})
-    await prisma.comment.deleteMany({where: {projectId: id}})
     await prisma.recordProgress.deleteMany({where: {projectId: id}})
+    await prisma.bought.deleteMany({where: {projectId: id}})
+    await prisma.comment.deleteMany({where: {projectId: id}})
+
+    return true
 }

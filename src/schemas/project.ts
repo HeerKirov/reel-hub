@@ -1,18 +1,29 @@
 import { z } from "zod"
 import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
-import { RATING_SEX, RATING_VIOLENCE, REGION, PROJECT_TYPE, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, Region } from "@/constants/project"
+import { RATING_SEX, RATING_VIOLENCE, REGION, PROJECT_TYPE, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, Region, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { ONLINE_TYPE } from "@/constants/game"
 import { ORIGINAL_TYPE, BOARDCAST_TYPE } from "@/constants/anime"
 import { arrays } from "@/helpers/primitive"
 import { parseStaffSchema } from "./staff"
 
-export type ProjectRelationModel = z.infer<typeof projectRelationModel>
+export const projectListFilter = z.object({
+    search: z.string().optional(),
+    page: z.number().optional(),
+    size: z.number().optional(),
+    type: z.enum(PROJECT_TYPE).optional()
+})
 
-export type ProjectRelationType = Record<string, z.infer<typeof projectRelationItemSchema>[]>
+export const projectRelationModel = z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(z.string()))
+
+export type ProjectRelationModel = Record<RelationType, string[]>
+
+export type ProjectRelationType = Record<RelationType, z.infer<typeof projectRelationItemSchema>[]>
 
 export type EpisodePublishRecord = z.infer<typeof episodePublishRecordSchema>
 
 export type ProjectModel = z.infer<typeof projectModel>
+
+export type ProjectListFilter = z.infer<typeof projectListFilter>
 
 export const episodePublishRecordSchema = z.object({
     index: z.number(),
@@ -42,8 +53,6 @@ export const projectStaffItemSchema = z.object({
         description: z.string()
     }))
 })
-
-export const projectRelationModel = z.record(z.string(), z.array(z.string()))
 
 export const projectModel = z.object({
     id: z.string(),
@@ -109,8 +118,8 @@ export const projectListSchema = z.object({
 })
 
 export const projectDetailSchema = projectListSchema.extend({
-    relations: z.record(z.string(), z.array(projectRelationItemSchema)),
-    relationsTopology: z.record(z.string(), z.array(projectRelationItemSchema)),
+    relations: z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(projectRelationItemSchema)),
+    relationsTopology: z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(projectRelationItemSchema)),
     tags: z.array(projectTagItemSchema),
     staffs: z.array(projectStaffItemSchema)
 })
@@ -120,9 +129,9 @@ export function parseProjectListSchema(data: Project): z.infer<typeof projectLis
     return {
         id: i.id,
         title: i.title,
-        subtitles: i.subtitles.split("|"),
+        subtitles: i.subtitles.split("|").filter(s => s !== ""),
         description: i.description,
-        keywords: i.keywords.split("|"),
+        keywords: i.keywords.split("|").filter(s => s !== ""),
         publishTime: i.publishTime ? i.publishTime.toISOString() : null,
         ratingS: i.ratingS !== null ? RATING_SEX_ITEMS[i.ratingS].value : null,
         ratingV: i.ratingV !== null ? RATING_VIOLENCE_ITEMS[i.ratingV].value : null,

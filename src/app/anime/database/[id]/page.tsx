@@ -1,4 +1,5 @@
 import NextLink from "next/link"
+import { notFound } from "next/navigation"
 import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, SimpleGrid, Button } from "@chakra-ui/react"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
@@ -16,7 +17,9 @@ export async function generateMetadata({ params }: {params: Promise<{id: string}
     const { id } = await params
     const data = await retrieveProjectAnime(id)
     if(!data) {
-        throw new Error("404 Not Found")
+        return {
+            title: "404 Not Found"
+        }
     }
     return {
         title: data.title || "(未命名)"
@@ -28,7 +31,7 @@ export default async function AnimationDatabaseDetail({ params }: { params: Prom
 
     const data = await retrieveProjectAnime(id)
     if(!data) {
-        throw new Error("404 Not Found")
+        notFound()
     }
 
     return (

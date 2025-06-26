@@ -8,7 +8,7 @@ import { NumberInput } from "@/components/form"
 export const PageRouterPopover = memo(function PageRouterPopover(props: {page: number, total: number, pageParamName: string}) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [page, setPage] = useState<number>(props.page)
+    const [page, setPage] = useState<number | null>(props.page)
 
     useEffect(() => setPage(props.page), [props.page])
 
@@ -20,7 +20,7 @@ export const PageRouterPopover = memo(function PageRouterPopover(props: {page: n
 
     return (
         <>
-            <NumberInput placeholder="页码" size="sm" min="1" max={props.total} value={page} onValueChange={setPage} onEnter={onClick}/>
+            <NumberInput placeholder="页码" size="sm" min={1} max={props.total} value={page} onValueChange={setPage} onEnter={onClick}/>
             <Button type="submit" variant="outline" size="sm" onClick={onClick}><RiArrowRightLine/> 跳转</Button>
         </>
     )

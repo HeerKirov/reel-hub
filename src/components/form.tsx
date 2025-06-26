@@ -25,7 +25,7 @@ export const Input = memo(function CompositionInput({ onValueChange, onEnter, on
     }, [])
 
     const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        onValueChange?.(e.target.value)
+            onValueChange?.(e.target.value)
     }, [onValueChange])
 
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
@@ -40,11 +40,12 @@ export const Input = memo(function CompositionInput({ onValueChange, onEnter, on
 
 export interface NumberInputProps extends Omit<ChakraNumberInputRootProps, "value" | "onValueChange"> {
     value?: number | null
+    placeholder?: string
     onValueChange?: (value: number | null) => void
     onEnter?: (value: number | null) => void
 }
 
-export const NumberInput = memo(function NumberInput({ value, onValueChange, onEnter, ...props }: NumberInputProps) {
+export const NumberInput = memo(function NumberInput({ value, onValueChange, onEnter, placeholder, ...props }: NumberInputProps) {
 
     const change = useCallback((details: NumberInputValueChangeDetails) => {
         console.log("change", details.value.length > 0 ? parseFloat(details.value) : null)
@@ -63,7 +64,7 @@ export const NumberInput = memo(function NumberInput({ value, onValueChange, onE
 
     return <ChakraNumberInput.Root value={finalValue} onValueChange={change} onKeyDown={handleKeyDown} {...props}>
         <ChakraNumberInput.Control/>
-        <ChakraNumberInput.Input/>
+        <ChakraNumberInput.Input placeholder={placeholder}/>
     </ChakraNumberInput.Root>
 
 })

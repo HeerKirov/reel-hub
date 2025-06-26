@@ -1,4 +1,5 @@
 import React from "react"
+import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/anime"
 import { AnimationDatabaseEditContent } from "./components"
 
@@ -7,7 +8,7 @@ export default async function AnimationDatabaseEdit({ params }: { params: Promis
 
     const data = await retrieveProjectAnime(id)
     if(!data) {
-        throw new Error("404 Not Found")
+        notFound()
     }
 
     return <AnimationDatabaseEditContent data={data}/>
