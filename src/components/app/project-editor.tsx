@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
 import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
-import { Select, Input, NumberInput } from "@/components/form"
+import { Select, Input, NumberInput, DateTimePicker } from "@/components/form"
 import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
@@ -33,6 +33,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [ratingS, setRatingS] = useState<RatingSex | null>(data?.ratingS ?? null)
     const [ratingV, setRatingV] = useState<RatingViolence | null>(data?.ratingV ?? null)
     const [region, setRegion] = useState<Region | null>(data?.region ?? null)
+    const [publishTime, setPublishTime] = useState<string | null>(data?.publishTime ?? null)
     const [originalType, setOriginalType] = useState<OriginalType | null>(data?.originalType ?? null)
     const [boardcastType, setBoardcastType] = useState<BoardcastType | null>(data?.boardcastType ?? null)
     const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? null)
@@ -50,9 +51,9 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const tabs = [
         {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfoTab 
             title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
-            ratingS={ratingS} ratingV={ratingV} region={region}
+            ratingS={ratingS} ratingV={ratingV} region={region} publishTime={publishTime}
             setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
-            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion}
+            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setPublishTime={setPublishTime}
         />},
         {label: "动画信息", icon: <RiTvLine/>, content: <AnimeInfoTab
             originalType={originalType} boardcastType={boardcastType} episodePublishPlan={episodePublishPlan}
@@ -93,6 +94,7 @@ interface BasicInfoTabProps {
     ratingS: RatingSex | null
     ratingV: RatingViolence | null
     region: Region | null
+    publishTime: string | null
     
     setTitle: (title: string) => void
     setSubtitles: (subtitles: string[]) => void
@@ -102,6 +104,7 @@ interface BasicInfoTabProps {
     setRatingS: (ratingSex: RatingSex | null) => void
     setRatingV: (ratingViolence: RatingViolence | null) => void
     setRegion: (region: Region | null) => void
+    setPublishTime: (publishTime: string | null) => void
 }
 
 const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
@@ -166,6 +169,12 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
                     </Field.Label>
                     <Select value={props.region} onValueChange={props.setRegion} items={REGION_ITEMS} placeholder="地区"/>
                 </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        发布时间
+                    </Field.Label>
+                    <DateTimePicker value={props.publishTime} onValueChange={props.setPublishTime}/>
+                </Field.Root>
             </Flex>
         </Flex>
     )
@@ -214,7 +223,9 @@ interface AnimeInfoTabProps {
 }
 
 const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const setEpisodeTotalNum = useCallback((value: number | null) => props.setEpisodeTotalNum(value ?? 0), [props.setEpisodeTotalNum])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const setEpisodePublishedNum = useCallback((value: number | null) => props.setEpisodePublishedNum(value ?? 0), [props.setEpisodePublishedNum])
 
     return (

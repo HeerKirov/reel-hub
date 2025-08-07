@@ -1,4 +1,4 @@
-import { RelationType, RELATION_TYPE_LEVELS, RELATION_TYPE_REVERSE, RELATION_TYPE_VALUES, mergeRelationTypes } from "@/constants/project"
+import { RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 
 /**
  * 关系图构建器类
@@ -173,4 +173,50 @@ export class RelationGraph<E> {
 
         return relations
     }
-} 
+}
+
+// RelationType 的合并规则
+function mergeRelationTypes(a: RelationType, b: RelationType): RelationType {
+    if (a === b) return a
+    if (a === "SERIES" || b === "SERIES" || RELATION_TYPE_LEVELS[a] === RELATION_TYPE_LEVELS[b]) {
+        return "SERIES"
+    }
+    if (a === "RUMOR" || b === "RUMOR") return "RUMOR"
+    if (a === "TRUE_PASS" || b === "TRUE_PASS") return "TRUE_PASS"
+    if (a === "PREV" || b === "PREV") return "PREV"
+    if (a === "NEXT" || b === "NEXT") return "NEXT"
+
+    throw new Error("This case may not occurred.")
+}
+
+// 字符串转 RelationType 的辅助函数
+function stringToRelationType(str: string): RelationType {
+    const upperStr = str.toUpperCase()
+    if (upperStr === "PREV" || upperStr === "NEXT" || upperStr === "FANWAI" ||
+        upperStr === "MAIN_ARTICLE" || upperStr === "RUMOR" || upperStr === "TRUE_PASS" || upperStr === "SERIES") {
+        return upperStr as RelationType
+    }
+    throw new Error(`Invalid relation type: ${str}`)
+}
+
+// RelationType 的级别定义
+const RELATION_TYPE_LEVELS: Record<RelationType, number> = {
+    PREV: 4,
+    NEXT: 4,
+    FANWAI: 3,
+    MAIN_ARTICLE: 3,
+    RUMOR: 2,
+    TRUE_PASS: 2,
+    SERIES: 1
+}
+
+// RelationType 的反向关系
+const RELATION_TYPE_REVERSE: Record<RelationType, RelationType> = {
+    PREV: "NEXT",
+    NEXT: "PREV",
+    FANWAI: "MAIN_ARTICLE",
+    MAIN_ARTICLE: "FANWAI",
+    RUMOR: "TRUE_PASS",
+    TRUE_PASS: "RUMOR",
+    SERIES: "SERIES"
+}

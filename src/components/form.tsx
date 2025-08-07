@@ -1,12 +1,16 @@
 "use client"
-import React, { memo, useRef, useCallback, KeyboardEvent, useMemo } from "react"
-import { 
-    Input as ChakraInput, InputProps as ChakraInputProps, NumberInput as ChakraNumberInput, NumberInputRootProps as ChakraNumberInputRootProps, 
-    RatingGroup, Text, Select as ChakraSelect, Portal, createListCollection 
+import React, { memo, useRef, useCallback, KeyboardEvent, useMemo, useState } from "react"
+import {
+    InputProps as ChakraInputProps, NumberInputRootProps as ChakraNumberInputRootProps, SystemStyleObject,
+    Input as ChakraInput, NumberInput as ChakraNumberInput, InputGroup,
+    RatingGroup, Text, Select as ChakraSelect, Portal, Popover,
+    createListCollection, Link, Box, Group
 } from "@chakra-ui/react"
+import { RiCalendar2Fill } from "react-icons/ri"
 import { ValueChangeDetails as NumberInputValueChangeDetails } from "@zag-js/number-input"
 import { ValueChangeDetails as RatingValueChangeDetails } from "@zag-js/rating-group"
 import { ValueChangeDetails as SelectValueChangeDetails } from "@zag-js/select"
+import { dates, numbers } from "@/helpers/primitive"
 
 export interface InputProps extends ChakraInputProps {
     onValueChange?: (value: string) => void
@@ -48,7 +52,6 @@ export interface NumberInputProps extends Omit<ChakraNumberInputRootProps, "valu
 export const NumberInput = memo(function NumberInput({ value, onValueChange, onEnter, placeholder, ...props }: NumberInputProps) {
 
     const change = useCallback((details: NumberInputValueChangeDetails) => {
-        console.log("change", details.value.length > 0 ? parseFloat(details.value) : null)
         onValueChange?.(details.value.length > 0 ? parseFloat(details.value) : null)
     }, [onValueChange])
 
@@ -59,8 +62,6 @@ export const NumberInput = memo(function NumberInput({ value, onValueChange, onE
     }, [onEnter, value])
 
     const finalValue = value !== undefined && value !== null ? String(value) : ""
-
-    console.log("value", finalValue)
 
     return <ChakraNumberInput.Root value={finalValue} onValueChange={change} onKeyDown={handleKeyDown} {...props}>
         <ChakraNumberInput.Control/>
@@ -132,3 +133,65 @@ export function Select<T extends string>({ value, items, onValueChange, placehol
     </ChakraSelect.Root>
 }
 
+export interface DateTimePickerProps {
+    value?: string | null
+    onValueChange?: (value: string | null) => void
+    mode?: "year" | "month" | "day" | "time"
+}
+
+export const DateTimePicker = memo(function DateTimePicker(props: DateTimePickerProps & SystemStyleObject) {
+    const { value, onValueChange, mode, ...attrs } = props
+
+    return (
+        <Popover.Root {...attrs}>
+            <Popover.Trigger asChild>
+                <InputGroup endElement={<RiCalendar2Fill/>}>
+                    <ChakraInput readOnly={true} placeholder="YYYY-MM-DD"/>
+                </InputGroup>
+            </Popover.Trigger>
+            <Portal>
+                <Popover.Positioner>
+                    <Popover.Content>
+                        <Popover.Arrow />
+                        <Popover.Body>
+                            <DateTimePickerPopover value={value} onValueChange={onValueChange} mode={mode}/>
+                        </Popover.Body>
+                    </Popover.Content>
+                </Popover.Positioner>
+            </Portal>
+        </Popover.Root>
+    )
+})
+
+const DateTimePickerPopover = memo(function DateTimePickerPopover(props: DateTimePickerProps) {
+    const { value, onValueChange, mode = "time" } = props
+
+    const [date, setDate] = useState<{year: number, month: number, day: number, hour: number, minute: number}>(() => {
+        const d = value ? dates.parseStandardText(value) ?? new Date() : new Date()
+        return {year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes()}
+    })
+
+    const [currentPanel, setCurrentPanel] = useState<"year" | "month" | "day" | "time">("day")
+
+    return (
+        <>
+            <Group>
+                <Link variant="underline" color={currentPanel === "year" ? `blue.fg` : "fg.subtle"} fontWeight={700} onClick={() => setCurrentPanel("year")}>{date.year}年</Link>
+                <Link variant="underline" color={currentPanel === "month" ? `blue.fg` : "fg.subtle"} fontWeight={700} onClick={() => setCurrentPanel("month")}>{date.month}月</Link>
+                <Link variant="underline" color={currentPanel === "day" ? `blue.fg` : "fg.subtle"} fontWeight={700} onClick={() => setCurrentPanel("day")}>{date.day}日</Link>
+                <Link variant="underline" color={currentPanel === "time" ? `blue.fg` : "fg.subtle"} fontWeight={700} onClick={() => setCurrentPanel("time")}>{numbers.zero(date.hour, 2)}:{numbers.zero(date.minute, 2)}</Link>
+            </Group>
+            <Box>
+                {currentPanel === "year" ? <>
+
+                </> : currentPanel === "month" ? <>
+
+                </> : currentPanel === "day" ? <>
+
+                </> : <>
+
+                </>}
+            </Box>
+        </>
+    )
+})

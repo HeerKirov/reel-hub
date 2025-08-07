@@ -43,3 +43,30 @@ export const records = {
         return returns
     }
 }
+
+export const numbers = {
+    zero(n: number | string, length: number): string {
+        let s = n.toString()
+        if(s.length < length) {
+            for(let i = 0; i < length - s.length; i++) s += "0"
+        }
+        return s
+    }
+}
+
+export const dates = {
+    parseStandardText(str: string): Date | undefined {
+        const re = /(?<Y>\d+)-(?<M>\d+)(-(?<D>\d+))?/
+        const matcher = str.match(re)
+        if(matcher && matcher.groups) {
+            return new Date(parseInt(matcher.groups["Y"]), parseInt(matcher.groups["M"]), matcher.groups["D"] !== undefined ? parseInt(matcher.groups["D"]) : 1)
+        }else{
+            const d = new Date(str)
+            if(isNaN(d.getTime())) {
+                return undefined
+            }
+            return d
+        }
+
+    }
+}

@@ -27,7 +27,7 @@ export type ProjectListFilter = z.infer<typeof projectListFilter>
 
 export const episodePublishRecordSchema = z.object({
     index: z.number(),
-    publishTime: z.date(),
+    publishTime: z.string(),
     actualEpisodeNum: z.number().nullable(),
     episodeTitle: z.string().nullable()
 })

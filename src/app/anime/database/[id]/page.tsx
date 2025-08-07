@@ -1,17 +1,17 @@
 import NextLink from "next/link"
 import { notFound } from "next/navigation"
-import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, SimpleGrid, Button } from "@chakra-ui/react"
+import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, Button } from "@chakra-ui/react"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
+import { RelationDisplay } from "@/components/display"
 import { Starlight } from "@/components/form"
 import { retrieveProjectAnime } from "@/services/anime"
 import { AnimeDetailSchema } from "@/schemas/anime"
 import { VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import emptyCover from "@/assets/empty.jpg"
-import { RelationDisplay } from "@/components/app/project-display"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
