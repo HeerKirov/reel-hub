@@ -48,7 +48,7 @@ export const numbers = {
     zero(n: number | string, length: number): string {
         let s = n.toString()
         if(s.length < length) {
-            for(let i = 0; i < length - s.length; i++) s += "0"
+            for(let i = 0; i < length - s.length; i++) s = "0" + s
         }
         return s
     }

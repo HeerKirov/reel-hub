@@ -1,10 +1,10 @@
 "use client"
 import React, { memo, useState, useCallback, useEffect } from "react"
-import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton } from "@chakra-ui/react"
+import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field } from "@chakra-ui/react"
 import { useEffectState } from "@/helpers/hooks"
-import { Input } from "@/components/form"
+import { Input, NumberInput, DateTimePicker } from "@/components/form"
 import { PiTrashBold } from "react-icons/pi"
-import { ProjectRelationType } from "@/schemas/project"
+import { ProjectRelationType, EpisodePublishRecord } from "@/schemas/project"
 import { RelationType, RELATION_TYPE_NAMES, RELATION_TYPE_VALUES, ProjectType } from "@/constants/project"
 
 export type DynamicInputListProps = {
@@ -611,6 +611,149 @@ export const RelationEditor = memo(function RelationEditor({ value = {}, onValue
                     )}
                 </Box>
             </Box>
+        </Box>
+    )
+})
+
+export type EpisodePublishedRecordEditorProps = {
+    value?: EpisodePublishRecord[]
+    onValueChange?: (value: EpisodePublishRecord[]) => void
+} & SystemStyleObject
+
+export const EpisodePublishedRecordEditor = memo(function EpisodePublishedRecordEditor({ value = [], onValueChange, ...attrs }: EpisodePublishedRecordEditorProps) {
+    const [records, setRecords] = useState<EpisodePublishRecord[]>(value)
+
+    // 当外部value变化时更新内部状态
+    useEffect(() => {
+        setRecords(value)
+    }, [value])
+
+    // 更新单条记录
+    const updateRecord = useCallback((index: number, updates: Partial<EpisodePublishRecord>) => {
+        const newRecords = records.map((record, i) => i === index ? { ...record, ...updates } : record)
+        setRecords(newRecords)
+        onValueChange?.(newRecords)
+    }, [records, onValueChange])
+
+    // 添加新记录
+    const addRecord = useCallback(() => {
+        const newIndex = records.length > 0 ? Math.max(...records.map(r => r.index)) + 1 : 1
+        const newRecord: EpisodePublishRecord = {
+            index: newIndex,
+            publishTime: "",
+            actualEpisodeNum: null,
+            episodeTitle: null
+        }
+        const newRecords = [...records, newRecord]
+        setRecords(newRecords)
+        onValueChange?.(newRecords)
+    }, [records, onValueChange])
+
+    // 删除记录
+    const removeRecord = useCallback((index: number) => {
+        const newRecords = records.filter((_, i) => i !== index)
+        setRecords(newRecords)
+        onValueChange?.(newRecords)
+    }, [records, onValueChange])
+
+    return (
+        <Box display="flex" flexDirection="column" gap="2" {...attrs}>
+            {/* 表头 */}
+            <Box display="grid" gridTemplateColumns={{
+                    base: "60px 1fr 80px 40px",
+                    md: "60px 1fr 100px 1fr 40px"
+                 }} 
+                 gap="2" alignItems="center" fontWeight="bold" fontSize="sm" color="fg.muted" px="2">
+                <Box>序号</Box>
+                <Box>发布时间</Box>
+                <Box>实际集数</Box>
+                <Box display={{base: "none", md: "block"}}>集标题</Box>
+                <Box></Box>
+            </Box>
+
+            {/* 记录列表 */}
+            <Box display="flex" flexDirection="column" gap="1">
+                {records.map((record, index) => (
+                    <Box key={index}>
+                        <Box display="grid" gridTemplateColumns={{
+                                 base: "60px 1fr 80px 40px",
+                                 md: "60px 1fr 100px 1fr 40px"
+                             }}
+                             gap="2" alignItems="center" p="1.5" 
+                             border="1px solid" borderColor="border" 
+                             rounded="md" bg="bg.subtle"
+                             borderBottomRadius={{base: record.episodeTitle ? "none" : "md", md: "md"}}>
+                            <Box textAlign="center" fontWeight="bold" color="fg.muted">
+                                {record.index}
+                            </Box>
+
+                            {/* 发布时间 */}
+                            <Field.Root>
+                                <DateTimePicker
+                                    value={record.publishTime}
+                                    onValueChange={(value) => updateRecord(index, { publishTime: value || "" })}
+                                    mode="time"
+                                    placeholder="选择时间"
+                                />
+                            </Field.Root>
+
+                            {/* 实际集数 */}
+                            <Field.Root>
+                                <NumberInput
+                                    value={record.actualEpisodeNum}
+                                    onValueChange={(value) => updateRecord(index, { actualEpisodeNum: value })}
+                                    placeholder="集数"
+                                    size="sm"
+                                />
+                            </Field.Root>
+
+                            {/* 集标题 - 桌面端显示 */}
+                            <Box display={{base: "none", md: "block"}}>
+                                <Field.Root>
+                                    <Input
+                                        value={record.episodeTitle || ""}
+                                        onValueChange={(value) => updateRecord(index, { episodeTitle: value || null })}
+                                        placeholder="集标题"
+                                        size="sm"
+                                    />
+                                </Field.Root>
+                            </Box>
+
+                            {/* 删除按钮保持不变 */}
+                            <IconButton variant="ghost" size="sm" colorPalette="red" onClick={() => removeRecord(index)} aria-label="删除记录">
+                                <PiTrashBold />
+                            </IconButton>
+                        </Box>
+
+                        {/* 移动端集标题 */}
+                        <Box display={{base: "block", md: "none"}}
+                             mt="1px" mb="1" px="1.5"py="1"
+                             border="1px solid" borderColor="border" borderTop="none"
+                             rounded="md" roundedTop="none" bg="bg.subtle">
+                            <Field.Root>
+                                <Input
+                                    value={record.episodeTitle || ""}
+                                    onValueChange={(value) => updateRecord(index, { episodeTitle: value || null })}
+                                    placeholder="集标题"
+                                    size="sm"
+                                />
+                            </Field.Root>
+                        </Box>
+                    </Box>
+                ))}
+
+                {/* 空状态 */}
+                {records.length === 0 && (
+                    <Box textAlign="center" color="fg.muted" fontSize="sm" py="4" border="1px solid" borderColor="border" rounded="md" bg="bg.subtle">
+                        暂无记录
+                    </Box>
+                )}
+            </Box>
+
+            {/* 添加按钮 */}
+            <Button variant="outline" size="sm" onClick={addRecord} alignSelf="flex-start">
+                添加记录
+            </Button>
         </Box>
     )
 })

@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 该规则解释了在编写各类前端, 诸如vuejs, react时的一些通用的编码习惯
+globs: **/*.jsx,**/*.tsx,**/*.vue
+alwaysApply: false
+---
+
+# 前端规范
+
+## 代码风格
+
+- 不添加js行末的分号
+- 将组件的属性保持在一行之内，不要频繁的换行；如果属性太多，则适当地换行，每一行放置多个属性；如果某个属性有多行内容(例如大型object或函数)，将其单独一行，或者尝试将函数拆分成单独的变量

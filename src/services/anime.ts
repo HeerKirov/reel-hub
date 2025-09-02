@@ -75,9 +75,9 @@ export async function createProjectAnime(form: AnimeForm) {
     const r = await prisma.project.create({
         data: {
             title: validate.data.title ?? "",
-            subtitles: validate.data.subtitles?.join(",") ?? "",
+            subtitles: validate.data.subtitles?.join("|") ?? "",
             description: validate.data.description || "",
-            keywords: validate.data.keywords?.join(",") ?? "",
+            keywords: validate.data.keywords?.join("|") ?? "",
             type: ProjectType.ANIME,
             publishTime: validate.data.publishTime ?? null,
             ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
@@ -120,9 +120,9 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
         where: { id },
         data: {
             title: validate.data.title,
-            subtitles: validate.data.subtitles?.join(",") ?? "",
+            subtitles: validate.data.subtitles?.join("|") ?? "",
             description: validate.data.description,
-            keywords: validate.data.keywords?.join(",") ?? "",
+            keywords: validate.data.keywords?.join("|") ?? "",
             publishTime: validate.data.publishTime,
             ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
             ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,

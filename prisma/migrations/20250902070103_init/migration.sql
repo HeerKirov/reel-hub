@@ -27,7 +27,7 @@ CREATE TABLE "Project" (
     "description" TEXT NOT NULL,
     "keywords" TEXT NOT NULL,
     "type" "ProjectType" NOT NULL,
-    "publishTime" DATE,
+    "publishTime" VARCHAR(10),
     "ratingS" INTEGER,
     "ratingV" INTEGER,
     "region" TEXT,

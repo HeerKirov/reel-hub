@@ -5,7 +5,7 @@ import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
 import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input, NumberInput, DateTimePicker } from "@/components/form"
-import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor } from "@/components/editor"
+import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor, EpisodePublishedRecordEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
 import { EpisodePublishRecord, ProjectRelationModel, ProjectRelationType } from "@/schemas/project"
@@ -32,12 +32,12 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [staffs, setStaffs] = useState<{type: string, members: string[]}[]>(data?.staffs.map(s => ({type: s.type, members: s.members.map(m => m.name)})) ?? [])
     const [ratingS, setRatingS] = useState<RatingSex | null>(data?.ratingS ?? null)
     const [ratingV, setRatingV] = useState<RatingViolence | null>(data?.ratingV ?? null)
-    const [region, setRegion] = useState<Region | null>(data?.region ?? null)
+    const [region, setRegion] = useState<Region | null>(data?.region ?? "jp")
     const [publishTime, setPublishTime] = useState<string | null>(data?.publishTime ?? null)
     const [originalType, setOriginalType] = useState<OriginalType | null>(data?.originalType ?? null)
     const [boardcastType, setBoardcastType] = useState<BoardcastType | null>(data?.boardcastType ?? null)
-    const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? null)
-    const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 1)
+    const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? 24)
+    const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 12)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
     const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
     const [relations, setRelations] = useState<Partial<ProjectRelationType>>(data?.relations ?? {})
@@ -68,8 +68,8 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const onSave = () => {
         const finalRelations: Partial<ProjectRelationModel> = Object.fromEntries(Object.entries(relations).map(([key, value]) => [key, value.map(r => r.id)]))
         onSubmit?.({
-            title, subtitles, description, keywords,
-            ratingS, ratingV, region, tags, staffs,
+            title, subtitles, description, keywords, 
+            ratingS, ratingV, region, tags, staffs, publishTime,
             originalType, boardcastType,
             episodeDuration, episodeTotalNum, episodePublishedNum, episodePublishPlan,
             relations: finalRelations
@@ -173,7 +173,7 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
                     <Field.Label>
                         发布时间
                     </Field.Label>
-                    <DateTimePicker value={props.publishTime} onValueChange={props.setPublishTime}/>
+                    <DateTimePicker mode="month" value={props.publishTime} onValueChange={props.setPublishTime}/>
                 </Field.Root>
             </Flex>
         </Flex>
@@ -264,6 +264,18 @@ const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
                     <NumberInput width="full" value={props.episodePublishedNum} onValueChange={setEpisodePublishedNum} min={0}/>
                 </Field.Root>
             </Flex>
+            <Field.Root>
+                <Field.Label>
+                    已发布集数
+                </Field.Label>
+                <EpisodePublishedRecordEditor value={props.episodePublishPlan} onValueChange={props.setEpisodePublishPlan}/>
+            </Field.Root>
+            <Field.Root>
+                <Field.Label>
+                    放送计划
+                </Field.Label>
+                {/* TODO: 放送计划编辑器 */}
+            </Field.Root>
         </Flex>
     )
 })

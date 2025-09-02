@@ -30,7 +30,7 @@ export async function createStaff(form: StaffCreateFormSchema) {
     return await prisma.staff.create({
         data: {
             ...validate.data,
-            otherNames: validate.data.otherNames?.join(",") ?? "",
+            otherNames: validate.data.otherNames?.join("|") ?? "",
             createTime: now,
             updateTime: now,
             creator: userId,
@@ -57,7 +57,7 @@ export async function updateStaff(id: number, form: StaffUpdateFormSchema) {
         where: { id },
         data: {
             ...validate.data,
-            otherNames: validate.data.otherNames?.join(",") ?? "",
+            otherNames: validate.data.otherNames?.join("|") ?? "",
             updateTime: now,
             updator: userId
         }

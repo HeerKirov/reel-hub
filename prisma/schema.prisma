@@ -79,7 +79,7 @@ model Project {
   description        String   @db.Text
   keywords           String   @db.Text
   type               ProjectType
-  publishTime        DateTime? @db.Date
+  publishTime        String?   @db.VarChar(10)
   ratingS            Int?
   ratingV            Int?
   region             String?
