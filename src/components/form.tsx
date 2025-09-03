@@ -137,7 +137,7 @@ export function Select<T extends string>({ value, items, onValueChange, placehol
 
 export interface DateTimePickerProps {
     id?: string
-    value?: string | null
+    value?: string | null  // 期望是UTC时间戳格式
     onValueChange?: (value: string | null) => void
     mode?: "year" | "month" | "day" | "time"
     placeholder?: string
@@ -146,11 +146,43 @@ export interface DateTimePickerProps {
 export const DateTimePicker = memo(function DateTimePicker(props: DateTimePickerProps & SystemStyleObject) {
     const { value, onValueChange, mode, placeholder = "YYYY-MM-DD", ...attrs } = props
 
+    // 将UTC时间戳或日期字符串转换为显示文本
+    const displayText = useMemo(() => {
+        if (!value) return ""
+        
+        if (mode === "time") {
+            // time模式：从UTC时间戳解析
+            const date = new Date(value)
+            if (isNaN(date.getTime())) return ""
+            return `${date.getFullYear()}-${numbers.zero(date.getMonth() + 1, 2)}-${numbers.zero(date.getDate(), 2)} ${numbers.zero(date.getHours(), 2)}:${numbers.zero(date.getMinutes(), 2)}`
+        } else {
+            // 其他模式：直接显示日期字符串
+            return value
+        }
+    }, [value, mode])
+
+    // 处理Popover的值变化
+    const handleValueChange = useCallback((localDateStr: string | null) => {
+        if (!localDateStr) {
+            onValueChange?.(null)
+            return
+        }
+
+        if (mode === "time") {
+            // time模式：转换为UTC时间戳
+            const date = new Date(`${localDateStr}:00`)
+            onValueChange?.(date.toISOString())
+        } else {
+            // 其他模式：直接传递日期字符串
+            onValueChange?.(localDateStr)
+        }
+    }, [mode, onValueChange])
+
     return (
         <Popover.Root {...attrs}>
             <Popover.Trigger asChild>
                 <InputGroup endElement={<RiCalendar2Fill/>}>
-                    <ChakraInput readOnly={true} placeholder={placeholder} value={value ?? ""}/>
+                    <ChakraInput readOnly={true} placeholder={placeholder} value={displayText}/>
                 </InputGroup>
             </Popover.Trigger>
             <Portal>
@@ -158,7 +190,11 @@ export const DateTimePicker = memo(function DateTimePicker(props: DateTimePicker
                     <Popover.Content>
                         <Popover.Arrow />
                         <Popover.Body>
-                            <DateTimePickerPopover value={value} onValueChange={onValueChange} mode={mode}/>
+                            <DateTimePickerPopover 
+                                value={value} 
+                                onValueChange={handleValueChange} 
+                                mode={mode}
+                            />
                         </Popover.Body>
                     </Popover.Content>
                 </Popover.Positioner>
@@ -170,9 +206,27 @@ export const DateTimePicker = memo(function DateTimePicker(props: DateTimePicker
 const DateTimePickerPopover = memo(function DateTimePickerPopover(props: DateTimePickerProps) {
     const { value, onValueChange, mode = "time" } = props
 
+    // 初始化日期状态时从UTC时间戳转换
     const [date, setDate] = useState<{year: number, month: number, day: number, hour: number, minute: number}>(() => {
-        const d = value ? dates.parseStandardText(value) ?? new Date() : new Date()
-        return {year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes()}
+        if (!value) {
+            const now = new Date()
+            return {
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
+                day: now.getDate(),
+                hour: now.getHours(),
+                minute: now.getMinutes()
+            }
+        }
+
+        const d = new Date(value)
+        return {
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            day: d.getDate(),
+            hour: d.getHours(),
+            minute: d.getMinutes()
+        }
     })
 
     // 根据mode确定初始面板
@@ -283,9 +337,31 @@ const DateTimePickerPopover = memo(function DateTimePickerPopover(props: DateTim
                     hour: (prev.hour + delta + 24) % 24
                 }
             } else {
+                // 对于分钟，需要调整到最近的delta倍数
+                const currentMinute = prev.minute
+                const absStep = Math.abs(delta)
+                let nextMinute
+                if (delta > 0) {
+                    // 如果当前值是步长的整倍数,则直接加上步长
+                    if (currentMinute % absStep === 0) {
+                        nextMinute = currentMinute + absStep
+                    } else {
+                        // 否则向上取整到最近的步长倍数
+                        nextMinute = Math.ceil(currentMinute / absStep) * absStep
+                    }
+                } else {
+                    // 如果当前值是步长的整倍数,则直接减去步长
+                    if (currentMinute % absStep === 0) {
+                        nextMinute = currentMinute - absStep
+                    } else {
+                        // 否则向下取整到最近的步长倍数
+                        nextMinute = Math.floor(currentMinute / absStep) * absStep
+                    }
+                }
+
                 return {
                     ...prev,
-                    minute: (prev.minute + delta + 60) % 60
+                    minute: (nextMinute + 60) % 60 // 确保在0-59范围内
                 }
             }
         })
@@ -355,18 +431,10 @@ const DateTimePickerPopover = memo(function DateTimePickerPopover(props: DateTim
                             ))}
                             {/* 实际日期 */}
                             {dayOptions.days.map(({ day, weekday }) => (
-                                <Box
-                                    key={day}
-                                    p="2"
-                                    textAlign="center"
-                                    cursor="pointer"
-                                    borderRadius="md"
-                                    bg={date.day === day ? "blue.500" : "transparent"}
-                                    color={date.day === day ? "white" : "fg.default"}
+                                <Box key={day} p="2" textAlign="center" cursor="pointer"
+                                    borderRadius="md" bg={date.day === day ? "blue.500" : "transparent"} color={date.day === day ? "white" : "fg.default"}
                                     _hover={{ bg: date.day === day ? "blue.600" : "gray.100" }}
-                                    onClick={() => updateDate({ day })}
-                                    title={`${day}日 ${weekday}`}
-                                >
+                                    onClick={() => updateDate({ day })} title={`${day}日 ${weekday}`}>
                                     {day}
                                 </Box>
                             ))}

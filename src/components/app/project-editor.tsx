@@ -5,7 +5,7 @@ import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
 import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input, NumberInput, DateTimePicker } from "@/components/form"
-import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor, EpisodePublishedRecordEditor } from "@/components/editor"
+import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor, EpisodePublishedRecordEditor, EpisodePublishPlanEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
 import { EpisodePublishRecord, ProjectRelationModel, ProjectRelationType } from "@/schemas/project"
@@ -40,6 +40,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 12)
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
     const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
+    const [episodePublishedRecords, setEpisodePublishedRecords] = useState<EpisodePublishRecord[]>(data?.episodePublishedRecords ?? [])
     const [relations, setRelations] = useState<Partial<ProjectRelationType>>(data?.relations ?? {})
     
     const breadcrumb = {
@@ -56,9 +57,9 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setPublishTime={setPublishTime}
         />},
         {label: "动画信息", icon: <RiTvLine/>, content: <AnimeInfoTab
-            originalType={originalType} boardcastType={boardcastType} episodePublishPlan={episodePublishPlan}
+            originalType={originalType} boardcastType={boardcastType} episodePublishPlan={episodePublishPlan} episodePublishedRecords={episodePublishedRecords}
             episodeDuration={episodeDuration} episodeTotalNum={episodeTotalNum} episodePublishedNum={episodePublishedNum}
-            setOriginalType={setOriginalType} setBoardcastType={setBoardcastType} setEpisodePublishPlan={setEpisodePublishPlan}
+            setOriginalType={setOriginalType} setBoardcastType={setBoardcastType} setEpisodePublishPlan={setEpisodePublishPlan} setEpisodePublishedRecords={setEpisodePublishedRecords}
             setEpisodeDuration={setEpisodeDuration} setEpisodeTotalNum={setEpisodeTotalNum} setEpisodePublishedNum={setEpisodePublishedNum} 
         />},
         {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab staffs={staffs} setStaffs={setStaffs}/>},
@@ -71,7 +72,8 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             title, subtitles, description, keywords, 
             ratingS, ratingV, region, tags, staffs, publishTime,
             originalType, boardcastType,
-            episodeDuration, episodeTotalNum, episodePublishedNum, episodePublishPlan,
+            episodeDuration, episodeTotalNum, episodePublishedNum, 
+            episodePublishPlan, episodePublishedRecords,
             relations: finalRelations
         })
     }
@@ -214,12 +216,14 @@ interface AnimeInfoTabProps {
     episodeTotalNum: number
     episodePublishedNum: number
     episodePublishPlan: EpisodePublishRecord[]
+    episodePublishedRecords: EpisodePublishRecord[]
     setOriginalType: (originalType: OriginalType | null) => void
     setBoardcastType: (boardcastType: BoardcastType | null) => void
     setEpisodeDuration: (episodeDuration: number | null) => void
     setEpisodeTotalNum: (episodeTotalNum: number) => void
     setEpisodePublishedNum: (episodePublishedNum: number) => void
     setEpisodePublishPlan: (episodePublishPlan: EpisodePublishRecord[]) => void
+    setEpisodePublishedRecords: (episodePublishedRecords: EpisodePublishRecord[]) => void
 }
 
 const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
@@ -268,13 +272,13 @@ const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
                 <Field.Label>
                     已发布集数
                 </Field.Label>
-                <EpisodePublishedRecordEditor value={props.episodePublishPlan} onValueChange={props.setEpisodePublishPlan}/>
+                <EpisodePublishedRecordEditor value={props.episodePublishedRecords} onValueChange={props.setEpisodePublishedRecords}/>
             </Field.Root>
             <Field.Root>
                 <Field.Label>
                     放送计划
                 </Field.Label>
-                {/* TODO: 放送计划编辑器 */}
+                <EpisodePublishPlanEditor episodePublishedNum={props.episodePublishedNum} episodeTotalNum={props.episodeTotalNum} value={props.episodePublishPlan} onValueChange={props.setEpisodePublishPlan}/>
             </Field.Root>
         </Flex>
     )

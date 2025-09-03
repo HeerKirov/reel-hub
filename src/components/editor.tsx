@@ -1,5 +1,5 @@
 "use client"
-import React, { memo, useState, useCallback, useEffect } from "react"
+import React, { memo, useState, useCallback, useEffect, useMemo } from "react"
 import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field } from "@chakra-ui/react"
 import { useEffectState } from "@/helpers/hooks"
 import { Input, NumberInput, DateTimePicker } from "@/components/form"
@@ -620,50 +620,39 @@ export type EpisodePublishedRecordEditorProps = {
     onValueChange?: (value: EpisodePublishRecord[]) => void
 } & SystemStyleObject
 
-export const EpisodePublishedRecordEditor = memo(function EpisodePublishedRecordEditor({ value = [], onValueChange, ...attrs }: EpisodePublishedRecordEditorProps) {
+// 基础的记录编辑器组件，只负责展示和基本编辑功能
+export const EpisodePublishedRecordEditor = memo(function EpisodePublishedRecordEditor({ 
+    value = [], 
+    onValueChange,
+    ...attrs 
+}: EpisodePublishedRecordEditorProps) {
     const [records, setRecords] = useState<EpisodePublishRecord[]>(value)
 
-    // 当外部value变化时更新内部状态
     useEffect(() => {
         setRecords(value)
     }, [value])
 
-    // 更新单条记录
     const updateRecord = useCallback((index: number, updates: Partial<EpisodePublishRecord>) => {
         const newRecords = records.map((record, i) => i === index ? { ...record, ...updates } : record)
         setRecords(newRecords)
         onValueChange?.(newRecords)
     }, [records, onValueChange])
 
-    // 添加新记录
-    const addRecord = useCallback(() => {
-        const newIndex = records.length > 0 ? Math.max(...records.map(r => r.index)) + 1 : 1
-        const newRecord: EpisodePublishRecord = {
-            index: newIndex,
-            publishTime: "",
-            actualEpisodeNum: null,
-            episodeTitle: null
-        }
-        const newRecords = [...records, newRecord]
-        setRecords(newRecords)
-        onValueChange?.(newRecords)
-    }, [records, onValueChange])
-
-    // 删除记录
     const removeRecord = useCallback((index: number) => {
         const newRecords = records.filter((_, i) => i !== index)
         setRecords(newRecords)
         onValueChange?.(newRecords)
     }, [records, onValueChange])
 
+    const gridTemplateColumns = {
+        base: "60px 1fr 80px 40px",
+        md: "60px 1fr 100px 1fr 40px"
+    }
+
     return (
         <Box display="flex" flexDirection="column" gap="2" {...attrs}>
             {/* 表头 */}
-            <Box display="grid" gridTemplateColumns={{
-                    base: "60px 1fr 80px 40px",
-                    md: "60px 1fr 100px 1fr 40px"
-                 }} 
-                 gap="2" alignItems="center" fontWeight="bold" fontSize="sm" color="fg.muted" px="2">
+            <Box display="grid" gap="2" alignItems="center" fontWeight="bold" fontSize="sm" color="fg.muted" px="2" gridTemplateColumns={gridTemplateColumns}>
                 <Box>序号</Box>
                 <Box>发布时间</Box>
                 <Box>实际集数</Box>
@@ -671,44 +660,61 @@ export const EpisodePublishedRecordEditor = memo(function EpisodePublishedRecord
                 <Box></Box>
             </Box>
 
-            {/* 记录列表 */}
-            <Box display="flex" flexDirection="column" gap="1">
-                {records.map((record, index) => (
-                    <Box key={index}>
-                        <Box display="grid" gridTemplateColumns={{
-                                 base: "60px 1fr 80px 40px",
-                                 md: "60px 1fr 100px 1fr 40px"
-                             }}
-                             gap="2" alignItems="center" p="1.5" 
-                             border="1px solid" borderColor="border" 
-                             rounded="md" bg="bg.subtle"
-                             borderBottomRadius={{base: record.episodeTitle ? "none" : "md", md: "md"}}>
-                            <Box textAlign="center" fontWeight="bold" color="fg.muted">
-                                {record.index}
+            {/* 记录列表 - 添加滚动区域 */}
+            <Box maxHeight="400px" overflowY="auto">
+                <Box display="flex" flexDirection="column" gap="1">
+                    {records.map((record, index) => (
+                        <Box key={index}>
+                            <Box display="grid" gridTemplateColumns={gridTemplateColumns} gap="2" alignItems="center" p="1.5" 
+                                 border="1px solid" borderColor="border" rounded="md" bg="bg.subtle"
+                                 borderBottomRadius={{base: record.episodeTitle ? "none" : "md", md: "md"}}>
+                                <Box textAlign="center" fontWeight="bold" color="fg.muted">
+                                    {record.index}
+                                </Box>
+
+                                {/* 发布时间 */}
+                                <Field.Root>
+                                    <DateTimePicker
+                                        value={record.publishTime}
+                                        onValueChange={(value) => updateRecord(index, { publishTime: value || "" })}
+                                        mode="time"
+                                        placeholder="选择时间"
+                                    />
+                                </Field.Root>
+
+                                {/* 实际集数 */}
+                                <Field.Root>
+                                    <NumberInput
+                                        value={record.actualEpisodeNum}
+                                        onValueChange={(value) => updateRecord(index, { actualEpisodeNum: value })}
+                                        placeholder="集数"
+                                        size="sm"
+                                    />
+                                </Field.Root>
+
+                                {/* 集标题 - 桌面端显示 */}
+                                <Box display={{base: "none", md: "block"}}>
+                                    <Field.Root>
+                                        <Input
+                                            value={record.episodeTitle || ""}
+                                            onValueChange={(value) => updateRecord(index, { episodeTitle: value || null })}
+                                            placeholder="集标题"
+                                            size="sm"
+                                        />
+                                    </Field.Root>
+                                </Box>
+
+                                {/* 删除按钮保持不变 */}
+                                <IconButton variant="ghost" size="sm" colorPalette="red" onClick={() => removeRecord(index)} aria-label="删除记录">
+                                    <PiTrashBold />
+                                </IconButton>
                             </Box>
 
-                            {/* 发布时间 */}
-                            <Field.Root>
-                                <DateTimePicker
-                                    value={record.publishTime}
-                                    onValueChange={(value) => updateRecord(index, { publishTime: value || "" })}
-                                    mode="time"
-                                    placeholder="选择时间"
-                                />
-                            </Field.Root>
-
-                            {/* 实际集数 */}
-                            <Field.Root>
-                                <NumberInput
-                                    value={record.actualEpisodeNum}
-                                    onValueChange={(value) => updateRecord(index, { actualEpisodeNum: value })}
-                                    placeholder="集数"
-                                    size="sm"
-                                />
-                            </Field.Root>
-
-                            {/* 集标题 - 桌面端显示 */}
-                            <Box display={{base: "none", md: "block"}}>
+                            {/* 移动端集标题 */}
+                            <Box display={{base: "block", md: "none"}}
+                                 mt="1px" mb="1" px="1.5"py="1"
+                                 border="1px solid" borderColor="border" borderTop="none"
+                                 rounded="md" roundedTop="none" bg="bg.subtle">
                                 <Field.Root>
                                     <Input
                                         value={record.episodeTitle || ""}
@@ -718,42 +724,156 @@ export const EpisodePublishedRecordEditor = memo(function EpisodePublishedRecord
                                     />
                                 </Field.Root>
                             </Box>
-
-                            {/* 删除按钮保持不变 */}
-                            <IconButton variant="ghost" size="sm" colorPalette="red" onClick={() => removeRecord(index)} aria-label="删除记录">
-                                <PiTrashBold />
-                            </IconButton>
                         </Box>
+                    ))}
 
-                        {/* 移动端集标题 */}
-                        <Box display={{base: "block", md: "none"}}
-                             mt="1px" mb="1" px="1.5"py="1"
-                             border="1px solid" borderColor="border" borderTop="none"
-                             rounded="md" roundedTop="none" bg="bg.subtle">
-                            <Field.Root>
-                                <Input
-                                    value={record.episodeTitle || ""}
-                                    onValueChange={(value) => updateRecord(index, { episodeTitle: value || null })}
-                                    placeholder="集标题"
-                                    size="sm"
-                                />
-                            </Field.Root>
+                    {/* 空状态 */}
+                    {records.length === 0 && (
+                        <Box textAlign="center" color="fg.muted" fontSize="sm" py="4" border="1px solid" borderColor="border" rounded="md" bg="bg.subtle">
+                            暂无记录
                         </Box>
-                    </Box>
-                ))}
+                    )}
+                </Box>
+            </Box>
+        </Box>
+    )
+})
 
-                {/* 空状态 */}
-                {records.length === 0 && (
-                    <Box textAlign="center" color="fg.muted" fontSize="sm" py="4" border="1px solid" borderColor="border" rounded="md" bg="bg.subtle">
-                        暂无记录
-                    </Box>
+export type EpisodePublishPlanEditorProps = {
+    value?: EpisodePublishRecord[]
+    onValueChange?: (value: EpisodePublishRecord[]) => void
+    episodePublishedNum?: number
+    episodeTotalNum?: number
+} & SystemStyleObject
+
+export const EpisodePublishPlanEditor = memo(function EpisodePublishPlanEditor({ 
+    value = [], 
+    onValueChange, 
+    episodePublishedNum = 0,
+    episodeTotalNum,
+    ...attrs 
+}: EpisodePublishPlanEditorProps) {
+    // 添加单条记录
+    const addRecord = useCallback(() => {
+        if (!value.length && episodePublishedNum >= (episodeTotalNum ?? Infinity)) return
+        if (value.length && Math.max(...value.map(r => r.index)) >= (episodeTotalNum ?? Infinity)) return
+
+        const nextIndex = value.length > 0 
+            ? Math.max(...value.map(r => r.index)) + 1 
+            : episodePublishedNum + 1
+
+        let newPublishTime = ""
+        if (value.length > 0) {
+            const lastRecord = value[value.length - 1]
+            if (lastRecord.publishTime) {
+                const lastDate = new Date(lastRecord.publishTime)
+                const nextDate = new Date(lastDate)
+                nextDate.setDate(lastDate.getDate() + 7)
+                newPublishTime = nextDate.toISOString()
+            }
+        }
+
+        const newRecord: EpisodePublishRecord = {
+            index: nextIndex,
+            publishTime: newPublishTime,
+            actualEpisodeNum: null,
+            episodeTitle: null
+        }
+
+        onValueChange?.([...value, newRecord])
+    }, [value, episodePublishedNum, episodeTotalNum, onValueChange])
+
+    // 批量添加记录
+    const addMultipleRecords = useCallback(() => {
+        if (!value.length || !episodeTotalNum) return
+
+        const lastRecord = value[value.length - 1]
+        if (!lastRecord.publishTime) return
+
+        const remainingSlots = episodeTotalNum - Math.max(...value.map(r => r.index))
+        if (remainingSlots <= 0) return
+
+        let lastDate = new Date(lastRecord.publishTime)
+        const newRecords = [...value]
+
+        for (let i = 0; i < remainingSlots; i++) {
+            const nextDate = new Date(lastDate)
+            nextDate.setDate(lastDate.getDate() + 7)
+            
+            newRecords.push({
+                index: Math.max(...newRecords.map(r => r.index)) + 1,
+                publishTime: nextDate.toISOString(),
+                actualEpisodeNum: null,
+                episodeTitle: null
+            })
+
+            lastDate = nextDate
+        }
+
+        onValueChange?.(newRecords)
+    }, [value, episodeTotalNum, onValueChange])
+
+    // 计算是否可以批量添加
+    const canAddMultiple = useMemo(() => {
+        if (!value.length || !episodeTotalNum) return false
+        const lastRecord = value[value.length - 1]
+        if (!lastRecord.publishTime) return false
+        const remainingSlots = episodeTotalNum - Math.max(...value.map(r => r.index))
+        return remainingSlots > 0
+    }, [value, episodeTotalNum])
+
+    // 监听 publishedNum 变化，重新计算 index
+    useEffect(() => {
+        if (!value.length) return
+
+        // 检查是否需要重新计算index（当前的起始index是否不等于publishedNum + 1）
+        const currentStartIndex = Math.min(...value.map(r => r.index))
+        if (currentStartIndex === episodePublishedNum + 1) return
+
+        // 重新计算所有记录的index，保持相对顺序不变
+        const newRecords = value.map((record, idx) => ({
+            ...record,
+            index: episodePublishedNum + 1 + idx
+        }))
+
+        onValueChange?.(newRecords)
+    }, [episodePublishedNum, value, onValueChange])
+
+    // 监听 totalNum/publishedNum 变化，处理超出限制的记录
+    useEffect(() => {
+        if (!value.length) return
+        if (!episodeTotalNum) return // 如果没有设置总集数，不需要处理
+
+        const maxAllowedIndex = episodeTotalNum
+        const recordsExceedLimit = value.some(r => r.index > maxAllowedIndex)
+
+        if (recordsExceedLimit) {
+            // 移除所有超出限制的记录
+            const newRecords = value.filter(r => r.index <= maxAllowedIndex)
+            onValueChange?.(newRecords)
+        }
+    }, [episodeTotalNum, value, onValueChange])
+
+    return (
+        <Box display="flex" flexDirection="column" gap="2" {...attrs}>
+            <EpisodePublishedRecordEditor 
+                value={value}
+                onValueChange={onValueChange}
+            />
+
+            {/* 添加按钮区域 */}
+            <Box display="flex" gap="2" alignItems="center">
+                {(!episodeTotalNum || (value.length > 0 ? Math.max(...value.map(r => r.index)) : episodePublishedNum) < episodeTotalNum) && (
+                    <Button variant="outline" size="sm" onClick={addRecord}>
+                        添加记录
+                    </Button>
+                )}
+                {canAddMultiple && (
+                    <Button variant="outline" size="sm" onClick={addMultipleRecords}>
+                        添加{episodeTotalNum! - Math.max(...value.map(r => r.index))}条记录
+                    </Button>
                 )}
             </Box>
-
-            {/* 添加按钮 */}
-            <Button variant="outline" size="sm" onClick={addRecord} alignSelf="flex-start">
-                添加记录
-            </Button>
         </Box>
     )
 })
