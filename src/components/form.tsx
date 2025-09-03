@@ -1,11 +1,10 @@
 "use client"
 import React, { memo, useRef, useCallback, KeyboardEvent, useMemo, useState, useEffect } from "react"
 import {
-    InputProps as ChakraInputProps, NumberInputRootProps as ChakraNumberInputRootProps, SystemStyleObject,
-    Input as ChakraInput, NumberInput as ChakraNumberInput, InputGroup,
-    RatingGroup, Text, Select as ChakraSelect, Portal, Popover,
-    createListCollection, Link, Box, Group, Button,
-    IconButton
+    InputProps as ChakraInputProps, NumberInputRootProps as ChakraNumberInputRootProps, TextareaProps as ChakraTextareaProps, SystemStyleObject,
+    Input as ChakraInput, NumberInput as ChakraNumberInput, InputGroup, Textarea as ChakraTextarea,
+    RatingGroup, Text, Select as ChakraSelect, Portal, Popover, 
+    createListCollection, Link, Box, Group, Button, IconButton, 
 } from "@chakra-ui/react"
 import { RiCalendar2Fill } from "react-icons/ri"
 import { ValueChangeDetails as NumberInputValueChangeDetails } from "@zag-js/number-input"
@@ -44,6 +43,36 @@ export const Input = memo(function CompositionInput({ onValueChange, onEnter, on
     return <ChakraInput {...props} onChange={onChange} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onKeyDown={handleKeyDown}/>
 })
 
+export interface TextareaProps extends ChakraTextareaProps {
+    onValueChange?: (value: string) => void
+    onEnter?: (value: string) => void
+}
+
+export const Textarea = memo(function CompositionInput({ onValueChange, onEnter, onKeyDown, ...props }: TextareaProps) {
+    const composingRef = useRef(false)
+
+    const handleCompositionStart = useCallback(() => {
+        composingRef.current = true
+    }, [])
+
+    const handleCompositionEnd = useCallback(() => {
+        composingRef.current = false
+    }, [])
+
+    const onChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+            onValueChange?.(e.target.value)
+    }, [onValueChange])
+
+    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Enter" && !composingRef.current && onEnter) {
+            onEnter(e.currentTarget.value)
+        }
+        onKeyDown?.(e)
+    }, [onEnter, onKeyDown])
+
+    return <ChakraTextarea {...props} onChange={onChange} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onKeyDown={handleKeyDown}/>
+})
+
 export interface NumberInputProps extends Omit<ChakraNumberInputRootProps, "value" | "onValueChange"> {
     value?: number | null
     placeholder?: string
@@ -73,16 +102,16 @@ export const NumberInput = memo(function NumberInput({ value, onValueChange, onE
 })
 
 export interface StarlightProps {
-    value?: number
+    value?: number | null
     onValueChange?: (value: number) => void
     disabled?: boolean
 }
 
-export const Starlight = memo(function Starlight({ value, onValueChange, disabled }: StarlightProps) {
+export const Starlight = memo(function Starlight({ value, onValueChange, disabled, ...attrs }: StarlightProps & SystemStyleObject) {
     const change = (details: RatingValueChangeDetails) => onValueChange?.(details.value * 2)
 
     return (
-        <RatingGroup.Root allowHalf count={5} value={value ? value / 2 : undefined} colorPalette="orange" disabled={disabled} onValueChange={change}>
+        <RatingGroup.Root allowHalf count={5} value={value ? value / 2 : undefined} colorPalette="orange" disabled={disabled} onValueChange={change} {...attrs}>
             <Text width="20px" color="orange.solid" fontWeight="700" textAlign="center" mr="1">{value ?? "?"}</Text>
             <RatingGroup.HiddenInput/>
             <RatingGroup.Control/>

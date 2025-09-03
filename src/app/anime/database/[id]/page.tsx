@@ -12,6 +12,7 @@ import { AnimeDetailSchema } from "@/schemas/anime"
 import { VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import emptyCover from "@/assets/empty.jpg"
+import { retrieveComment } from "@/services/comment"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -154,13 +155,33 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                         </Stat.Root>
                     </Flex>
                 </Box>
-                <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
-                    <Starlight value={10} disabled/>
-                    <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>这是一份评论的标题</Text>
-                    <Text mt="1" color="fg.muted" fontSize="sm">这是一部份评论的内容……</Text>
-                </Box>
+                <CommentBox project={data}/>
             </Flex>
             <RelationDisplay relations={relationsTopology}/>
         </>
+    )
+}
+
+async function CommentBox({ project }: {project: AnimeDetailSchema}) {
+    const data = await retrieveComment(project.id)
+    if(!data) {
+        return (
+            <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
+                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
+                    <Text color="fg.muted" fontSize="sm">未进行任何评价</Text>
+                    <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild><NextLink href={`/anime/comment/${project.id}/edit`}>编写评价</NextLink></Button>
+                </Box>
+            </Box>
+        )
+    }
+
+    return (
+        <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" asChild>
+            <NextLink href={`/anime/comment/${project.id}`}>
+                <Starlight value={data.score ?? 0} disabled/>
+                <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>{data.title}</Text>
+                <Text mt="1" color="fg.muted" fontSize="sm">{data.article}</Text>
+            </NextLink>
+        </Box>
     )
 }
