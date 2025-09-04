@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/anime"
 import { retrieveComment } from "@/services/comment"
 import { CommentDisplay } from "@/components/app/comment-display"
+import { ProjectType } from "@/constants/project"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -29,5 +30,5 @@ export default async function AnimationCommentDetail({ params }: {params: Promis
         notFound()  
     }
 
-    return <CommentDisplay project={project} comment={data}/>
+    return <CommentDisplay type={ProjectType.ANIME} project={project} comment={data}/>
 }

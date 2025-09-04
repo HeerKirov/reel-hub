@@ -2,17 +2,16 @@ import NextLink from "next/link"
 import { notFound } from "next/navigation"
 import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, Button } from "@chakra-ui/react"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
-import { RiChatQuoteFill, RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
+import { RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { RelationDisplay } from "@/components/display"
-import { Starlight } from "@/components/form"
-import { retrieveProjectAnime } from "@/services/anime"
+import { CommentBox } from "@/components/app/comment-display"
 import { AnimeDetailSchema } from "@/schemas/anime"
-import { VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
+import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
+import { retrieveProjectAnime } from "@/services/anime"
 import emptyCover from "@/assets/empty.jpg"
-import { retrieveComment } from "@/services/comment"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -155,33 +154,9 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                         </Stat.Root>
                     </Flex>
                 </Box>
-                <CommentBox project={data}/>
+                <CommentBox type={ProjectType.ANIME} project={data}/>
             </Flex>
             <RelationDisplay relations={relationsTopology}/>
         </>
-    )
-}
-
-async function CommentBox({ project }: {project: AnimeDetailSchema}) {
-    const data = await retrieveComment(project.id)
-    if(!data) {
-        return (
-            <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
-                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
-                    <Text color="fg.muted" fontSize="sm">未进行任何评价</Text>
-                    <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild><NextLink href={`/anime/comment/${project.id}/edit`}>编写评价</NextLink></Button>
-                </Box>
-            </Box>
-        )
-    }
-
-    return (
-        <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" asChild>
-            <NextLink href={`/anime/comment/${project.id}`}>
-                <Starlight value={data.score ?? 0} disabled/>
-                <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>{data.title}</Text>
-                <Text mt="1" color="fg.muted" fontSize="sm">{data.article}</Text>
-            </NextLink>
-        </Box>
     )
 }

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/anime"
 import { retrieveComment } from "@/services/comment"
 import { CommentEditor } from "@/components/app/comment-editor"
+import { ProjectType } from "@/constants/project"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -26,5 +27,5 @@ export default async function AnimationCommentEdit({ params }: {params: Promise<
 
     const data = await retrieveComment(project.id)
 
-    return <CommentEditor project={project} comment={data}/>
+    return <CommentEditor type={ProjectType.ANIME} project={project} comment={data}/>
 }
