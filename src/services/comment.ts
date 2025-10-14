@@ -1,9 +1,9 @@
 "use server"
-import { CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchema, commentUpsertSchema, parseCommentSchema } from "@/schemas/comment"
+import { CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchema, commentUpsertSchema, parseCommentSchema, CommentWithProjectSchema, parseCommentWithProjectSchema } from "@/schemas/comment"
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 
-export async function listComments(filter: CommentListFilter): Promise<CommentSchema[]> {
+export async function listComments(filter: CommentListFilter): Promise<CommentWithProjectSchema[]> {
     const validate = commentListFilter.safeParse(filter)
     if(!validate.success) throw new Error(validate.error.message)
 
@@ -24,10 +24,19 @@ export async function listComments(filter: CommentListFilter): Promise<CommentSc
             updateTime: "desc"
         },
         skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-        take: validate.data.size ?? 15
+        take: validate.data.size ?? 15,
+        include: {
+            project: {
+                select: {
+                    id: true,
+                    title: true,
+                    resources: true
+                }
+            }
+        }
     })
 
-    return r.map(parseCommentSchema)
+    return r.map(parseCommentWithProjectSchema)
 }
 
 export async function countComments(filter: CommentListFilter): Promise<number> {

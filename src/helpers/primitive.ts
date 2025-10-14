@@ -115,6 +115,21 @@ export const dates = {
             }
             return d
         }
+    },
+    toDailyText(date: Date, now?: Date): string {
+        const current = now ?? new Date()
+        const today = new Date(current.getFullYear(), current.getMonth(), current.getDate())
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
 
+        const timeStr = `${numbers.zero(date.getHours(), 2)}:${numbers.zero(date.getMinutes(), 2)}`
+
+        if (date >= today) {
+            return timeStr
+        } else if (date >= yesterday) {
+            return `昨天 ${timeStr}`
+        } else {
+            return `${date.getFullYear()}-${numbers.zero(date.getMonth() + 1, 2)}-${numbers.zero(date.getDate(), 2)} ${timeStr}`
+        }
     }
 }

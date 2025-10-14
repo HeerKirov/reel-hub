@@ -31,11 +31,33 @@ export const commentSchema = commentUpsertSchema.extend({
     updateTime: z.date()
 })
 
+export const commentWithProjectSchema = commentSchema.extend({
+    project: z.object({
+        id: z.string(),
+        title: z.string(),
+        resources: z.record(z.string(), z.string())
+    })
+})
+
+
 export const parseCommentSchema = (data: Comment): CommentSchema => {
     return commentSchema.parse(data)
+}
+
+export const parseCommentWithProjectSchema = (data: Comment & { project: { id: string, title: string, resources: any } }): CommentWithProjectSchema => {
+    const base = commentSchema.parse(data)
+    return {
+        ...base,
+        project: {
+            id: data.project.id,
+            title: data.project.title,
+            resources: (data.project.resources || {}) as Record<string, string>
+        }
+    }
 }
 
 export type CommentModel = z.infer<typeof commentModel>
 export type CommentListFilter = z.infer<typeof commentListFilter>
 export type CommentUpsertSchema = z.infer<typeof commentUpsertSchema>
 export type CommentSchema = z.infer<typeof commentSchema>
+export type CommentWithProjectSchema = z.infer<typeof commentWithProjectSchema>
