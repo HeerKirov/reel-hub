@@ -11,7 +11,7 @@ export const SCORE_DESCRIPTIONS: Record<ProjectType, {header: string, content: s
         /*7*/ {header: '优秀', content: '优秀的动画作品，很推荐观看'},
         /*8*/ {header: '佳作', content: '非常棒的动画，制作和内容都很出色'},
         /*9*/ {header: '殿堂', content: '殿堂级的精彩作品，几乎挑不出缺点'},
-        /*10*/{header: '神作', content: '无可挑剔的神作，值得永远铭记'}
+        /*10*/{header: '神作', content: '足以称之为神作的动画杰作'}
     ],
     [ProjectType.GAME]: [
         /*1*/ {header: '差评', content: '糟糕的游戏体验，完全不推荐'},

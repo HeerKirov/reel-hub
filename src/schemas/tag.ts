@@ -15,7 +15,9 @@ export const tagModel = z.object({
 
 export const tagListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
-    search: z.string().optional()
+    search: z.string().optional(),
+    page: z.number().optional(),
+    size: z.number().optional()
 })
 
 export const tagCreateFormSchema = z.object({

@@ -7,6 +7,7 @@ import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSche
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
 import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
+import { getPublishTimeRange } from "@/helpers/data"
 
 export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
     const validate = animeListFilter.safeParse(filter)
@@ -19,7 +20,26 @@ export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeLi
                 {title: {contains: validate.data.search}},
                 {subtitles: {contains: validate.data.search}},
                 {keywords: {contains: validate.data.search}}
-            ] : undefined
+            ] : undefined,
+            ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
+            ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
+            boardcastType: validate.data.boardcastType,
+            originalType: validate.data.originalType,
+            publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
+            tags: validate.data.tag ? {
+                some: {
+                    tag: {
+                        name: validate.data.tag
+                    }
+                }
+            } : undefined,
+            staffs: validate.data.staff ? {
+                some: {
+                    staff: {
+                        name: validate.data.staff
+                    }
+                }
+            } : undefined
         },
         orderBy: {
             publishTime: "desc"
@@ -42,7 +62,26 @@ export async function countProjectAnime(filter: AnimeListFilter): Promise<number
                 {title: {contains: validate.data.search}},
                 {subtitles: {contains: validate.data.search}},
                 {keywords: {contains: validate.data.search}}
-            ] : undefined
+            ] : undefined,
+            ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
+            ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
+            boardcastType: validate.data.boardcastType,
+            originalType: validate.data.originalType,
+            publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
+            tags: validate.data.tag ? {
+                some: {
+                    tag: {
+                        name: validate.data.tag
+                    }
+                }
+            } : undefined,
+            staffs: validate.data.staff ? {
+                some: {
+                    staff: {
+                        name: validate.data.staff
+                    }
+                }
+            } : undefined
         }
     })
 }

@@ -1,9 +1,11 @@
 "use client"
 import React, { memo, useEffect, useState } from "react"
+import NextLink from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Box, Button, Flex } from "@chakra-ui/react"
-import { RiArrowRightLine } from "react-icons/ri"
+import { Box, Button, Flex, Icon, Link } from "@chakra-ui/react"
+import { RiArrowRightLine, RiCloseFill } from "react-icons/ri"
 import { NumberInput } from "@/components/form"
+import { staticHref } from "@/helpers/ui"
 
 export const PageRouterPopover = memo(function PageRouterPopover(props: {page: number, total: number, pageParamName: string}) {
     const router = useRouter()
@@ -26,7 +28,15 @@ export const PageRouterPopover = memo(function PageRouterPopover(props: {page: n
     )
 })
 
-export const SidePanelFilterStackCollapseItem = memo(function FilterStackCollapseItem({ title, header, children, asChild }: {title?: React.ReactNode, header?: React.ReactNode, children?: React.ReactNode, asChild?: boolean}) {
+interface SidePanelFilterStackCollapseItemProps {
+    title: React.ReactNode
+    header: React.ReactNode
+    children: React.ReactNode
+    clear?: {paramName: string, searchParams?: Record<string, string>}
+    asChild?: boolean
+}
+
+export const SidePanelFilterStackCollapseItem = memo(function FilterStackCollapseItem({ title, header, children, asChild, clear }: SidePanelFilterStackCollapseItemProps) {
     const [open, setOpen] = useState(false)
 
     return (
@@ -34,6 +44,11 @@ export const SidePanelFilterStackCollapseItem = memo(function FilterStackCollaps
             <Flex alignItems="baseline">
                 <Box flex="1 0 75px" fontSize="sm" textAlign="right" pr="3">{title}</Box>
                 <Box flex="1 1 calc(100% - 75px)" asChild={asChild} onClick={() => setOpen(o => !o)}>{header}</Box>
+                {clear && clear.searchParams?.[clear.paramName] && <Link transform="translateY(2px)" color="blue.fg" asChild>
+                    <NextLink href={staticHref({searchParams: clear.searchParams, key: clear.paramName, value: undefined, removePagination: true})}>
+                        <Icon><RiCloseFill/></Icon>
+                    </NextLink>
+                </Link>}
             </Flex>
             {open && <Box borderTopWidth="1px" borderBottomWidth="1px" px="2" py="1" mt="2">
                 {children}

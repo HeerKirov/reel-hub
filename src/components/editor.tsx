@@ -620,7 +620,6 @@ export type EpisodePublishedRecordEditorProps = {
     onValueChange?: (value: EpisodePublishRecord[]) => void
 } & SystemStyleObject
 
-// 基础的记录编辑器组件，只负责展示和基本编辑功能
 export const EpisodePublishedRecordEditor = memo(function EpisodePublishedRecordEditor({ 
     value = [], 
     onValueChange,

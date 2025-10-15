@@ -14,7 +14,9 @@ export async function listTags(filter: TagListFilter): Promise<TagSchema[]> {
         },
         orderBy: {
             createTime: "desc"
-        }
+        },
+        skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+        take: validate.data.size ?? 15
     })
 
     return r.map(parseTagSchema)

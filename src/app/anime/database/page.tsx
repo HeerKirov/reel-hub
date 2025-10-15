@@ -1,33 +1,33 @@
 import NextLink from "next/link"
 import type { Metadata } from "next"
-import { Box, Text, Image, SimpleGrid, SystemStyleObject, Button, Icon, Link, IconButton } from "@chakra-ui/react"
+import { Box, Text, Image, SimpleGrid, SystemStyleObject, Button, Icon, IconButton } from "@chakra-ui/react"
 import { RiAddLine, RiPriceTag3Line, RiUser2Line } from "react-icons/ri"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
-import { LinkGroupFilter, PublishTimeFilterHeader } from "@/components/server/filters"
-import { PublishTimePicker, SearchBox } from "@/components/filters"
+import { LinkGroupFilter, PublishTimeFilterHeader, StaffFilterHeader, TagFilterHeader } from "@/components/server/filters"
+import { PublishTimePicker, SearchBox, TagPicker, StaffPicker } from "@/components/filters"
 import { listProjectAnime, countProjectAnime } from "@/services/anime"
-import { AnimeListSchema } from "@/schemas/anime"
-import { hasPermission } from "@/helpers/next"
-import emptyCover from "@/assets/empty.jpg"
+import { AnimeListFilter, AnimeListSchema } from "@/schemas/anime"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS } from "@/constants/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
+import { hasPermission } from "@/helpers/next"
+import emptyCover from "@/assets/empty.jpg"
 
-type SearchParams = { page?: string, search?: string, ratingSex?: string, ratingViolence?: string, publishTime?: string }
+type SearchParams = Omit<AnimeListFilter, "page" | "size"> & { page?: string }
 
 export const metadata: Metadata = {
     title: "数据库"
 }
 
 export default async function AnimationDatabase(props: {searchParams: Promise<SearchParams>}) {
-    const searchParams = await props.searchParams
-    const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
+    const { page: pageStr, ...searchParams } = await props.searchParams
+    const page = pageStr !== undefined ? parseInt(pageStr) : 1
 
     const isAdmin = await hasPermission("admin")
 
     const [list, total] = await Promise.all([
-        listProjectAnime({page, size: 15, search: searchParams.search}),
-        countProjectAnime({search: searchParams.search})
+        listProjectAnime({...searchParams, page, size: 15}),
+        countProjectAnime({...searchParams})
     ])
 
     return (
@@ -81,19 +81,28 @@ function FilterPanel({ searchParams }: {searchParams: SearchParams}) {
                     <LinkGroupFilter items={originalTypeItems} searchParams={searchParams} searchParamName="originalType"/>
                 </SidePanel.FilterStackItem>
                 <SidePanel.FilterStackItem title={<><Icon><PiGenderIntersexBold/></Icon> 分级</>} asChild>
-                    <LinkGroupFilter items={ratingSexItems} searchParams={searchParams} searchParamName="ratingSex"/>
+                    <LinkGroupFilter items={ratingSexItems} searchParams={searchParams} searchParamName="ratingS"/>
                 </SidePanel.FilterStackItem>
                 <SidePanel.FilterStackItem title={<><Icon><PiKnifeFill/></Icon> 分级</>} asChild>
-                    <LinkGroupFilter items={ratingViolenceItems} searchParams={searchParams} searchParamName="ratingViolence"/>
+                    <LinkGroupFilter items={ratingViolenceItems} searchParams={searchParams} searchParamName="ratingV"/>
                 </SidePanel.FilterStackItem>
-                <SidePanel.FilterStackCollapseItem title="放送时间" header={<PublishTimeFilterHeader publishTime={searchParams.publishTime} mode="season"/>}>
+                <SidePanel.FilterStackCollapseItem 
+                    title="放送时间"
+                    header={<PublishTimeFilterHeader publishTime={searchParams.publishTime} mode="season"/>}
+                    clear={{paramName: "publishTime", searchParams}}>
                     <PublishTimePicker value={searchParams.publishTime} searchParamName="publishTime" mode="season"/>
                 </SidePanel.FilterStackCollapseItem>
-                <SidePanel.FilterStackCollapseItem title={<><Icon><RiPriceTag3Line/></Icon> 标签</>} asChild header={<Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>}>
-                    泥嚎
+                <SidePanel.FilterStackCollapseItem 
+                    title={<><Icon><RiPriceTag3Line/></Icon> 标签</>} 
+                    header={<TagFilterHeader searchParams={searchParams}/>} 
+                    clear={{paramName: "tag", searchParams}}>
+                    <TagPicker/>
                 </SidePanel.FilterStackCollapseItem>
-                <SidePanel.FilterStackCollapseItem title={<><Icon><RiUser2Line/></Icon> STAFF</>} asChild header={<Link variant="underline" fontWeight="700" color="fg.subtle">未选择</Link>}>
-                    泥嚎
+                <SidePanel.FilterStackCollapseItem 
+                    title={<><Icon><RiUser2Line/></Icon> STAFF</>} 
+                    header={<StaffFilterHeader searchParams={searchParams}/>} 
+                    clear={{paramName: "staff", searchParams}}>
+                    <StaffPicker/>
                 </SidePanel.FilterStackCollapseItem>
             </SidePanel.FilterStack>
         </>

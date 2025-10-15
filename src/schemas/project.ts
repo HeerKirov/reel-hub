@@ -10,7 +10,12 @@ export const projectListFilter = z.object({
     search: z.string().optional(),
     page: z.number().optional(),
     size: z.number().optional(),
-    type: z.enum(PROJECT_TYPE).optional()
+    type: z.enum(PROJECT_TYPE).optional(),
+    ratingS: z.enum(RATING_SEX).optional(),
+    ratingV: z.enum(RATING_VIOLENCE).optional(),
+    publishTime: z.string().regex(/^\d{4}(-\d{2})?$/).optional(),
+    tag: z.string().optional(),
+    staff: z.string().optional(),
 })
 
 export const projectRelationModel = z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(z.string()))

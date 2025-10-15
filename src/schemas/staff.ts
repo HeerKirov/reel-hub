@@ -13,7 +13,9 @@ export const staffModel = z.object({
 })
 
 export const staffListFilter = z.object({
-    search: z.string().optional()
+    search: z.string().optional(),
+    page: z.number().optional(),
+    size: z.number().optional()
 })
 
 export type StaffListFilter = z.infer<typeof staffListFilter>

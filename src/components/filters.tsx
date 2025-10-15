@@ -5,6 +5,9 @@ import { RiArrowLeftBoxFill, RiCloseFill, RiSearch2Line } from "react-icons/ri"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffectState } from "@/helpers/hooks"
 import { Input } from "@/components/form"
+import { TagEditor } from "@/components/editor"
+import { listTags } from "@/services/tag"
+import { listStaffs } from "@/services/staff"
 
 export interface SearchBoxProps extends SystemStyleObject {
     value?: string | null
@@ -53,27 +56,35 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
     const searchParams = useSearchParams()
 
     const years = useMemo(() => Array(new Date().getFullYear() - 1995 + 1).fill(0).map((_, i) => i + 1995).toReversed(), [])
-    const months = useMemo(() => props.mode === "season" ? [1, 4, 6, 10] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [props.mode])
+    const months = useMemo(() => props.mode === "season" ? [1, 4, 7, 10] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [props.mode])
 
-    const [step, setStep] = useState<"y" | "m">("y")
+    const [step, setStep] = useState<"y" | "m">(props.value ? "m" : "y")
     const [currentYear, setYear] = useState<number | undefined>(() => {
         const value = props.value?.split("-", 2)
         return value ? parseInt(value[0]) : undefined
     })
     const [currentMonth, setMonth] = useState<"any" | number | undefined>(() => {
         const value = props.value?.split("-", 2)
-        return value ? (value[1] ? parseInt(value[1]) : "any") : undefined
+        if(value && parseInt(value[0]) !== currentYear) return undefined
+        else return value ? (value[1] ? parseInt(value[1]) : "any") : undefined
     })
 
     const selectYear = (selectedYear: number) => {
         setStep("m")
         setYear(selectedYear)
+        const value = props.value?.split("-", 2)
+        const valueYear = value ? parseInt(value[0]) : undefined
+        if(selectedYear !== valueYear) {
+            setMonth(undefined)
+        }else{
+            setMonth(value ? (value[1] ? parseInt(value[1]) : "any") : undefined)
+        }
     }
 
     const selectMonth = (selectedMonth: "any" | number | undefined) => {
         setMonth(selectedMonth)
         if(selectedMonth !== currentMonth) {
-            const newValue = typeof selectedMonth === "number" ? `${currentYear}-${selectedMonth}` : `${currentYear}`
+            const newValue = typeof selectedMonth === "number" ? `${currentYear}-${selectedMonth.toString().padStart(2, "0")}` : `${currentYear}`
             props.onValueChange?.(newValue)
             if(props.searchParamName) {
                 const p = new URLSearchParams(searchParams.toString())
@@ -109,4 +120,46 @@ export const PublishTimePicker = memo(function PublishTimePicker(props: PublishT
             ))}
         </SimpleGrid>
     )
+})
+
+export const TagPicker = memo(function TagPicker() {
+    const searchParamName = "tag"
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    const onValueChange = (value: string[]) => {
+        if(searchParamName) {
+            const p = new URLSearchParams(searchParams.toString())
+            p.set(searchParamName, value.join(","))
+            p.delete("page")
+            router.push(`?${p.toString()}`)
+        }
+    }
+
+    const search = async (text: string) => {
+        return (await listTags({search: text, type: "ANIME"})).map(i => i.name)
+    }
+
+    return <TagEditor value={[]} onValueChange={onValueChange} search={search}/>
+})
+
+export const StaffPicker = memo(function StaffPicker() {
+    const searchParamName = "staff"
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    const onValueChange = (value: string[]) => {
+        if(searchParamName) {
+            const p = new URLSearchParams(searchParams.toString())
+            p.set(searchParamName, value.join(","))
+            p.delete("page")
+            router.push(`?${p.toString()}`)
+        }
+    }
+
+    const search = async (text: string) => {
+        return (await listStaffs({search: text})).map(i => i.name)
+    }
+
+    return <TagEditor value={[]} onValueChange={onValueChange} search={search}/>
 })
