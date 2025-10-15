@@ -21,7 +21,7 @@ export async function listComments(filter: CommentListFilter): Promise<CommentWi
             } : undefined
         },
         orderBy: {
-            updateTime: "desc"
+            [filter.orderBy ?? "updateTime"]: "desc"
         },
         skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
         take: validate.data.size ?? 15,

@@ -57,12 +57,12 @@ function Content({ comment, type }: {comment: CommentSchema, type: ProjectType})
             <Flex mt="2" direction="column" alignItems="end">
                 <Flex alignItems="center" gap="4">
                     {comment.score && <Text fontSize="xl">{SCORE_DESCRIPTIONS[type][comment.score - 1].header}</Text>}
-                    <Starlight value={comment.score ?? 0} disabled/>
+                    <Starlight value={comment.score} disabled/>
                 </Flex>
                 {comment.score && <Text mt="2" mr="1" color="fg.muted" fontSize="sm">{comment.score && SCORE_DESCRIPTIONS[type][comment.score - 1].content}</Text>}
             </Flex>
-            <Heading><Icon><RiChatQuoteFill/></Icon> {comment.title}</Heading>
-            <WrappedText mt="4" text={comment.article}/>
+            <Heading mb="2"><Icon><RiChatQuoteFill/></Icon> {comment.title}</Heading>
+            <WrappedText text={comment.article}/>
         </>
     )
 }
@@ -83,7 +83,7 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
     return (
         <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" asChild>
             <NextLink href={`/${type.toLowerCase()}/comment/${project.id}`}>
-                <Starlight value={data.score ?? 0} disabled/>
+                <Starlight value={data.score} disabled/>
                 <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>{data.title}</Text>
                 <Text mt="1" color="fg.muted" fontSize="sm">{data.article}</Text>
             </NextLink>

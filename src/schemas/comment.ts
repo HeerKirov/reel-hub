@@ -17,7 +17,8 @@ export const commentListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
     search: z.string().optional(),
     page: z.number().optional(),
-    size: z.number().optional()
+    size: z.number().optional(),
+    orderBy: z.enum(["updateTime", "score"]).optional()
 })
 
 export const commentUpsertSchema = z.object({
