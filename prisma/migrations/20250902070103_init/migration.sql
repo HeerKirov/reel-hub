@@ -120,7 +120,7 @@ CREATE TABLE "Record" (
     "specialAttention" BOOLEAN NOT NULL,
     "status" "RecordStatus" NOT NULL,
     "progressCount" INTEGER NOT NULL,
-    "startTime" TIMESTAMP(3) NOT NULL,
+    "startTime" TIMESTAMP(3),
     "endTime" TIMESTAMP(3),
     "lastActivityTime" TIMESTAMP(3),
     "lastActivityEvent" JSONB NOT NULL DEFAULT '{}',

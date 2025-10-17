@@ -1,6 +1,6 @@
 import NextLink from "next/link"
 import { Box, Button, Flex, Heading, Icon, Image, Table, Text } from "@chakra-ui/react"
-import { RiBookmark3Line, RiChatQuoteFill, RiDatabase2Fill, RiEdit2Line } from "react-icons/ri"
+import { RiBookmark3Line, RiChatQuoteFill, RiDatabase2Fill, RiEdit2Line, RiPenNibLine } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { Starlight } from "@/components/form"
@@ -74,7 +74,7 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
                     <Text color="fg.muted" fontSize="sm">未进行任何评价</Text>
-                    <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild><NextLink href={`/${type.toLowerCase()}/comment/${project.id}/edit`}>编写评价</NextLink></Button>
+                    <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild><NextLink href={`/${type.toLowerCase()}/comment/${project.id}/edit`}><RiPenNibLine/> 编写评价</NextLink></Button>
                 </Box>
             </Box>
         )

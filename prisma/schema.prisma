@@ -188,7 +188,7 @@ model Record {
   specialAttention Boolean
   status      RecordStatus
   progressCount Int
-  startTime   DateTime
+  startTime   DateTime?
   endTime     DateTime?
   lastActivityTime DateTime?
   lastActivityEvent Json @default("{}")

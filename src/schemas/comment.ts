@@ -42,7 +42,7 @@ export const parseCommentSchema = (data: Comment): CommentSchema => {
     return commentSchema.parse(data)
 }
 
-export const parseCommentWithProjectSchema = (data: Comment & { project: Pick<Project, "id" | "title" | "resources"> }): CommentWithProjectSchema => {
+export const parseCommentWithProjectSchema = (data: Comment & { project: Pick<Project, "id" | "type" | "title" | "resources"> }): CommentWithProjectSchema => {
     const base = commentSchema.parse(data)
     return {
         ...base,

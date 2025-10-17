@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
+import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag, ProjectType } from "@/prisma/generated"
 import { RATING_SEX, RATING_VIOLENCE, REGION, PROJECT_TYPE, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, Region, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { ONLINE_TYPE } from "@/constants/game"
 import { ORIGINAL_TYPE, BOARDCAST_TYPE } from "@/constants/anime"
@@ -113,6 +113,7 @@ export const projectCommonForm = z.object({
 
 export const projectSimpleSchema = z.object({
     id: z.string(),
+    type: z.enum(PROJECT_TYPE),
     title: z.string(),
     resources: z.record(z.string(), z.string())
 })
@@ -138,10 +139,11 @@ export const projectDetailSchema = projectListSchema.extend({
     staffs: z.array(projectStaffItemSchema)
 })
 
-export function parseProjectSimpleSchema(i: {id: string, title: string, resources: any}): ProjectSimpleSchema {
+export function parseProjectSimpleSchema(i: {id: string, type: ProjectType, title: string, resources: any}): ProjectSimpleSchema {
     return {
         id: i.id,
         title: i.title,
+        type: i.type,
         resources: Object.fromEntries(
             Object.entries(i.resources)
                 .filter(([_, value]) => value)

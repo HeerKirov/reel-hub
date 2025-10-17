@@ -12,6 +12,7 @@ import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_RE
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import { retrieveProjectAnime } from "@/services/anime"
 import emptyCover from "@/assets/empty.jpg"
+import { RecordBox } from "@/components/app/record-display"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -138,22 +139,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                 </Table.Body>
             </Table.Root>
             <Flex mt="4" width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", md: "nowrap"}}>
-                <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
-                    <Text color="blue.fg"><Icon><RiPushpin2Fill/></Icon> 已订阅</Text>
-                    <Flex mt="2">
-                        <Stat.Root>
-                            <Stat.Label>进度</Stat.Label>
-                            <HStack>
-                                <Stat.ValueText>5 / 12</Stat.ValueText>
-                                <Badge>{Math.floor(5 / 12 * 100)}%</Badge>
-                            </HStack>
-                        </Stat.Root>
-                        <Stat.Root>
-                            <Stat.Label>上一集在</Stat.Label>
-                            <Stat.HelpText>2025年5月10日</Stat.HelpText>
-                        </Stat.Root>
-                    </Flex>
-                </Box>
+                <RecordBox type={ProjectType.ANIME} project={data}/>
                 <CommentBox type={ProjectType.ANIME} project={data}/>
             </Flex>
             <RelationDisplay relations={relationsTopology}/>

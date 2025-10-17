@@ -26,13 +26,7 @@ export async function listComments(filter: CommentListFilter): Promise<CommentWi
         skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
         take: validate.data.size ?? 15,
         include: {
-            project: {
-                select: {
-                    id: true,
-                    title: true,
-                    resources: true
-                }
-            }
+            project: {select: {id: true, type: true, title: true, resources: true}}
         }
     })
 
