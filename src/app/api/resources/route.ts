@@ -22,13 +22,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const ext = f.type.split("/")[1]
         const objectName = `${projectId}-${nanoid()}.${ext}`
         await uploadFile(`avatar/${objectName}`, Buffer.from(await f.arrayBuffer()), {})
-        
+
+        if(resources["avatar"] !== null && await existFile(resources["avatar"])) {
+            await deleteFile(resources["avatar"])
+        }
+
         resources["avatar"] = `avatar/${objectName}`
         changed = true
-
-        if(resources["avatar"] !== null && await existFile(`avatar/${resources["avatar"]}`)) {
-            await deleteFile(`avatar/${resources["avatar"]}`)
-        }
     }
 
     if(form.has("cover")) {
@@ -38,14 +38,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         const ext = f.type.split("/")[1]
         const objectName = `${projectId}-${nanoid()}.${ext}`
-        await uploadFile(`cover/${objectName}`, Buffer.from(await f.arrayBuffer()), {})
+        await uploadFile(`cover/${objectName}`, Buffer.from(await f.arrayBuffer()), {}) 
+
+        if(resources["cover"] !== null && await existFile(resources["cover"])) {
+            await deleteFile(resources["cover"])
+        }
 
         resources["cover"] = `cover/${objectName}`
         changed = true
-
-        if(resources["cover"] !== null && await existFile(`cover/${resources["cover"]}`)) {
-            await deleteFile(`cover/${resources["cover"]}`)
-        }
     }
 
     if(changed) {
