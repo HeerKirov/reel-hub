@@ -30,6 +30,10 @@ export type ProjectModel = z.infer<typeof projectModel>
 
 export type ProjectListFilter = z.infer<typeof projectListFilter>
 
+export type ProjectSimpleSchema = z.infer<typeof projectSimpleSchema>
+
+export type ProjectListSchema = z.infer<typeof projectListSchema>
+
 export type ProjectDetailSchema = z.infer<typeof projectDetailSchema>
 
 export const episodePublishRecordSchema = z.object({
@@ -107,9 +111,13 @@ export const projectCommonForm = z.object({
     })).optional()
 })
 
-export const projectListSchema = z.object({
+export const projectSimpleSchema = z.object({
     id: z.string(),
     title: z.string(),
+    resources: z.record(z.string(), z.string())
+})
+
+export const projectListSchema = projectSimpleSchema.extend({
     subtitles: z.array(z.string()),
     description: z.string(),
     keywords: z.array(z.string()),
@@ -117,7 +125,6 @@ export const projectListSchema = z.object({
     ratingS: z.enum(RATING_SEX).nullable(),
     ratingV: z.enum(RATING_VIOLENCE).nullable(),
     region: z.enum(REGION).nullable(),
-    resources: z.record(z.string(), z.string()),
     createTime: z.date(),
     updateTime: z.date(),
     creator: z.string(),
@@ -131,11 +138,22 @@ export const projectDetailSchema = projectListSchema.extend({
     staffs: z.array(projectStaffItemSchema)
 })
 
-export function parseProjectListSchema(data: Project): z.infer<typeof projectListSchema> {
-    const i = data as ProjectModel
+export function parseProjectSimpleSchema(i: {id: string, title: string, resources: any}): ProjectSimpleSchema {
     return {
         id: i.id,
         title: i.title,
+        resources: Object.fromEntries(
+            Object.entries(i.resources)
+                .filter(([_, value]) => value)
+                .map(([key, value]) => [key, `/api/resources/${value}`])
+        )
+    }
+}
+
+export function parseProjectListSchema(data: Project): ProjectListSchema {
+    const i = data as ProjectModel
+    return {
+        ...parseProjectSimpleSchema(data),
         subtitles: i.subtitles.split("|").filter(s => s !== ""),
         description: i.description,
         keywords: i.keywords.split("|").filter(s => s !== ""),
@@ -143,7 +161,6 @@ export function parseProjectListSchema(data: Project): z.infer<typeof projectLis
         ratingS: i.ratingS !== null ? RATING_SEX_ITEMS[i.ratingS].value : null,
         ratingV: i.ratingV !== null ? RATING_VIOLENCE_ITEMS[i.ratingV].value : null,
         region: i.region as Region | null,
-        resources: i.resources,
         createTime: i.createTime,
         updateTime: i.updateTime,
         creator: i.creator,
@@ -155,7 +172,7 @@ export function parseProjectDetailSchema(
     data: Project & {staffs: (ProjectStaffRelation & {staff: Staff})[], tags: (ProjectTagRelation & {tag: Tag})[]}, 
     relations: ProjectRelationType, 
     relationsTopology: ProjectRelationType,
-): z.infer<typeof projectDetailSchema> {
+): ProjectDetailSchema {
     const tags = data.tags.map(t => ({id: t.tag.id, name: t.tag.name, description: t.tag.description}))
     const staffs = Object.entries(arrays.groupByTo(data.staffs, s => s.staffType, s => parseStaffSchema(s.staff))).map(([type, members]) => ({type, members}))
 

@@ -4,9 +4,9 @@ import { ProjectRelationModel, ProjectRelationType, projectRelationItemSchema, P
 import { arrays, records } from "@/helpers/primitive"
 import { ProjectType, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { Staff, Tag } from "@/prisma/generated"
+import { RelationGraph } from "@/helpers/relation-graph"
 import { createTag } from "./tag"
 import { createStaff } from "./staff"
-import { RelationGraph } from "@/helpers/relation-graph"
 
 
 export async function listProject(filter: ProjectListFilter): Promise<{id: string, type: ProjectType, title: string, subtitles: string[]}[]> {

@@ -1,6 +1,7 @@
 import { z } from "zod"
-import { Comment } from "@/prisma/generated"
+import { Comment, Project } from "@/prisma/generated"
 import { PROJECT_TYPE } from "@/constants/project"
+import { parseProjectSimpleSchema, projectSimpleSchema } from "./project"
 
 export const commentModel = z.object({
     id: z.number(),
@@ -33,11 +34,7 @@ export const commentSchema = commentUpsertSchema.extend({
 })
 
 export const commentWithProjectSchema = commentSchema.extend({
-    project: z.object({
-        id: z.string(),
-        title: z.string(),
-        resources: z.record(z.string(), z.string())
-    })
+    project: projectSimpleSchema
 })
 
 
@@ -45,15 +42,11 @@ export const parseCommentSchema = (data: Comment): CommentSchema => {
     return commentSchema.parse(data)
 }
 
-export const parseCommentWithProjectSchema = (data: Comment & { project: { id: string, title: string, resources: any } }): CommentWithProjectSchema => {
+export const parseCommentWithProjectSchema = (data: Comment & { project: Pick<Project, "id" | "title" | "resources"> }): CommentWithProjectSchema => {
     const base = commentSchema.parse(data)
     return {
         ...base,
-        project: {
-            id: data.project.id,
-            title: data.project.title,
-            resources: (data.project.resources || {}) as Record<string, string>
-        }
+        project: parseProjectSimpleSchema(data.project)
     }
 }
 

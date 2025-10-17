@@ -11,9 +11,12 @@
     "migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.15.0",
+    "@chakra-ui/react": "^3.27.1",
     "@emotion/react": "^11.14.0",
     "@prisma/client": "^6.8.2",
+    "@types/ali-oss": "^6.16.11",
+    "ali-oss": "^6.23.0",
+    "cropperjs": "^1.6.2",
     "jsonwebtoken": "^9.0.2",
     "next": "15.2.4",
     "next-auth": "^4.24.11",
@@ -25,7 +28,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@chakra-ui/cli": "^3.15.0",
+    "@chakra-ui/cli": "^3.27.1",
     "@eslint/eslintrc": "^3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20",
@@ -33,6 +36,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
+    "proxy-agent": "^6.5.0",
     "typescript": "^5"
   }
 }

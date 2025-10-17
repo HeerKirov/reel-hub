@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
-import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
 import { getPublishTimeRange } from "@/helpers/data"
+import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
 
 export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
     const validate = animeListFilter.safeParse(filter)
@@ -204,7 +204,6 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
             ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
             ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
             region: validate.data.region,
-            resources: {},
             updateTime: now,
             updator: userId,
             originalType: validate.data.originalType,

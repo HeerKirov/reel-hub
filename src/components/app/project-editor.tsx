@@ -1,9 +1,10 @@
 "use client"
 import { memo, useCallback, useState } from "react"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
 import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
-import { Box, Field, Flex, Icon, Textarea } from "@chakra-ui/react"
+import { Field, Flex, Icon, Textarea } from "@chakra-ui/react"
 import { Select, Input, NumberInput, DateTimePicker } from "@/components/form"
 import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor, EpisodePublishedRecordEditor, EpisodePublishPlanEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
@@ -16,9 +17,11 @@ import { listTags } from "@/services/tag"
 import { listStaffs } from "@/services/staff"
 import { listProject } from "@/services/project"
 
+const CropperImage = dynamic(() => import("@/components/cropper").then(mod => mod.CropperFileUploader), { ssr: false })
+
 export type EditorProps = {
     data?: AnimeDetailSchema
-    onSubmit?: (data: AnimeForm) => void
+    onSubmit?: (data: AnimeForm, resources?: Record<string, Blob>) => void
     onDelete?: () => void
 }
 
@@ -42,7 +45,9 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
     const [episodePublishedRecords, setEpisodePublishedRecords] = useState<EpisodePublishRecord[]>(data?.episodePublishedRecords ?? [])
     const [relations, setRelations] = useState<Partial<ProjectRelationType>>(data?.relations ?? {})
-    
+    const [resourceCover, setResourceCover] = useState<string | Blob | null>(data?.resources?.["cover"] ?? null)
+    const [resourceAvatar, setResourceAvatar] = useState<string | Blob | null>(data?.resources?.["avatar"] ?? null)
+
     const breadcrumb = {
         url: "/anime/database",
         detail: data?.title ?? "新建",
@@ -53,6 +58,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
         {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfoTab 
             title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
             ratingS={ratingS} ratingV={ratingV} region={region} publishTime={publishTime}
+            resourceCover={resourceCover} resourceAvatar={resourceAvatar} setResourceCover={setResourceCover} setResourceAvatar={setResourceAvatar}
             setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
             setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setPublishTime={setPublishTime}
         />},
@@ -68,6 +74,9 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
 
     const onSave = () => {
         const finalRelations: Partial<ProjectRelationModel> = Object.fromEntries(Object.entries(relations).map(([key, value]) => [key, value.map(r => r.id)]))
+        const resources: Record<string, Blob> = {}
+        if(resourceAvatar instanceof Blob) resources["avatar"] = resourceAvatar
+        if(resourceCover instanceof Blob) resources["cover"] = resourceCover
         onSubmit?.({
             title, subtitles, description, keywords, 
             ratingS, ratingV, region, tags, staffs, publishTime,
@@ -75,7 +84,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             episodeDuration, episodeTotalNum, episodePublishedNum, 
             episodePublishPlan, episodePublishedRecords,
             relations: finalRelations
-        })
+        }, Object.keys(resources).length > 0 ? resources : undefined)
     }
 
     const onCancel = () => {
@@ -97,7 +106,10 @@ interface BasicInfoTabProps {
     ratingV: RatingViolence | null
     region: Region | null
     publishTime: string | null
-    
+    resourceCover: string | Blob | null
+    resourceAvatar: string | Blob | null
+    setResourceCover: (resourceCover: string | Blob | null) => void
+    setResourceAvatar: (resourceAvatar: string | Blob | null) => void
     setTitle: (title: string) => void
     setSubtitles: (subtitles: string[]) => void
     setDescription: (description: string) => void
@@ -117,7 +129,7 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
 
     return (
         <Flex direction="column" gap="1">
-            <Flex gap="4">
+            <Flex direction={{base: "column", sm: "row"}} gap="4">
                 <Flex direction="column" flex="1" gap="1">
                     <Field.Root required>
                         <Field.Label>
@@ -138,7 +150,13 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
                         <Textarea autoresize placeholder="用不长的文字简要介绍此动画" value={props.description} onChange={e => props.setDescription(e.target.value)} />
                     </Field.Root>
                 </Flex>
-                <Box flex="1" border="1px solid" borderColor="border" rounded="md"/>
+                <Field.Root flex="1">
+                    <Field.Label>头像与封面</Field.Label>
+                    <Flex direction="row" gap="4">
+                        <CropperImage flex="1" src={props.resourceAvatar ?? props.resourceCover} onCropChange={props.setResourceAvatar} aspectRatio={1}/>
+                        <CropperImage flex="1" src={props.resourceCover ?? props.resourceAvatar} onCropChange={props.setResourceCover} aspectRatio={5/7}/>
+                    </Flex>
+                </Field.Root>
             </Flex>
             <Flex flexWrap="wrap" gap="4">
                 <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>

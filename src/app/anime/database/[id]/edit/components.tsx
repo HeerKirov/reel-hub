@@ -8,8 +8,15 @@ import { Editor } from "@/components/app/project-editor"
 export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}) {
     const router = useRouter()
 
-    const onSubmit = async (form: AnimeForm) => {
+    const onSubmit = async (form: AnimeForm, resources?: Record<string, Blob>) => {
         await updateProjectAnime(data.id, form)
+        if(resources !== undefined) {
+            const form = new FormData()
+            form.append("projectId", data.id)
+            if(resources["cover"]) form.append("cover", resources["cover"])
+            if(resources["avatar"]) form.append("avatar", resources["avatar"])
+            await fetch("/api/resources", {method: "POST", body: form})
+        }
         router.push(`/anime/database/${data.id}`)
     }
 
