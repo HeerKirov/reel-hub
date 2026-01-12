@@ -83,7 +83,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             originalType, boardcastType,
             episodeDuration, episodeTotalNum, episodePublishedNum, 
             episodePublishPlan, episodePublishedRecords,
-            relations: finalRelations
+            relations: finalRelations as any
         }, Object.keys(resources).length > 0 ? resources : undefined)
     }
 

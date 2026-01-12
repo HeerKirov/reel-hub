@@ -46,7 +46,7 @@ export function parseAnimeListSchema(data: Project): AnimeListSchema {
 }
 
 export function parseAnimeDetailSchema(data: Project & {staffs: (ProjectStaffRelation & {staff: Staff})[], tags: (ProjectTagRelation & {tag: Tag})[]}, relations: ProjectRelationType, relationsTopology: ProjectRelationType): AnimeDetailSchema {
-    const i = data as ProjectModel
+    const i = data as any as ProjectModel
     return {
         ...parseProjectDetailSchema(data, relations, relationsTopology),
         originalType: i.originalType,
