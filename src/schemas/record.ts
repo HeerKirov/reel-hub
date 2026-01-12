@@ -31,7 +31,7 @@ export const recordProgressModel = z.object({
     episodeWatchedNum: z.number().nullable(),
     episodeWatchedRecords: z.array(z.object({
         watchedTime: z.string()
-    })).nullable(),
+    }).nullable()).nullable(),
     followType: z.enum(FOLLOW_TYPE).nullable(),
     platform: z.array(z.string())
 })
@@ -72,6 +72,26 @@ export const recordPreviewSchema = z.object({
     latestWatchedTime: z.date().nullable(),
 })
 
+export const recordDetailSchema = z.object({
+    specialAttention: z.boolean(),
+    status: z.enum(RECORD_STATUS),
+    progressCount: z.number(),
+    startTime: z.date().nullable(),
+    endTime: z.date().nullable(),
+    progresses: z.array(z.object({
+        ordinal: z.number(),
+        status: z.enum(RECORD_STATUS),
+        startTime: z.date().nullable(),
+        endTime: z.date().nullable(),
+        episodeWatchedNum: z.number().nullable(),
+        episodeWatchedRecords: z.array(z.object({
+            watchedTime: z.string()
+        }).nullable()).nullable(),
+        followType: z.enum(FOLLOW_TYPE).nullable(),
+        platform: z.array(z.string())
+    }))
+})
+
 export function parsePreviewSchema(data: Record, progress: RecordProgress | null): RecordPreviewSchema {
     const episodeWatchedRecord = (progress?.episodeWatchedRecords as ({watchedTime: string} | null)[])?.findLast(r => r !== null)
     return {
@@ -85,7 +105,28 @@ export function parsePreviewSchema(data: Record, progress: RecordProgress | null
     }
 }
 
+export function parseDetailSchema(data: Record, progresses: RecordProgress[]): RecordDetailSchema {
+    return {
+        specialAttention: data.specialAttention,
+        status: data.status,
+        progressCount: data.progressCount,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        progresses: progresses.map(progress => ({
+            ordinal: progress.ordinal,
+            status: progress.status,
+            startTime: progress.startTime,
+            endTime: progress.endTime,
+            episodeWatchedNum: progress.episodeWatchedNum,
+            episodeWatchedRecords: progress.episodeWatchedRecords as ({watchedTime: string} | null)[],
+            followType: progress.followType,
+            platform: progress.platform
+        }))
+    }
+}
+
 export type RecordModel = z.infer<typeof recordModel>
 export type RecordProgressModel = z.infer<typeof recordProgressModel>
 export type RecordCreateForm = z.infer<typeof recordCreateForm>
 export type RecordPreviewSchema = z.infer<typeof recordPreviewSchema>
+export type RecordDetailSchema = z.infer<typeof recordDetailSchema>

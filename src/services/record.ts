@@ -1,7 +1,7 @@
 "use server"
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
-import { parsePreviewSchema, recordCreateForm, RecordCreateForm, RecordPreviewSchema } from "@/schemas/record"
+import { parsePreviewSchema, recordCreateForm, RecordCreateForm, RecordPreviewSchema, RecordDetailSchema, parseDetailSchema } from "@/schemas/record"
 import { BoardcastType, FollowType, ProjectType, RecordStatus } from "@/prisma/generated"
 
 export async function retrieveRecordPreview(projectId: string): Promise<RecordPreviewSchema | null> {
@@ -16,6 +16,25 @@ export async function retrieveRecordPreview(projectId: string): Promise<RecordPr
     const recordProgress = record.progressCount > 0 ? await prisma.recordProgress.findFirst({where: {recordId: record.id, ordinal: record.progressCount}}) : null
 
     return parsePreviewSchema(record, recordProgress)
+}
+
+export async function retrieveRecord(projectId: string): Promise<RecordDetailSchema | null> {
+    const userId = await getUserId()
+
+    const project = await prisma.project.findUnique({where: {id: projectId}})
+    if(!project) throw new Error("Project not found")
+
+    const record = await prisma.record.findFirst({
+        where: {ownerId: userId, projectId},
+        include: {
+            progresses: {
+                orderBy: {ordinal: 'asc'}
+            }
+        }
+    })
+    if(!record) return null
+
+    return parseDetailSchema(record, record.progresses)
 }
 
 export async function createRecord(projectId: string, form: RecordCreateForm) {
