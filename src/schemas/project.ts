@@ -18,9 +18,17 @@ export const projectListFilter = z.object({
     staff: z.string().optional(),
 })
 
-export const projectRelationModel = z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(z.string()))
+export const projectRelationModel = z.record(z.string(), z.array(z.string())).refine(
+    (val) => {
+        const keys = Object.keys(val)
+        return keys.every(key => RELATION_TYPE_VALUES.includes(key as RelationType))
+    },
+    {
+        message: "Relation keys must be valid RelationType values"
+    }
+)
 
-export type ProjectRelationModel = Record<RelationType, string[]>
+export type ProjectRelationModel = Partial<Record<RelationType, string[]>>
 
 export type ProjectRelationType = Record<RelationType, z.infer<typeof projectRelationItemSchema>[]>
 

@@ -8,6 +8,7 @@ import { ProjectDetailSchema } from "@/schemas/project"
 import { RecordDetailSchema } from "@/schemas/record"
 import { ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
+import { deleteProgress } from "@/services/record"
 
 export function RecordEditor({ type, project, record }: {type: ProjectType, project: ProjectDetailSchema, record: RecordDetailSchema}) {
     const router = useRouter()
@@ -33,9 +34,24 @@ export function RecordEditor({ type, project, record }: {type: ProjectType, proj
 }
 
 function ProgressTab({ type, record, project }: {type: ProjectType, record: RecordDetailSchema, project: ProjectDetailSchema}) {
+    const router = useRouter()
+    const [deletingOrdinal, setDeletingOrdinal] = useState<number | null>(null)
+
     const handleDeleteProgress = async (ordinal: number) => {
-        // TODO: 实现删除进度API
-        console.log("Delete progress:", ordinal)
+        if(!confirm(`确定要删除第${ordinal}周目的进度吗？此操作无法恢复。`)) {
+            return
+        }
+
+        setDeletingOrdinal(ordinal)
+        try {
+            await deleteProgress(project.id, ordinal)
+            router.refresh()
+        } catch(error) {
+            console.error("Failed to delete progress:", error)
+            alert(error instanceof Error ? error.message : "删除进度失败")
+        } finally {
+            setDeletingOrdinal(null)
+        }
     }
 
     return (
@@ -73,7 +89,7 @@ function ProgressTab({ type, record, project }: {type: ProjectType, record: Reco
                                 </>
                             )}
                             <Table.Cell>
-                                <IconButton variant="ghost" size="sm" colorPalette="red" onClick={() => handleDeleteProgress(progress.ordinal)}>
+                                <IconButton variant="ghost" size="sm" colorPalette="red" onClick={() => handleDeleteProgress(progress.ordinal)} loading={deletingOrdinal === progress.ordinal}>
                                     <RiDeleteBinLine/>
                                 </IconButton>
                             </Table.Cell>

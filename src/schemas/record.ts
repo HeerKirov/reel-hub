@@ -51,6 +51,16 @@ export const recordCreateForm = z.object({
     })).optional()
 })
 
+export const recordUpdateForm = z.object({
+    specialAttention: z.boolean().optional()
+})
+
+export const recordProgressUpsertForm = z.object({
+    startTime: z.date().nullable().optional(),
+    endTime: z.date().nullable().optional(),
+    episodeWatchedNum: z.number().min(0).nullable().optional(),
+})
+
 export const recordSubscriptionSchema = z.object({
     project: projectSimpleSchema.extend({
         episodeTotalNum: z.number().nullable(),
@@ -128,5 +138,7 @@ export function parseDetailSchema(data: Record, progresses: RecordProgress[]): R
 export type RecordModel = z.infer<typeof recordModel>
 export type RecordProgressModel = z.infer<typeof recordProgressModel>
 export type RecordCreateForm = z.infer<typeof recordCreateForm>
+export type RecordUpdateForm = z.infer<typeof recordUpdateForm>
+export type RecordProgressUpsertForm = z.infer<typeof recordProgressUpsertForm>
 export type RecordPreviewSchema = z.infer<typeof recordPreviewSchema>
 export type RecordDetailSchema = z.infer<typeof recordDetailSchema>

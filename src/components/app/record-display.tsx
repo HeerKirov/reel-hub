@@ -197,7 +197,7 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                 )}
 
                 {/* 交互按钮区域 */}
-                <RecordDisplayActions record={record} type={type} project={anime} />
+                <RecordDisplayActions record={record} type={type} project={anime} projectId={project.id} />
                 
                 {/* 历史进度列表 */}
                 {record.progresses.length > 1 && (

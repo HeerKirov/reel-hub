@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation"
 import { Box, Button, CloseButton, Dialog, Flex, Icon, Text, Table, IconButton } from "@chakra-ui/react"
 import { RiBookmark3Line, RiEyeCloseFill, RiPenNibFill, RiAddLine, RiDeleteBinLine, RiArrowRightLine } from "react-icons/ri"
 import { ProjectType } from "@/constants/project"
-import { createRecord } from "@/services/record"
+import { createRecord, nextEpisode, createProgress } from "@/services/record"
 import { DateTimePicker, NumberInput } from "@/components/form"
-import { RecordCreateForm } from "@/schemas/record"
+import { RecordCreateForm, RecordProgressUpsertForm } from "@/schemas/record"
 import { RecordDetailSchema } from "@/schemas/record"
 import { AnimeDetailSchema } from "@/schemas/anime"
 
@@ -166,31 +166,54 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
 export function RecordDisplayActions({ 
     record, 
     type, 
-    project 
+    project,
+    projectId
 }: {
     record: RecordDetailSchema
     type: ProjectType
     project: AnimeDetailSchema | null
+    projectId: string
 }) {
+    const router = useRouter()
+    const [loading, setLoading] = useState(false)
     const latestProgress = record.progresses.length > 0 ? record.progresses[record.progresses.length - 1] : null
     const isLatestComplete = latestProgress?.endTime !== null
 
     const handleNext = async () => {
-        // TODO: 实现NEXT步进API
-        console.log("Next step")
+        if(type !== ProjectType.ANIME) return
+        
+        setLoading(true)
+        try {
+            await nextEpisode(projectId)
+            router.refresh()
+        } catch(error) {
+            console.error("Failed to next episode:", error)
+            alert(error instanceof Error ? error.message : "步进失败")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleNewProgress = async () => {
-        // TODO: 实现新建进度API
-        console.log("New progress")
+        setLoading(true)
+        try {
+            const form: RecordProgressUpsertForm = {}
+            await createProgress(projectId, form)
+            router.refresh()
+        } catch(error) {
+            console.error("Failed to create progress:", error)
+            alert(error instanceof Error ? error.message : "创建进度失败")
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
         <>
             {/* NEXT按钮和已看完信息 */}
-            {latestProgress && !isLatestComplete && (
+            {latestProgress && !isLatestComplete && type === ProjectType.ANIME && (
                 <Flex alignItems="center" gap="4" flexWrap="wrap">
-                    <Button variant="outline" size="sm" onClick={handleNext}>
+                    <Button variant="outline" size="sm" onClick={handleNext} loading={loading}>
                         <Icon><RiArrowRightLine/></Icon>
                         NEXT {project && latestProgress.episodeWatchedNum !== null ? `第${latestProgress.episodeWatchedNum + 1}话` : "下一步"}
                     </Button>
@@ -199,7 +222,7 @@ export function RecordDisplayActions({
 
             {/* 操作按钮 */}
             <Flex gap="2">
-                <Button variant="outline" size="sm" onClick={handleNewProgress}>
+                <Button variant="outline" size="sm" onClick={handleNewProgress} loading={loading}>
                     <Icon><RiAddLine/></Icon>
                     新建进度
                 </Button>
