@@ -90,92 +90,153 @@ export async function createRecord(projectId: string, form: RecordCreateForm) {
             throw new Error("Progress list is required for supplement mode")
         }
 
-        for(let i = 0; i < validate.data.progress.length - 1; i++) {
-            const progress = validate.data.progress[i]
-            if(!progress.endTime) {
-                throw new Error("Only the last progress can be incomplete")
-            }
+        const isAnime = project.type === ProjectType.ANIME
+        const episodeTotalNum = isAnime ? project.episodeTotalNum : null
+        const episodePublishedNum = isAnime ? project.episodePublishedNum ?? 0 : null
+
+        if(isAnime && episodeTotalNum === null) {
+            throw new Error("Anime project must have episodeTotalNum")
         }
 
-        let lastEndTime: Date | null = null
-        for(let i = 0; i < validate.data.progress.length; i++) {
-            const progress = validate.data.progress[i]
-            const isLast = i === validate.data.progress.length - 1
+        const episodeFullyPublished = isAnime && episodePublishedNum !== null && episodeTotalNum !== null && episodePublishedNum >= episodeTotalNum
+        const inputProgresses = validate.data.progress
+        const normalizedProgresses = inputProgresses.map(p => {
+            const startTimeFilled = p.startTime ?? p.endTime ?? null
+            return {
+                startTime: p.startTime,
+                endTime: p.endTime,
+                startTimeFilled,
+                episodeWatchedNum: p.episodeWatchedNum
+            }
+        })
+
+        // Chronological & completeness validation
+        for(let i = 0; i < normalizedProgresses.length; i++) {
+            const p = normalizedProgresses[i]
+            const isLast = i === normalizedProgresses.length - 1
 
             if(!isLast) {
-                // Not last progress must have endTime
-                if(!progress.endTime) {
-                    throw new Error("Only the last progress can be incomplete") 
+                if(p.endTime === null) {
+                    throw new Error("Only the last progress can be incomplete")
                 }
-
-                // If has startTime, must be before endTime
-                if(progress.startTime && progress.startTime > progress.endTime) {
-                    throw new Error("Start time must be before end time")
+                if(p.startTimeFilled === null) {
+                    throw new Error("Completed progress must have startTime")
                 }
-
-                // Progress must be in order
-                if(lastEndTime && progress.startTime && progress.startTime < lastEndTime) {
-                    throw new Error("Progress must be in chronological order")
+                if(p.startTimeFilled > p.endTime) {
+                    throw new Error("Start time must be before or equal to end time")
                 }
-                lastEndTime = progress.endTime
             } else {
-                if(!progress.endTime) {
-                    // Incomplete progress must have startTime
-                    if(!progress.startTime) {
-                        throw new Error("Incomplete progress must have start time")
-                    }
-                    // For anime, must have episodeWatchedNum
-                    if(project.type === ProjectType.ANIME && progress.episodeWatchedNum === undefined) {
-                        throw new Error("Anime progress must specify watched episodes")
+                if(p.endTime !== null) {
+                    // ANIME restriction: incomplete release => cannot have COMPLETED progress
+                    if(isAnime && !episodeFullyPublished) {
+                        throw new Error("Anime episodes are not fully published, cannot create completed progress")
                     }
                 } else {
-                    // Complete progress follows same rules
-                    if(progress.startTime && progress.startTime > progress.endTime) {
-                        throw new Error("Start time must be before end time")
-                    }
-                    if(lastEndTime && progress.startTime && progress.startTime < lastEndTime) {
-                        throw new Error("Progress must be in chronological order") 
+                    if(p.startTimeFilled === null) {
+                        throw new Error("Incomplete progress must have start time")
                     }
                 }
             }
         }
-        const episodeWatchedNum = project.type === ProjectType.ANIME ? (
-            validate.data.progress[validate.data.progress.length - 1].endTime !== null ? project.episodePublishedNum! : (
-                validate.data.progress[validate.data.progress.length - 1].episodeWatchedNum === null || validate.data.progress[validate.data.progress.length - 1].episodeWatchedNum! > project.episodePublishedNum! ? project.episodePublishedNum! : validate.data.progress[validate.data.progress.length - 1].episodeWatchedNum!
+
+        if(isAnime && !episodeFullyPublished) {
+            const hasAnyCompleted = normalizedProgresses.some(p => p.endTime !== null)
+            if(hasAnyCompleted) {
+                throw new Error("Anime episodes are not fully published, cannot create completed progress")
+            }
+        }
+
+        let prevEndTime: Date | null = null
+        for(let i = 0; i < normalizedProgresses.length; i++) {
+            const p = normalizedProgresses[i]
+            if(i === 0) {
+                prevEndTime = p.endTime
+                continue
+            }
+
+            const start = p.startTimeFilled
+            if(prevEndTime && start && start.getTime() <= prevEndTime.getTime()) {
+                throw new Error("Progress must be in chronological order")
+            }
+
+            prevEndTime = p.endTime
+        }
+
+        const lastIndex = normalizedProgresses.length - 1
+        const lastProgress = normalizedProgresses[lastIndex]
+
+        const lastEpisodeWatchedNum = isAnime ? (
+            lastProgress.endTime !== null ? (
+                // 已完成进度：直接取总集数
+                episodeTotalNum!
+            ) : (
+                // 未完成进度：取已看集数（缺省为0），并保证不超过已发布集数
+                (() => {
+                    const raw = lastProgress.episodeWatchedNum ?? 0
+                    const published = episodePublishedNum!
+                    const total = episodeTotalNum!
+                    const clamped = Math.max(0, Math.min(raw ?? 0, published, total))
+                    return clamped
+                })()
             )
         ) : null
+
+        const lastEndTime = isAnime && lastProgress.endTime === null
+            && episodeFullyPublished
+            && lastEpisodeWatchedNum !== null
+            && lastEpisodeWatchedNum >= episodeTotalNum!
+            ? now
+            : lastProgress.endTime
+
+        const recordStatus = getRecordStatus(normalizedProgresses.length, lastEndTime, episodeTotalNum, lastEpisodeWatchedNum)
 
         const record = await prisma.record.create({
             data: {
                 ownerId: userId,
                 projectId,
-                specialAttention: project.type === ProjectType.ANIME && episodeWatchedNum! < project.episodeTotalNum!,
-                status: getRecordStatus(validate.data.progress.length, validate.data.progress[validate.data.progress.length - 1].endTime, project.episodeTotalNum, episodeWatchedNum),
-                progressCount: validate.data.progress.length,
-                startTime: validate.data.progress[validate.data.progress.length - 1].startTime,
-                endTime: validate.data.progress[validate.data.progress.length - 1].endTime,
+                specialAttention: isAnime && recordStatus === RecordStatus.WATCHING,
+                status: recordStatus,
+                progressCount: normalizedProgresses.length,
+                startTime: normalizedProgresses[0].startTimeFilled,
+                endTime: lastEndTime,
                 lastActivityTime: now,
                 lastActivityEvent: {},
                 createTime: now,
                 updateTime: now
             }
         })
-        for(let i = 0; i < validate.data.progress.length; i++) {
-            const progressForm = validate.data.progress[i]
+
+        for(let i = 0; i < normalizedProgresses.length; i++) {
+            const p = normalizedProgresses[i]
+            const ordinal = i + 1
+            const isLast = i === lastIndex
+
+            const finalEndTime = isAnime && isLast
+                && p.endTime === null
+                && episodeFullyPublished
+                && lastEpisodeWatchedNum !== null
+                && lastEpisodeWatchedNum >= episodeTotalNum!
+                ? now
+                : p.endTime
+
+            const episodeWatchedNum = isAnime ? (
+                finalEndTime !== null ? episodeTotalNum! : (isLast ? lastEpisodeWatchedNum! : episodeTotalNum!)
+            ) : null
+
             await prisma.recordProgress.create({
                 data: {
                     projectId, recordId: record.id,
-                    ordinal: i + 1,
-                    status: getRecordStatus(i + 1, progressForm.endTime, project.episodeTotalNum, episodeWatchedNum),
-                    startTime: progressForm.startTime,
-                    endTime: project.type === ProjectType.ANIME && i === validate.data.progress.length - 1 && episodeWatchedNum! >= project.episodeTotalNum! ? now : progressForm.endTime,
+                    ordinal,
+                    status: getRecordStatus(ordinal, finalEndTime, episodeTotalNum, episodeWatchedNum),
+                    startTime: p.startTimeFilled,
+                    endTime: finalEndTime,
                     createTime: now,
                     updateTime: now,
-                    //anime
-                    episodeWatchedNum: project.type === ProjectType.ANIME ? (i === validate.data.progress.length - 1 ? episodeWatchedNum : project.episodeTotalNum!) : null,
-                    episodeWatchedRecords: [],
-                    followType: project.type === ProjectType.ANIME ? getFollowType(i + 1, project.boardcastType, project.publishTime, progressForm.startTime) : null,
-                    //game
+                    // anime
+                    episodeWatchedNum: isAnime ? episodeWatchedNum : null,
+                    episodeWatchedRecords: isAnime ? Array(episodeWatchedNum ?? 0).fill(null) : [],
+                    followType: isAnime ? getFollowType(ordinal, project.boardcastType, project.publishTime, p.startTimeFilled) : null,
+                    // game
                     platform: []
                 }
             })
@@ -250,17 +311,41 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
     const isSupplement = validate.data.startTime !== undefined || validate.data.endTime !== undefined || validate.data.episodeWatchedNum !== undefined
 
     if(isSupplement) {
+        const isAnime = project.type === ProjectType.ANIME
+        const episodeTotalNum = isAnime ? project.episodeTotalNum : null
+        const episodePublishedNum = isAnime ? project.episodePublishedNum ?? 0 : null
+
+        if(isAnime && episodeTotalNum === null) {
+            throw new Error("Anime project must have episodeTotalNum")
+        }
+
+        const episodeFullyPublished = isAnime && episodePublishedNum !== null && episodeTotalNum !== null && episodePublishedNum >= episodeTotalNum
+
+        const startTimeRaw = validate.data.startTime === undefined ? null : validate.data.startTime
+        const endTimeRaw = validate.data.endTime === undefined ? null : validate.data.endTime
+
+        // If only watchedNum is provided (without start/end time), we don't know which interval it belongs to.
+        if(isAnime && validate.data.startTime === undefined && validate.data.endTime === undefined && validate.data.episodeWatchedNum !== undefined) {
+            throw new Error("startTime is required when providing episodeWatchedNum")
+        }
+
+        if(startTimeRaw !== null && endTimeRaw !== null && startTimeRaw > endTimeRaw) {
+            throw new Error("Start time must be before or equal to end time")
+        }
+
+        // Follow the document rules:
+        // - If only endTime is provided => startTime == endTime
+        // - If endTime is omitted => incomplete interval (endTime == null)
+        let newStartTime = startTimeRaw
+        const newEndTime = endTimeRaw
+        if(newEndTime !== null && newStartTime === null) {
+            newStartTime = newEndTime
+        }
+        if(newEndTime === null && newStartTime === null) {
+            throw new Error("startTime is required for incomplete progress")
+        }
+
         // Supplement模式：根据时间次序插队
-        if(validate.data.endTime === undefined && validate.data.episodeWatchedNum === undefined) {
-            throw new Error("End time or episode watched num is required for supplement mode")
-        }
-        if(validate.data.startTime !== undefined && validate.data.startTime !== null && validate.data.endTime !== undefined && validate.data.endTime !== null && validate.data.startTime > validate.data.endTime) {
-            throw new Error("Start time must be before end time")
-        }
-
-        const newStartTime = validate.data.startTime ?? null
-        const newEndTime = validate.data.endTime ?? null
-
         // 找到应该插入的位置（基于finishTime比较）
         let insertOrdinal: number
         if(existingProgresses.length === 0) {
@@ -277,20 +362,18 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                     break
                 }
                 // 遇到了具有相等时间点的记录，按照规则排在此记录的后面一位
-                if(newEndTime.getTime() === progress.endTime.getTime()) {
+                if(progress.endTime !== null && newEndTime.getTime() === progress.endTime.getTime()) {
                     foundOrdinal = progress.ordinal + 1
                     break
                 }
             }
             insertOrdinal = foundOrdinal ?? (existingProgresses.length + 1)
         } else {
-            // 存在已有进度，未指定新进度的完成时间
+            // 存在已有进度，未指定新进度的完成时间（incomplete）
             const lastProgress = existingProgresses[existingProgresses.length - 1]
             if(lastProgress.endTime !== null) {
-                // 不存在已完成的进度，直接追加到末尾
                 insertOrdinal = existingProgresses.length + 1
             } else {
-                // 存在已有进度，未指定新进度的完成时间，且存在未完成的进度时，提示无法插入
                 throw new Error("Cannot create new progress because latest progress is not completed")
             }
         }
@@ -305,12 +388,30 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
             }
         }
 
-        // 计算episodeWatchedNum
-        const episodeWatchedNum = project.type === ProjectType.ANIME ? (
-            newEndTime !== null || (validate.data.episodeWatchedNum !== undefined && validate.data.episodeWatchedNum !== null && validate.data.episodeWatchedNum! > project.episodePublishedNum!) 
-                ? project.episodePublishedNum! 
-                : (validate.data.episodeWatchedNum ?? null)
-        ) : null
+        // Compute episodeWatchedNum & endTime (ANIME rules)
+        let episodeWatchedNum: number | null = null
+        let finalEndTime: Date | null = newEndTime
+
+        if(isAnime) {
+            // Completed progress => require full release
+            if(newEndTime !== null) {
+                if(!episodeFullyPublished) {
+                    throw new Error("Anime episodes are not fully published, cannot create completed progress")
+                }
+                episodeWatchedNum = episodeTotalNum!
+            } else {
+                // Incomplete progress => watchedNum (default 0), clamped by published episodes
+                const raw = validate.data.episodeWatchedNum ?? 0
+                const published = episodePublishedNum!
+                const total = episodeTotalNum!
+                episodeWatchedNum = Math.max(0, Math.min(raw, published, total))
+
+                // Auto-complete if it reaches total AND animation is fully published
+                if(episodeFullyPublished && episodeWatchedNum >= total) {
+                    finalEndTime = now
+                }
+            }
+        }
 
         // 创建新进度
         await prisma.recordProgress.create({
@@ -318,14 +419,14 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                 projectId,
                 recordId: record.id,
                 ordinal: insertOrdinal,
-                status: getRecordStatus(insertOrdinal, newEndTime, project.episodeTotalNum, episodeWatchedNum),
+                status: getRecordStatus(insertOrdinal, finalEndTime, project.episodeTotalNum, episodeWatchedNum),
                 startTime: newStartTime,
-                endTime: newEndTime,
+                endTime: finalEndTime,
                 createTime: now,
                 updateTime: now,
-                episodeWatchedNum: project.type === ProjectType.ANIME ? episodeWatchedNum : null,
-                episodeWatchedRecords: [],
-                followType: project.type === ProjectType.ANIME ? getFollowType(insertOrdinal, project.boardcastType, project.publishTime, newStartTime) : null,
+                episodeWatchedNum: isAnime ? episodeWatchedNum : null,
+                episodeWatchedRecords: isAnime ? Array(episodeWatchedNum ?? 0).fill(null) : [],
+                followType: isAnime ? getFollowType(insertOrdinal, project.boardcastType, project.publishTime, newStartTime) : null,
                 platform: []
             }
         })
@@ -426,34 +527,70 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         // 如果没有提供episodeWatchedNum，不需要更新
         return
     }
+    
+    const isAnime = project.type === ProjectType.ANIME
+    const episodeTotalNum = isAnime ? project.episodeTotalNum : null
+    const episodePublishedNum = isAnime ? project.episodePublishedNum ?? 0 : null
 
-    const newEpisodeWatchedNum = project.type === ProjectType.ANIME ? (
-        validate.data.episodeWatchedNum! > project.episodePublishedNum! ? project.episodePublishedNum! : validate.data.episodeWatchedNum!
-    ) : null
+    if(isAnime && episodeTotalNum === null) {
+        throw new Error("Anime project must have episodeTotalNum")
+    }
+
+    const newEpisodeWatchedNum = isAnime ? (() => {
+        const raw = validate.data.episodeWatchedNum ?? 0
+        const published = episodePublishedNum!
+        const total = episodeTotalNum!
+        return Math.max(0, Math.min(raw, published, total))
+    })() : null
 
     if(newEpisodeWatchedNum === progress.episodeWatchedNum) {
         // 如果值没有变化，不需要更新
         return
     }
 
+    // Update episodeWatchedRecords:
+    // - Manual edits (this endpoint) only resize/crop/pad with `null`
+    // - Only `nextEpisode` records `watchedTime`
+    let newEpisodeWatchedRecords: ({ watchedTime: string } | null)[] = []
+    if(isAnime) {
+        const current = (progress.episodeWatchedRecords as ({ watchedTime: string } | null)[] | null) ?? []
+        const targetLen = newEpisodeWatchedNum ?? 0
+        if(current.length > targetLen) {
+            newEpisodeWatchedRecords = current.slice(0, targetLen)
+        } else if(current.length < targetLen) {
+            newEpisodeWatchedRecords = [...current, ...Array(targetLen - current.length).fill(null)]
+        } else {
+            newEpisodeWatchedRecords = current
+        }
+    }
+
+    const episodeFullyPublished = isAnime && episodePublishedNum !== null && episodeTotalNum !== null && episodePublishedNum >= episodeTotalNum
+    const shouldComplete = isAnime && episodeFullyPublished && (newEpisodeWatchedNum ?? 0) >= (episodeTotalNum ?? 0)
+    const finalEndTime = shouldComplete ? now : null
+    const finalStatus = getRecordStatus(ordinal, finalEndTime, episodeTotalNum, newEpisodeWatchedNum)
+
     // 更新进度
     await prisma.recordProgress.update({
         where: {id: progress.id},
         data: {
-            episodeWatchedNum: project.type === ProjectType.ANIME ? newEpisodeWatchedNum : progress.episodeWatchedNum,
-            endTime: project.type === ProjectType.ANIME && newEpisodeWatchedNum! >= project.episodeTotalNum! ? now : (progress.endTime && newEpisodeWatchedNum! < project.episodeTotalNum! ? null : progress.endTime),
-            status: getRecordStatus(ordinal, project.type === ProjectType.ANIME && newEpisodeWatchedNum! >= project.episodeTotalNum! ? now : progress.endTime, project.episodeTotalNum, newEpisodeWatchedNum),
+            ...(isAnime ? {
+                episodeWatchedNum: newEpisodeWatchedNum,
+                episodeWatchedRecords: newEpisodeWatchedRecords,
+                endTime: finalEndTime,
+                status: finalStatus
+            } : {}),
             updateTime: now
         }
     })
 
     // 更新record
+    const nextRecordStatus = getRecordStatus(record.progressCount, finalEndTime, episodeTotalNum, newEpisodeWatchedNum)
     await prisma.record.update({
         where: {id: record.id},
         data: {
-            status: getRecordStatus(record.progressCount, project.type === ProjectType.ANIME && newEpisodeWatchedNum! >= project.episodeTotalNum! ? now : progress.endTime, project.episodeTotalNum, newEpisodeWatchedNum),
-            endTime: project.type === ProjectType.ANIME && newEpisodeWatchedNum! >= project.episodeTotalNum! ? now : record.endTime,
-            specialAttention: project.type === ProjectType.ANIME && newEpisodeWatchedNum !== null && newEpisodeWatchedNum < project.episodeTotalNum!,
+            status: nextRecordStatus,
+            endTime: isAnime ? finalEndTime : record.endTime,
+            specialAttention: isAnime && newEpisodeWatchedNum !== null && newEpisodeWatchedNum < episodeTotalNum!,
             lastActivityTime: newEpisodeWatchedNum! > (progress.episodeWatchedNum ?? 0) ? now : record.lastActivityTime,
             updateTime: now
         }
@@ -478,10 +615,13 @@ export async function nextEpisode(projectId: string): Promise<number> {
         throw new Error("No next episode")
     }
 
+    const episodeTotalNum = project.episodeTotalNum ?? 0
+    const episodeFullyPublished = project.episodePublishedNum !== null && episodeTotalNum > 0 && project.episodePublishedNum >= episodeTotalNum
+
     if(record.progressCount === 0) {
         // 没有进度，那么创建一个
         const newEpisodeWatchedNum = 1
-        const isComplete = newEpisodeWatchedNum >= (project.episodeTotalNum ?? 0)
+        const isComplete = episodeFullyPublished && newEpisodeWatchedNum >= episodeTotalNum
 
         await prisma.recordProgress.create({
             data: {
@@ -527,11 +667,17 @@ export async function nextEpisode(projectId: string): Promise<number> {
         }
 
         const newEpisodeWatchedNum = currentEpisodeWatchedNum + 1
-        const isComplete = newEpisodeWatchedNum >= (project.episodeTotalNum ?? 0)
+        const isComplete = episodeFullyPublished && newEpisodeWatchedNum >= episodeTotalNum
 
         // 更新 episodeWatchedRecords
         const existingRecords = (progress.episodeWatchedRecords as ({watchedTime: string} | null)[]) ?? []
-        const newRecords = [...existingRecords, {watchedTime: now.toISOString()}]
+        // Keep array aligned with episodeWatchedNum; manual edits may leave holes.
+        const alignedRecords = existingRecords.length > currentEpisodeWatchedNum
+            ? existingRecords.slice(0, currentEpisodeWatchedNum)
+            : existingRecords.length < currentEpisodeWatchedNum
+                ? [...existingRecords, ...Array(currentEpisodeWatchedNum - existingRecords.length).fill(null)]
+                : existingRecords
+        const newRecords = [...alignedRecords, {watchedTime: now.toISOString()}]
 
         await prisma.recordProgress.update({
             where: {id: progress.id},
@@ -590,11 +736,31 @@ export async function deleteProgress(projectId: string, ordinal: number): Promis
         })
     }
 
-    // 更新record（只更新progressCount和updateTime，类似旧代码）
+    // 更新record缓存字段：status/startTime/endTime/progressCount
+    // 注意：specialAttention 按你的文档约束在 deleteProgress 中不做联动更新
+    const remainingProgresses = await prisma.recordProgress.findMany({
+        where: {recordId: record.id},
+        orderBy: {ordinal: 'asc'}
+    })
+
+    const progressCount = remainingProgresses.length
+    const firstProgress = remainingProgresses[0] ?? null
+    const lastProgress = remainingProgresses[remainingProgresses.length - 1] ?? null
+
+    const status = getRecordStatus(
+        progressCount,
+        lastProgress?.endTime ?? null,
+        project.episodeTotalNum,
+        lastProgress?.episodeWatchedNum ?? null
+    )
+
     await prisma.record.update({
         where: {id: record.id},
         data: {
-            progressCount: record.progressCount - 1,
+            progressCount,
+            status,
+            startTime: firstProgress?.startTime ?? null,
+            endTime: lastProgress?.endTime ?? null,
             updateTime: now
         }
     })
@@ -615,4 +781,143 @@ function getRecordStatus(progressCount: number, endTime: Date | null, episodeTot
     else if(episodeTotalNum !== null && (episodeWatchedNum ?? 0) >= episodeTotalNum!) return RecordStatus.COMPLETED
     else if(endTime !== null) return RecordStatus.COMPLETED
     else return RecordStatus.WATCHING
+}
+
+function alignEpisodeWatchedRecords(current: ({ watchedTime: string } | null)[], targetLen: number): ({ watchedTime: string } | null)[] {
+    if(targetLen <= 0) return []
+    if(current.length === targetLen) return current
+    if(current.length > targetLen) return current.slice(0, targetLen)
+    return [...current, ...Array(targetLen - current.length).fill(null)]
+}
+
+/**
+ * 当 ANIME 的 episodeTotalNum / episodePublishedNum 发生变化时，
+ * 需要同步所有 RecordProgress 的状态与 watchedNum，并重算 Record 的缓存字段。
+ *
+ * specialAttention 不参与此同步（只在“普通完成”行为里由业务侧取消）。
+ */
+export async function syncAnimeRecordProgressAfterEpisodeMetaChange(projectId: string, now: Date): Promise<void> {
+    const project = await prisma.project.findUnique({ where: { id: projectId } })
+    if(!project || project.type !== ProjectType.ANIME) return
+
+    const episodeTotalNum = project.episodeTotalNum ?? 0
+    const episodePublishedNum = project.episodePublishedNum ?? 0
+    const episodeFullyPublished = project.episodeTotalNum !== null && project.episodePublishedNum !== null && episodePublishedNum >= episodeTotalNum && episodeTotalNum > 0
+
+    // DROPPED 进度不参与 watchedNum 的强制调整（按文档：不需要更新已放弃进度的已看集数）
+    const progresses = await prisma.recordProgress.findMany({
+        where: {
+            projectId,
+            status: { not: RecordStatus.DROPPED }
+        },
+        select: {
+            id: true,
+            recordId: true,
+            status: true,
+            endTime: true,
+            episodeWatchedNum: true,
+            episodeWatchedRecords: true
+        }
+    })
+
+    const updatedRecordIds = new Set<number>()
+
+    for(const p of progresses) {
+        const currentWatchedNum = p.episodeWatchedNum ?? 0
+        const currentRecords = (p.episodeWatchedRecords as ({ watchedTime: string } | null)[] | null) ?? []
+
+        if(!episodeFullyPublished) {
+            // 未完全发布时不允许出现 COMPLETED/endTime!=null
+            if(p.status !== RecordStatus.COMPLETED && p.endTime === null) continue
+
+            const targetWatchedNum = Math.min(currentWatchedNum, episodePublishedNum)
+            const nextRecords = alignEpisodeWatchedRecords(currentRecords, targetWatchedNum)
+
+            await prisma.recordProgress.update({
+                where: { id: p.id },
+                data: {
+                    episodeWatchedNum: targetWatchedNum,
+                    episodeWatchedRecords: nextRecords,
+                    endTime: null,
+                    status: RecordStatus.WATCHING,
+                    updateTime: now
+                }
+            })
+            updatedRecordIds.add(p.recordId)
+        } else {
+            const shouldBecomeCompleted = p.status === RecordStatus.COMPLETED || p.endTime !== null || currentWatchedNum >= episodeTotalNum
+
+            if(!shouldBecomeCompleted) {
+                // 仍是未完成态：确保 endTime 为空，且 watchedNum 不超过 total
+                const targetWatchedNum = Math.min(currentWatchedNum, episodeTotalNum)
+                const nextRecords = alignEpisodeWatchedRecords(currentRecords, targetWatchedNum)
+
+                if(p.status === RecordStatus.WATCHING && p.endTime === null && targetWatchedNum === currentWatchedNum && nextRecords.length === currentRecords.length) {
+                    continue
+                }
+
+                await prisma.recordProgress.update({
+                    where: { id: p.id },
+                    data: {
+                        episodeWatchedNum: targetWatchedNum,
+                        episodeWatchedRecords: nextRecords,
+                        endTime: null,
+                        status: RecordStatus.WATCHING,
+                        updateTime: now
+                    }
+                })
+                updatedRecordIds.add(p.recordId)
+                continue
+            }
+
+            // 已完成态：watchedNum 必须与 total 全局一致
+            const targetWatchedNum = episodeTotalNum
+            const nextRecords = alignEpisodeWatchedRecords(currentRecords, targetWatchedNum)
+
+            await prisma.recordProgress.update({
+                where: { id: p.id },
+                data: {
+                    episodeWatchedNum: targetWatchedNum,
+                    episodeWatchedRecords: nextRecords,
+                    endTime: p.endTime ?? now,
+                    status: RecordStatus.COMPLETED,
+                    updateTime: now
+                }
+            })
+            updatedRecordIds.add(p.recordId)
+        }
+    }
+
+    // Recompute Record 缓存字段（不更新 specialAttention）
+    const recordIds = Array.from(updatedRecordIds.values())
+    if(recordIds.length === 0) return
+
+    for(const recordId of recordIds) {
+        const progresses = await prisma.recordProgress.findMany({
+            where: { recordId },
+            orderBy: { ordinal: "asc" }
+        })
+
+        const progressCount = progresses.length
+        const first = progresses[0] ?? null
+        const last = progresses[progresses.length - 1] ?? null
+
+        const status = getRecordStatus(
+            progressCount,
+            last?.endTime ?? null,
+            project.episodeTotalNum,
+            last?.episodeWatchedNum ?? null
+        )
+
+        await prisma.record.update({
+            where: { id: recordId },
+            data: {
+                progressCount,
+                status,
+                startTime: first?.startTime ?? null,
+                endTime: last?.endTime ?? null,
+                updateTime: now
+            }
+        })
+    }
 }

@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 该规则解释了在编写各类typescript内容时的一些通用的编码习惯
+globs: **/*.jsx,**/*.tsx,**/*.vue,**/*.ts,**/*.js
+alwaysApply: false
+---
+
+# JavaScript/TypeScript编码习惯
+
+## 代码风格
+
+- 不添加js行末的分号
+- import语句尽量保持在同一行；如果太长需要换行，则使用如下风格，尽量撑满每一行后再换行：
+    ```typescript
+    import {
+        A, B, C,
+        D, E, F
+    } from '...'
+    ```

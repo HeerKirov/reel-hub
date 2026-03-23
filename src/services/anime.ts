@@ -8,6 +8,7 @@ import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/co
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
 import { getPublishTimeRange } from "@/helpers/data"
 import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
+import { syncAnimeRecordProgressAfterEpisodeMetaChange } from "@/services/record"
 
 export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
     const validate = animeListFilter.safeParse(filter)
@@ -193,6 +194,9 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
         validate.data.episodePublishedRecords = publishedRecords
     }
 
+    const oldEpisodeTotalNum = record.episodeTotalNum
+    const oldEpisodePublishedNum = record.episodePublishedNum
+
     const r = await prisma.project.update({
         where: { id },
         data: {
@@ -219,6 +223,14 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
     if(form.tags !== undefined) await saveTags(id, ProjectType.ANIME, form.tags)
     if(form.staffs !== undefined) await saveStaffs(id, form.staffs)
     if(form.relations !== undefined) await updateRelations(id, form.relations)
+
+    // Episode total/published changed => sync all cached progress fields.
+    const newEpisodeTotalNum = validate.data.episodeTotalNum ?? oldEpisodeTotalNum
+    const newEpisodePublishedNum = validate.data.episodePublishedNum ?? oldEpisodePublishedNum
+
+    if(newEpisodeTotalNum !== oldEpisodeTotalNum || newEpisodePublishedNum !== oldEpisodePublishedNum) {
+        await syncAnimeRecordProgressAfterEpisodeMetaChange(id, now)
+    }
 }
 
 export async function deleteProjectAnime(id: string): Promise<boolean> {
@@ -252,12 +264,12 @@ function processEpisodePlan(totalNum: number, newPublishedNum: number, newPublis
     const remainNum = totalNum - actualPublishedNum
     const planWithDate = newPublishPlan
         .filter(p => p.publishTime).map(p => ({...p, date: new Date(p.publishTime!)}))
-        .sort((a, b) => a.date < b.date ? -1 : 1)
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
         .slice(0, remainNum)
 
     //分割在now之前和之后的plan
-    const beforeNowPlan = planWithDate.filter(p => p.date < now)
-    const afterNowPlan = planWithDate.filter(p => p.date >= now)
+    const beforeNowPlan = planWithDate.filter(p => p.date.getTime() <= now.getTime())
+    const afterNowPlan = planWithDate.filter(p => p.date.getTime() > now.getTime())
 
     //publishedRecords的记录要求与publishedNum的数目保持一致，其index从1开始，最后一项等同于publishedNum
     //为了实现这个检验，直接从1到publishedNum循环，从原数组里取出index符合的项，若不存在符合项则创建一个其他属性都是null的项
@@ -272,7 +284,25 @@ function processEpisodePlan(totalNum: number, newPublishedNum: number, newPublis
     })
 
     const publishedNum = actualPublishedNum + beforeNowPlan.length
-    const publishPlan = afterNowPlan.map(({ date, ...p }) => p)
-    const publishedRecords = [...actualPublishedRecords, ...beforeNowPlan.map(({ date, ...p }) => p)]
+
+    // According to the document:
+    // - Ignore form.index
+    // - Re-map indices to be continuous, appended after currently published episodes
+    const publishedRecords = [
+        ...actualPublishedRecords,
+        ...beforeNowPlan.map((p, idx) => ({
+            index: actualPublishedNum + idx + 1,
+            publishTime: p.publishTime,
+            actualEpisodeNum: p.actualEpisodeNum,
+            episodeTitle: p.episodeTitle
+        }))
+    ]
+
+    const publishPlan = afterNowPlan.map((p, idx) => ({
+        index: publishedNum + idx + 1,
+        publishTime: p.publishTime,
+        actualEpisodeNum: p.actualEpisodeNum,
+        episodeTitle: p.episodeTitle
+    }))
     return {publishedNum, publishPlan, publishedRecords}
 }
