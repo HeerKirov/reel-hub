@@ -1,46 +1,57 @@
 "use server"
 import { prisma } from "@/lib/prisma"
 import { ProjectRelationModel, ProjectRelationSchema, parseProjectRelationItem, ProjectListFilter, projectListFilter } from "@/schemas/project"
+import { Result, err, ok } from "@/schemas/all"
 import { arrays, records } from "@/helpers/primitive"
 import { ProjectType, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { Staff, Tag } from "@/prisma/generated"
 import { RelationGraph } from "@/helpers/relation-graph"
+import { InternalServerError, ParamError, ResourceNotExist, exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
 import { createTag } from "./tag"
 import { createStaff } from "./staff"
 
+export type ListProjectError = ParamError | InternalServerError
+export type SaveTagsError = ParamError | ResourceNotExist<"tagIds", string>
+export type SaveStaffsError = ParamError | ResourceNotExist<"staffIds", string>
+export type UpdateRelationsError = ParamError | ResourceNotExist<"projectId" | "projectIds", string> | ResourceNotExist<"tagIds", string> | ResourceNotExist<"staffIds", string> | InternalServerError
+export type UpdateAllRelationTopologyError = InternalServerError
+export type RemoveProjectInTopologyError = ResourceNotExist<"projectIds", string> | InternalServerError
+type FindAllError = ResourceNotExist<"projectIds", string>
 
-export async function listProject(filter: ProjectListFilter): Promise<{id: string, type: ProjectType, title: string, subtitles: string[]}[]> {
-    const validate = projectListFilter.safeParse(filter)
-    if(!validate.success) throw new Error(validate.error.message)
+export async function listProject(filter: ProjectListFilter): Promise<Result<{id: string, type: ProjectType, title: string, subtitles: string[]}[], ListProjectError>> {
+    return safeExecuteResult(async () => {
+        const validate = projectListFilter.safeParse(filter)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-    const r = await prisma.project.findMany({
-        where: {
-            type: validate.data.type ?? undefined,
-            OR: validate.data.search ? [
-                {title: {contains: validate.data.search}},
-                {subtitles: {contains: validate.data.search}},
-                {keywords: {contains: validate.data.search}}
-            ] : undefined
-        },
-        orderBy: {
-            publishTime: "desc"
-        },
-        skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-        take: validate.data.size ?? 15,
-        select: {
-            id: true,
-            type: true,
-            title: true,
-            subtitles: true
-        }
+        const r = await prisma.project.findMany({
+            where: {
+                type: validate.data.type ?? undefined,
+                OR: validate.data.search ? [
+                    {title: {contains: validate.data.search}},
+                    {subtitles: {contains: validate.data.search}},
+                    {keywords: {contains: validate.data.search}}
+                ] : undefined
+            },
+            orderBy: {
+                publishTime: "desc"
+            },
+            skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+            take: validate.data.size ?? 15,
+            select: {
+                id: true,
+                type: true,
+                title: true,
+                subtitles: true
+            }
+        })
+
+        return ok(r.map(item => ({
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            subtitles: item.subtitles.split("|").filter(s => s !== "")
+        })))
     })
-
-    return r.map(item => ({
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        subtitles: item.subtitles.split("|").filter(s => s !== "")
-    }))
 }
 
 export async function getRelations(relations: ProjectRelationModel, relationsTopology: ProjectRelationModel): Promise<{relations: ProjectRelationSchema, relationsTopology: ProjectRelationSchema}> {
@@ -54,7 +65,7 @@ export async function getRelations(relations: ProjectRelationModel, relationsTop
     }
 }
 
-export async function saveTags(projectId: string, type: ProjectType, tags: string[]): Promise<void> {
+export async function saveTags(projectId: string, type: ProjectType, tags: string[]): Promise<Result<void, SaveTagsError>> {
     // 获取所有已存在的tag
     const existingTags = tags.length > 0 ? await prisma.tag.findMany({
         where: {
@@ -69,8 +80,14 @@ export async function saveTags(projectId: string, type: ProjectType, tags: strin
 
     const allTags: Tag[] = existingTags
     if(newTagNames.length > 0) {
-        const newTags = await Promise.all(newTagNames.map(name => createTag({name, description: "", type})))
-        allTags.push(...newTags)
+        const newTagResults = await Promise.all(newTagNames.map(name => createTag({name, description: "", type})))
+        for(const r of newTagResults) {
+            if(!r.ok) return err(exceptionResourceNotExist("tagIds", newTagNames.join(", ")))
+            allTags.push({
+                ...r.value,
+                type: r.value.type as ProjectType
+            } as Tag)
+        }
     }    
 
     // 获取当前project的所有tag关联
@@ -111,9 +128,10 @@ export async function saveTags(projectId: string, type: ProjectType, tags: strin
             }))
         })
     }
+    return ok(undefined)
 }
 
-export async function saveStaffs(projectId: string, staffs: {type: string, members: string[]}[]): Promise<void> {
+export async function saveStaffs(projectId: string, staffs: {type: string, members: string[]}[]): Promise<Result<void, SaveStaffsError>> {
     // 获取所有staff名字
     const staffNames = Array.from(new Set(staffs.flatMap(s => s.members)))
 
@@ -127,8 +145,14 @@ export async function saveStaffs(projectId: string, staffs: {type: string, membe
     // 合并已有和新建的staff
     const allStaffs: Staff[] = existingStaffs
     if(newStaffNames.length > 0) {
-        const newStaffs = await Promise.all(newStaffNames.map(name => createStaff({name, otherNames: [], description: ""})))
-        allStaffs.push(...newStaffs)
+        const newStaffResults = await Promise.all(newStaffNames.map(name => createStaff({name, otherNames: [], description: ""})))
+        for(const r of newStaffResults) {
+            if(!r.ok) return err(exceptionResourceNotExist("staffIds", newStaffNames.join(", ")))
+            allStaffs.push({
+                ...r.value,
+                otherNames: r.value.otherNames.join("|")
+            } as Staff)
+        }
     }
 
     // 获取当前project的所有staff关联
@@ -183,6 +207,7 @@ export async function saveStaffs(projectId: string, staffs: {type: string, membe
             }))
         })
     }
+    return ok(undefined)
 }
 
 /**
@@ -190,20 +215,21 @@ export async function saveStaffs(projectId: string, staffs: {type: string, membe
  * 首先根据旧的拓扑，找出所有关联对象。然后加入新的拓扑关联对象，构成全量图。
  * 然后，对全量图进行关系传播推导，导出所有对象的全量拓扑，并更新那些拓扑发生变化的对象。
  */
-export async function updateRelations(projectId: string, relations: Partial<ProjectRelationModel>): Promise<void> {
-    const newRelations = validateRelation(relations)
+export async function updateRelations(projectId: string, relations: Partial<ProjectRelationModel>): Promise<Result<void, UpdateRelationsError>> {
+    return safeExecuteResult(async () => {
+    const relationResult = validateRelation(relations)
+    if(!relationResult.ok) return relationResult
+    const newRelations = relationResult.value
     
     // 查到主对象
     const thisProject = await find(projectId)
-    if (!thisProject) {
-        throw new Error(`Cannot find project ${projectId}`)
-    }
+    if (!thisProject) return err(exceptionResourceNotExist("projectId", projectId))
 
     // 比对主对象的旧关联拓扑和新关联拓扑，找出新增的那些节点
     // 而如果关联拓扑没有变化，那么退出这个方法
     const changes = compareRelationAdds(thisProject.relations, newRelations)
     if (changes.length === 0 && compareRelationEquals(thisProject.relations, newRelations)) {
-        return
+        return ok(undefined)
     }
 
     // 节点列表
@@ -215,27 +241,35 @@ export async function updateRelations(projectId: string, relations: Partial<Proj
     // 将主对象的旧的全量拓扑的关联节点放入图中
     const currentTopologyIds = Object.values(thisProject.relationsTopology).flat()
     if (currentTopologyIds.length > 0) {
-        const currentTopologyProjects = await findAll(currentTopologyIds as string[])
+        const currentTopologyResult = await findAll(currentTopologyIds as string[])
+        if(!currentTopologyResult.ok) return currentTopologyResult
+        const currentTopologyProjects = currentTopologyResult.value
         currentTopologyProjects.forEach(p => elements.set(p.id, p))
     }
 
     // 查找上述拓扑比对结果中新增节点，将它们放入图中。在那之前，计算id和exists的差以减少查询
     const changesMinusExists = changes.filter(id => !elements.has(id))
     if (changesMinusExists.length > 0) {
-        const appendProjects = await findAll(changesMinusExists)
+        const appendResult = await findAll(changesMinusExists)
+        if(!appendResult.ok) return appendResult
+        const appendProjects = appendResult.value
         appendProjects.forEach(p => elements.set(p.id, p))
     }
 
     // 查找上述拓扑比对结果中新增节点的全量拓扑，将它们也都放入图中。在那之前，计算id和exists的差以减少查询
     const appendProjectIds = Array.from(elements.keys()).filter(id => id !== projectId)
     if (appendProjectIds.length > 0) {
-        const appendProjects = await findAll(appendProjectIds)
+        const appendResult = await findAll(appendProjectIds)
+        if(!appendResult.ok) return appendResult
+        const appendProjects = appendResult.value
         const changesTopologyIds = appendProjects.flatMap(p => 
             Object.values(p.relationsTopology).flat()
         )
         const changesTopologyIdsMinusExists = changesTopologyIds.filter((id: any) => !elements.has(id))
         if (changesTopologyIdsMinusExists.length > 0) {
-            const changesTopologyProjects = await findAll(changesTopologyIdsMinusExists as string[])
+            const changesTopologyResult = await findAll(changesTopologyIdsMinusExists as string[])
+            if(!changesTopologyResult.ok) return changesTopologyResult
+            const changesTopologyProjects = changesTopologyResult.value
             changesTopologyProjects.forEach(p => elements.set(p.id, p))
         }
     }
@@ -280,13 +314,16 @@ export async function updateRelations(projectId: string, relations: Partial<Proj
             relationsTopology: thisTopologyAsStrings
         }
     })
+    return ok(undefined)
+    })
 }
 
 /**
  * 对全部project的relation进行更新。
  * @return 有多少project得到了更新
  */
-export async function updateAllRelationTopology(): Promise<number> {
+export async function updateAllRelationTopology(): Promise<Result<number, UpdateAllRelationTopologyError>> {
+    return safeExecuteResult(async () => {
     const elements = await prisma.project.findMany({
         select: {
             id: true,
@@ -332,7 +369,8 @@ export async function updateAllRelationTopology(): Promise<number> {
         ))
     }
 
-    return num
+    return ok(num)
+    })
 }
 
 /**
@@ -341,14 +379,17 @@ export async function updateAllRelationTopology(): Promise<number> {
  * 遍历这些对象的所有直接关联关系，从之中移除全部原对象，然后将剩余关系放入图。
  * 随后推导全量图，将新的全量拓扑和变化的关联对象更新到其对应的对象。
  */
-export async function removeProjectInTopology(projectId: string, topology: ProjectRelationModel): Promise<void> {
+export async function removeProjectInTopology(projectId: string, topology: ProjectRelationModel): Promise<Result<void, RemoveProjectInTopologyError>> {
+    return safeExecuteResult(async () => {
     // 节点列表
     const elements = new Map<string, ProjectModel>()
     
     // 查找全量拓扑的关联节点，放入图中
     const topologyIds = Object.values(topology).flat()
     if (topologyIds.length > 0) {
-        const topologyProjects = await findAll(topologyIds as string[])
+        const topologyResult = await findAll(topologyIds as string[])
+        if(!topologyResult.ok) return topologyResult
+        const topologyProjects = topologyResult.value
         topologyProjects.forEach(p => elements.set(p.id, p))
     }
 
@@ -388,6 +429,8 @@ export async function removeProjectInTopology(projectId: string, topology: Proje
             })
         ))
     }
+    return ok(undefined)
+    })
 }
 
 /**
@@ -417,9 +460,9 @@ async function find(projectId: string): Promise<ProjectModel | null> {
 /**
  * 从数据库查找全部id的project的拓扑关系。
  */
-async function findAll(projectIds: string[]): Promise<ProjectModel[]> {
+async function findAll(projectIds: string[]): Promise<Result<ProjectModel[], FindAllError>> {
     if (projectIds.length === 0) {
-        return []
+        return ok([])
     }
 
     const projects = await prisma.project.findMany({
@@ -435,15 +478,15 @@ async function findAll(projectIds: string[]): Promise<ProjectModel[]> {
     if (projects.length < projectIds.length) {
         const foundIds = new Set(projects.map(p => p.id))
         const missingIds = projectIds.filter(id => !foundIds.has(id))
-        throw new Error(`Project ${missingIds.join(", ")} not exists.`)
+        return err(exceptionResourceNotExist("projectIds", missingIds.join(", ")))
     }
 
-    return projects.map(p => ({
+    return ok(projects.map(p => ({
         id: p.id,
         relations: p.relations as ProjectRelationModel,
         relationsTopology: p.relationsTopology as ProjectRelationModel,
         createTime: p.createTime
-    }))
+    })))
 }
 
 /**
@@ -452,7 +495,7 @@ async function findAll(projectIds: string[]): Promise<ProjectModel[]> {
  * - 移除同关系下重复的id。
  * - 如果存在不同关系下重复的id，那么抛出异常。
  */
-function validateRelation(relations: Partial<ProjectRelationModel>): ProjectRelationModel {
+function validateRelation(relations: Partial<ProjectRelationModel>): Result<ProjectRelationModel, ParamError> {
     const map: ProjectRelationModel = {} as ProjectRelationModel
     const idSet = new Set<string>()
 
@@ -462,7 +505,7 @@ function validateRelation(relations: Partial<ProjectRelationModel>): ProjectRela
             const distinctList = Array.from(new Set(list))
             for (const id of distinctList) {
                 if (idSet.has(id)) {
-                    throw new Error(`Relation of project ${id} is duplicated.`)
+                    return err(exceptionParamError(`Relation of project ${id} is duplicated.`))
                 }
             }
             distinctList.forEach(id => idSet.add(id))
@@ -470,7 +513,7 @@ function validateRelation(relations: Partial<ProjectRelationModel>): ProjectRela
         }
     }
 
-    return map
+    return ok(map)
 }
 
 /**

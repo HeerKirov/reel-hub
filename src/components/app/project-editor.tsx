@@ -123,8 +123,9 @@ interface BasicInfoTabProps {
 
 const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
     const search = useCallback(async (text: string): Promise<string[]> => {
-        const tags = await listTags({search: text, type: "ANIME"})
-        return tags.map(t => t.name)
+        const tagsResult = await listTags({search: text, type: "ANIME"})
+        if(!tagsResult.ok) return []
+        return tagsResult.value.map(t => t.name)
     }, [])
 
     return (
@@ -207,8 +208,9 @@ interface StaffTabProps {
 
 const StaffTab = memo(function StaffTab(props: StaffTabProps) {
     const search = useCallback(async (text: string): Promise<string[]> => {
-        const staffs = await listStaffs({search: text})
-        return staffs.map(t => t.name)
+        const staffsResult = await listStaffs({search: text})
+        if(!staffsResult.ok) return []
+        return staffsResult.value.map(t => t.name)
     }, [])
 
     return (
@@ -310,7 +312,9 @@ interface RelationTabProps {
 
 const RelationTab = memo(function RelationTab(props: RelationTabProps) {
     const search = async (text: string) => {
-        return await listProject({search: text, type: props.projectType})
+        const projectsResult = await listProject({search: text, type: props.projectType})
+        if(!projectsResult.ok) return []
+        return projectsResult.value
     }
 
     return (

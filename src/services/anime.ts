@@ -4,86 +4,103 @@ import { getUserId } from "@/helpers/next"
 import { objects } from "@/helpers/primitive"
 import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
+import { err, ok, Result } from "@/schemas/all"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
+import { exceptionParamError, exceptionResourceNotExist, InternalServerError, ParamError, ResourceNotExist, safeExecuteResult } from "@/constants/exception"
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
 import { getPublishTimeRange } from "@/helpers/data"
-import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
+import { getRelations, removeProjectInTopology, RemoveProjectInTopologyError, saveStaffs, SaveStaffsError, saveTags, SaveTagsError, updateRelations, UpdateRelationsError } from "./project"
 import { syncAnimeRecordProgressAfterEpisodeMetaChange } from "@/services/record"
 
-export async function listProjectAnime(filter: AnimeListFilter): Promise<AnimeListSchema[]> {
-    const validate = animeListFilter.safeParse(filter)
-    if(!validate.success) throw new Error(validate.error.message)
+type AnimeServiceError =
+    | ParamError
+    | ResourceNotExist<"projectId", string>
+    | SaveTagsError
+    | SaveStaffsError
+    | UpdateRelationsError
+    | RemoveProjectInTopologyError
+    | InternalServerError
 
-    const r = await prisma.project.findMany({
-        where: {
-            type: ProjectType.ANIME,
-            OR: validate.data.search ? [
-                {title: {contains: validate.data.search}},
-                {subtitles: {contains: validate.data.search}},
-                {keywords: {contains: validate.data.search}}
-            ] : undefined,
-            ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
-            ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
-            boardcastType: validate.data.boardcastType,
-            originalType: validate.data.originalType,
-            publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
-            tags: validate.data.tag ? {
-                some: {
-                    tag: {
-                        name: validate.data.tag
+export async function listProjectAnime(filter: AnimeListFilter): Promise<Result<AnimeListSchema[], AnimeServiceError>> {
+    return safeExecuteResult(async () => {
+        const validate = animeListFilter.safeParse(filter)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
+
+        const r = await prisma.project.findMany({
+            where: {
+                type: ProjectType.ANIME,
+                OR: validate.data.search ? [
+                    {title: {contains: validate.data.search}},
+                    {subtitles: {contains: validate.data.search}},
+                    {keywords: {contains: validate.data.search}}
+                ] : undefined,
+                ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
+                ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
+                boardcastType: validate.data.boardcastType,
+                originalType: validate.data.originalType,
+                publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
+                tags: validate.data.tag ? {
+                    some: {
+                        tag: {
+                            name: validate.data.tag
+                        }
                     }
-                }
-            } : undefined,
-            staffs: validate.data.staff ? {
-                some: {
-                    staff: {
-                        name: validate.data.staff
+                } : undefined,
+                staffs: validate.data.staff ? {
+                    some: {
+                        staff: {
+                            name: validate.data.staff
+                        }
                     }
-                }
-            } : undefined
-        },
-        orderBy: {
-            publishTime: "desc"
-        },
-        skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-        take: validate.data.size ?? 15
+                } : undefined
+            },
+            orderBy: {
+                publishTime: "desc"
+            },
+            skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+            take: validate.data.size ?? 15
+        })
+
+        return ok<AnimeListSchema[], AnimeServiceError>(r.map(parseAnimeListSchema))
     })
-
-    return r.map(parseAnimeListSchema)
 }
 
-export async function countProjectAnime(filter: AnimeListFilter): Promise<number> {
-    const validate = animeListFilter.safeParse(filter)
-    if(!validate.success) throw new Error(validate.error.message)
+export async function countProjectAnime(filter: AnimeListFilter): Promise<Result<number, AnimeServiceError>> {
+    return safeExecuteResult(async () => {
+        const validate = animeListFilter.safeParse(filter)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-    return await prisma.project.count({
-        where: {
-            type: ProjectType.ANIME,
-            OR: validate.data.search ? [
-                {title: {contains: validate.data.search}},
-                {subtitles: {contains: validate.data.search}},
-                {keywords: {contains: validate.data.search}}
-            ] : undefined,
-            ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
-            ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
-            boardcastType: validate.data.boardcastType,
-            originalType: validate.data.originalType,
-            publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
-            tags: validate.data.tag ? {
-                some: {
-                    tag: {
-                        name: validate.data.tag
+        const total = await prisma.project.count({
+            where: {
+                type: ProjectType.ANIME,
+                OR: validate.data.search ? [
+                    {title: {contains: validate.data.search}},
+                    {subtitles: {contains: validate.data.search}},
+                    {keywords: {contains: validate.data.search}}
+                ] : undefined,
+                ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
+                ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
+                boardcastType: validate.data.boardcastType,
+                originalType: validate.data.originalType,
+                publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
+                tags: validate.data.tag ? {
+                    some: {
+                        tag: {
+                            name: validate.data.tag
+                        }
                     }
-                }
-            } : undefined,
-            staffs: validate.data.staff ? {
-                some: {
-                    staff: {
-                        name: validate.data.staff
+                } : undefined,
+                staffs: validate.data.staff ? {
+                    some: {
+                        staff: {
+                            name: validate.data.staff
+                        }
                     }
-                }
-            } : undefined
-        }
+                } : undefined
+            }
+        })
+
+        return ok<number, AnimeServiceError>(total)
     })
 }
 
@@ -106,148 +123,176 @@ export const retrieveProjectAnime = cache(async function(id: string): Promise<An
     return parseAnimeDetailSchema(r, relations, relationsTopology)
 })
 
-export async function createProjectAnime(form: AnimeForm) {
-    const userId = await getUserId()
-    const now = new Date()
+export async function createProjectAnime(form: AnimeForm): Promise<Result<string, AnimeServiceError>> {
+    return safeExecuteResult(async () => {
+        const userId = await getUserId()
+        const now = new Date()
 
-    const validate = animeForm.safeParse(form)
-    if(!validate.success) throw new Error(validate.error.message)
+        const validate = animeForm.safeParse(form)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-    if((validate.data.episodeTotalNum !== undefined)
-        || (validate.data.episodePublishedNum !== undefined)
-        || (validate.data.episodePublishPlan !== undefined)
-        || (validate.data.episodePublishedRecords !== undefined)) {
-        const { publishedNum, publishPlan, publishedRecords } = processEpisodePlan(
-            validate.data.episodeTotalNum ?? 0, 
-            validate.data.episodePublishedNum ?? 0, 
-            validate.data.episodePublishPlan ?? [], 
-            validate.data.episodePublishedRecords ?? [], 
-            now
-        )
+        if((validate.data.episodeTotalNum !== undefined)
+            || (validate.data.episodePublishedNum !== undefined)
+            || (validate.data.episodePublishPlan !== undefined)
+            || (validate.data.episodePublishedRecords !== undefined)) {
+            const { publishedNum, publishPlan, publishedRecords } = processEpisodePlan(
+                validate.data.episodeTotalNum ?? 0, 
+                validate.data.episodePublishedNum ?? 0, 
+                validate.data.episodePublishPlan ?? [], 
+                validate.data.episodePublishedRecords ?? [], 
+                now
+            )
 
-        validate.data.episodePublishedNum = publishedNum
-        validate.data.episodePublishPlan = publishPlan
-        validate.data.episodePublishedRecords = publishedRecords
-    }
-
-    const r = await prisma.project.create({
-        data: {
-            title: validate.data.title ?? "",
-            subtitles: validate.data.subtitles?.join("|") ?? "",
-            description: validate.data.description || "",
-            keywords: validate.data.keywords?.join("|") ?? "",
-            type: ProjectType.ANIME,
-            publishTime: validate.data.publishTime ?? null,
-            ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
-            ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
-            region: validate.data.region ?? null,
-            relations: {},
-            relationsTopology: {},
-            resources: {},
-            createTime: now,
-            updateTime: now,
-            creator: userId,
-            updator: userId,
-            originalType: validate.data.originalType ?? null,
-            boardcastType: validate.data.boardcastType ?? null,
-            episodeDuration: validate.data.episodeDuration ?? null,
-            episodeTotalNum: validate.data.episodeTotalNum ?? 1,
-            episodePublishedNum: validate.data.episodePublishedNum ?? 0,
-            episodePublishPlan: validate.data.episodePublishPlan ?? [],
-            episodePublishedRecords: validate.data.episodePublishedRecords ?? [],
-            platform: [],
-            onlineType: null
+            validate.data.episodePublishedNum = publishedNum
+            validate.data.episodePublishPlan = publishPlan
+            validate.data.episodePublishedRecords = publishedRecords
         }
+
+        const r = await prisma.project.create({
+            data: {
+                title: validate.data.title ?? "",
+                subtitles: validate.data.subtitles?.join("|") ?? "",
+                description: validate.data.description || "",
+                keywords: validate.data.keywords?.join("|") ?? "",
+                type: ProjectType.ANIME,
+                publishTime: validate.data.publishTime ?? null,
+                ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
+                ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
+                region: validate.data.region ?? null,
+                relations: {},
+                relationsTopology: {},
+                resources: {},
+                createTime: now,
+                updateTime: now,
+                creator: userId,
+                updator: userId,
+                originalType: validate.data.originalType ?? null,
+                boardcastType: validate.data.boardcastType ?? null,
+                episodeDuration: validate.data.episodeDuration ?? null,
+                episodeTotalNum: validate.data.episodeTotalNum ?? 1,
+                episodePublishedNum: validate.data.episodePublishedNum ?? 0,
+                episodePublishPlan: validate.data.episodePublishPlan ?? [],
+                episodePublishedRecords: validate.data.episodePublishedRecords ?? [],
+                platform: [],
+                onlineType: null
+            }
+        })
+
+        if(form.tags !== undefined) {
+            const tagResult = await saveTags(r.id, ProjectType.ANIME, form.tags)
+            if(!tagResult.ok) return err(tagResult.err)
+        }
+        if(form.staffs !== undefined) {
+            const staffResult = await saveStaffs(r.id, form.staffs)
+            if(!staffResult.ok) return err(staffResult.err)
+        }
+        if(form.relations !== undefined) {
+            const relationResult = await updateRelations(r.id, form.relations)
+            if(!relationResult.ok) return err(relationResult.err)
+        }
+
+        return ok<string, AnimeServiceError>(r.id)
     })
-
-    if(form.tags !== undefined) await saveTags(r.id, ProjectType.ANIME, form.tags)
-    if(form.staffs !== undefined) await saveStaffs(r.id, form.staffs)
-    if(form.relations !== undefined) await updateRelations(r.id, form.relations)
-
-    return r.id
 }
 
-export async function updateProjectAnime(id: string, form: AnimeForm) {
-    const userId = await getUserId()
-    const now = new Date()
+export async function updateProjectAnime(id: string, form: AnimeForm): Promise<Result<void, AnimeServiceError>> {
+    return safeExecuteResult(async () => {
+        const userId = await getUserId()
+        const now = new Date()
 
-    const validate = animeForm.safeParse(form)
-    if(!validate.success) throw new Error(validate.error.message)
+        const validate = animeForm.safeParse(form)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-    const record = await prisma.project.findUnique({where: {id}})
-    if(!record) return false
+        const record = await prisma.project.findUnique({where: {id}})
+        if(!record) return err(exceptionResourceNotExist("projectId", id))
 
-    if((validate.data.episodeTotalNum !== undefined && validate.data.episodePublishedNum !== record.episodePublishedNum)
-        || (validate.data.episodePublishedNum !== undefined && validate.data.episodePublishedNum !== record.episodePublishedNum)
-        || (validate.data.episodePublishPlan !== undefined && !objects.deepEquals(validate.data.episodePublishPlan, record.episodePublishPlan))
-        || (validate.data.episodePublishedRecords !== undefined && !objects.deepEquals(validate.data.episodePublishedRecords, record.episodePublishedRecords))) {
-        const { publishedNum, publishPlan, publishedRecords } = processEpisodePlan(
-            validate.data.episodeTotalNum ?? record.episodeTotalNum ?? 0, 
-            validate.data.episodePublishedNum ?? record.episodePublishedNum ?? 0, 
-            validate.data.episodePublishPlan ?? (record.episodePublishPlan as unknown as EpisodePublishRecord[]) ?? [], 
-            validate.data.episodePublishedRecords ?? (record.episodePublishedRecords as unknown as EpisodePublishRecord[]) ?? [], 
-            now
-        )
+        if((validate.data.episodeTotalNum !== undefined && validate.data.episodePublishedNum !== record.episodePublishedNum)
+            || (validate.data.episodePublishedNum !== undefined && validate.data.episodePublishedNum !== record.episodePublishedNum)
+            || (validate.data.episodePublishPlan !== undefined && !objects.deepEquals(validate.data.episodePublishPlan, record.episodePublishPlan))
+            || (validate.data.episodePublishedRecords !== undefined && !objects.deepEquals(validate.data.episodePublishedRecords, record.episodePublishedRecords))) {
+            const { publishedNum, publishPlan, publishedRecords } = processEpisodePlan(
+                validate.data.episodeTotalNum ?? record.episodeTotalNum ?? 0, 
+                validate.data.episodePublishedNum ?? record.episodePublishedNum ?? 0, 
+                validate.data.episodePublishPlan ?? (record.episodePublishPlan as unknown as EpisodePublishRecord[]) ?? [], 
+                validate.data.episodePublishedRecords ?? (record.episodePublishedRecords as unknown as EpisodePublishRecord[]) ?? [], 
+                now
+            )
 
-        validate.data.episodePublishedNum = publishedNum
-        validate.data.episodePublishPlan = publishPlan
-        validate.data.episodePublishedRecords = publishedRecords
-    }
-
-    const oldEpisodeTotalNum = record.episodeTotalNum
-    const oldEpisodePublishedNum = record.episodePublishedNum
-
-    const r = await prisma.project.update({
-        where: { id },
-        data: {
-            title: validate.data.title,
-            subtitles: validate.data.subtitles?.join("|") ?? "",
-            description: validate.data.description,
-            keywords: validate.data.keywords?.join("|") ?? "",
-            publishTime: validate.data.publishTime,
-            ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
-            ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
-            region: validate.data.region,
-            updateTime: now,
-            updator: userId,
-            originalType: validate.data.originalType,
-            boardcastType: validate.data.boardcastType,
-            episodeDuration: validate.data.episodeDuration,
-            episodeTotalNum: validate.data.episodeTotalNum,
-            episodePublishedNum: validate.data.episodePublishedNum,
-            episodePublishPlan: validate.data.episodePublishPlan,
-            episodePublishedRecords: validate.data.episodePublishedRecords
+            validate.data.episodePublishedNum = publishedNum
+            validate.data.episodePublishPlan = publishPlan
+            validate.data.episodePublishedRecords = publishedRecords
         }
+
+        await prisma.project.update({
+            where: { id },
+            data: {
+                title: validate.data.title,
+                subtitles: validate.data.subtitles?.join("|") ?? "",
+                description: validate.data.description,
+                keywords: validate.data.keywords?.join("|") ?? "",
+                publishTime: validate.data.publishTime,
+                ratingS: validate.data.ratingS !== undefined && validate.data.ratingS !== null ? RATING_SEX_TO_INDEX[validate.data.ratingS] : null,
+                ratingV: validate.data.ratingV !== undefined && validate.data.ratingV !== null ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : null,
+                region: validate.data.region,
+                updateTime: now,
+                updator: userId,
+                originalType: validate.data.originalType,
+                boardcastType: validate.data.boardcastType,
+                episodeDuration: validate.data.episodeDuration,
+                episodeTotalNum: validate.data.episodeTotalNum,
+                episodePublishedNum: validate.data.episodePublishedNum,
+                episodePublishPlan: validate.data.episodePublishPlan,
+                episodePublishedRecords: validate.data.episodePublishedRecords
+            }
+        })
+
+        if(form.tags !== undefined) {
+            const tagResult = await saveTags(id, ProjectType.ANIME, form.tags)
+            if(!tagResult.ok) return err(tagResult.err)
+        }
+        if(form.staffs !== undefined) {
+            const staffResult = await saveStaffs(id, form.staffs)
+            if(!staffResult.ok) return err(staffResult.err)
+        }
+        if(form.relations !== undefined) {
+            const relationResult = await updateRelations(id, form.relations)
+            if(!relationResult.ok) return err(relationResult.err)
+        }
+
+        // Episode total/published changed => sync all cached progress fields.
+        const oldEpisodeTotalNum = record.episodeTotalNum
+        const oldEpisodePublishedNum = record.episodePublishedNum
+        const newEpisodeTotalNum = validate.data.episodeTotalNum ?? oldEpisodeTotalNum
+        const newEpisodePublishedNum = validate.data.episodePublishedNum ?? oldEpisodePublishedNum
+
+        if(newEpisodeTotalNum !== oldEpisodeTotalNum || newEpisodePublishedNum !== oldEpisodePublishedNum) {
+            await syncAnimeRecordProgressAfterEpisodeMetaChange(id, now)
+        }
+
+        return ok<void, AnimeServiceError>(undefined)
     })
-
-    if(form.tags !== undefined) await saveTags(id, ProjectType.ANIME, form.tags)
-    if(form.staffs !== undefined) await saveStaffs(id, form.staffs)
-    if(form.relations !== undefined) await updateRelations(id, form.relations)
-
-    // Episode total/published changed => sync all cached progress fields.
-    const newEpisodeTotalNum = validate.data.episodeTotalNum ?? oldEpisodeTotalNum
-    const newEpisodePublishedNum = validate.data.episodePublishedNum ?? oldEpisodePublishedNum
-
-    if(newEpisodeTotalNum !== oldEpisodeTotalNum || newEpisodePublishedNum !== oldEpisodePublishedNum) {
-        await syncAnimeRecordProgressAfterEpisodeMetaChange(id, now)
-    }
 }
 
-export async function deleteProjectAnime(id: string): Promise<boolean> {
-    const r = await prisma.project.findUnique({where: {id}})
-    if(!r) return false
+export async function deleteProjectAnime(id: string): Promise<Result<void, AnimeServiceError>> {
+    return safeExecuteResult(async () => {
+        const r = await prisma.project.findUnique({where: {id}})
+        if(!r) return err(exceptionResourceNotExist("projectId", id))
 
-    if(Object.keys(r.relationsTopology as ProjectRelationModel).length > 0) await removeProjectInTopology(id, r.relationsTopology as ProjectRelationModel)
+        if(Object.keys(r.relationsTopology as ProjectRelationModel).length > 0) {
+            const removeResult = await removeProjectInTopology(id, r.relationsTopology as ProjectRelationModel)
+            if(!removeResult.ok) return err(removeResult.err)
+        }
 
-    await prisma.project.delete({where: {id}})
-    await prisma.projectStaffRelation.deleteMany({where: {projectId: id}})
-    await prisma.projectTagRelation.deleteMany({where: {projectId: id}})
-    await prisma.record.deleteMany({where: {projectId: id}})
-    await prisma.recordProgress.deleteMany({where: {projectId: id}})
-    await prisma.bought.deleteMany({where: {projectId: id}})
-    await prisma.comment.deleteMany({where: {projectId: id}})
+        await prisma.project.delete({where: {id}})
+        await prisma.projectStaffRelation.deleteMany({where: {projectId: id}})
+        await prisma.projectTagRelation.deleteMany({where: {projectId: id}})
+        await prisma.record.deleteMany({where: {projectId: id}})
+        await prisma.recordProgress.deleteMany({where: {projectId: id}})
+        await prisma.bought.deleteMany({where: {projectId: id}})
+        await prisma.comment.deleteMany({where: {projectId: id}})
 
-    return true
+        return ok<void, AnimeServiceError>(undefined)
+    })
 }
 
 /**
