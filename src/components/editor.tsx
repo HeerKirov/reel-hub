@@ -4,7 +4,7 @@ import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field } fr
 import { useEffectState } from "@/helpers/hooks"
 import { Input, NumberInput, DateTimePicker } from "@/components/form"
 import { PiTrashBold } from "react-icons/pi"
-import { ProjectRelationType, EpisodePublishRecord } from "@/schemas/project"
+import { ProjectRelationSchema, EpisodePublishRecord } from "@/schemas/project"
 import { RelationType, RELATION_TYPE_NAMES, RELATION_TYPE_VALUES, ProjectType } from "@/constants/project"
 
 export type DynamicInputListProps = {
@@ -282,13 +282,13 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
 })
 
 export type RelationEditorProps = {
-    value?: Partial<ProjectRelationType>
-    onValueChange?: (value: Partial<ProjectRelationType>) => void
+    value?: Partial<ProjectRelationSchema>
+    onValueChange?: (value: Partial<ProjectRelationSchema>) => void
     search?: (text: string) => Promise<{id: string, type: ProjectType, title: string}[]>
 } & SystemStyleObject
 
 export const RelationEditor = memo(function RelationEditor({ value = {}, onValueChange, search, ...attrs }: RelationEditorProps) {
-    const [relations, setRelations] = useState<Partial<ProjectRelationType>>(value)
+    const [relations, setRelations] = useState<Partial<ProjectRelationSchema>>(value)
     const [selectedType, setSelectedType] = useState<RelationType>("PREV")
     const [searchText, setSearchText] = useState("")
     const [searchResults, setSearchResults] = useState<{id: string, type: ProjectType, title: string}[]>([])
@@ -296,7 +296,7 @@ export const RelationEditor = memo(function RelationEditor({ value = {}, onValue
     const [isDraggingOver, setIsDraggingOver] = useState(false)
 
     // 更新关系数据
-    const updateRelations = useCallback((newRelations: Partial<ProjectRelationType>) => {
+    const updateRelations = useCallback((newRelations: Partial<ProjectRelationSchema>) => {
         setRelations(newRelations)
         onValueChange?.(newRelations)
     }, [onValueChange])

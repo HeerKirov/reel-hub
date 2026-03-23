@@ -1,54 +1,114 @@
 import { z } from "zod"
-import { Record, RecordProgress } from "@/prisma/generated"
-import { RECORD_STATUS, FOLLOW_TYPE } from "@/constants/record"
-import { projectSimpleSchema } from "./project"
+import type { Record as PrismaRecord, RecordProgress } from "@/prisma/generated"
+import { RECORD_STATUS, FOLLOW_TYPE, RecordStatus, FollowType } from "@/constants/record"
+import { PROJECT_TYPE } from "@/constants/project"
+import type { ProjectSimpleSchema } from "./project"
 
-export const recordModel = z.object({
-    id: z.number(),
-    ownerId: z.string(),
-    projectId: z.string(),
-    specialAttention: z.boolean(),
-    status: z.enum(RECORD_STATUS),
-    progressCount: z.number(),
-    startTime: z.date().nullable(),
-    endTime: z.date().nullable(),
-    lastActivityTime: z.date().nullable(),
-    lastActivityEvent: z.record(z.string(), z.any()),
-    createTime: z.date(),
-    updateTime: z.date()
-})
+// =============================================================================
+// Model
+// =============================================================================
 
-export const recordProgressModel = z.object({
-    id: z.number(),
-    projectId: z.string(),
-    recordId: z.number(),
-    ordinal: z.number(),
-    status: z.enum(RECORD_STATUS),
-    startTime: z.date().nullable(),
-    endTime: z.date().nullable(),
-    createTime: z.date(),
-    updateTime: z.date(),
-    episodeWatchedNum: z.number().nullable(),
-    episodeWatchedRecords: z.array(z.object({
-        watchedTime: z.string()
-    }).nullable()).nullable(),
-    followType: z.enum(FOLLOW_TYPE).nullable(),
-    platform: z.array(z.string())
-})
+export interface RecordModel {
+    id: number
+    ownerId: string
+    projectId: string
+    specialAttention: boolean
+    status: RecordStatus
+    progressCount: number
+    startTime: Date | null
+    endTime: Date | null
+    lastActivityTime: Date | null
+    lastActivityEvent: Record<string, unknown>
+    createTime: Date
+    updateTime: Date
+}
+
+export type EpisodeWatchedRecordEntry = { watchedTime: string } | null
+
+export interface RecordProgressModel {
+    id: number
+    projectId: string
+    recordId: number
+    ordinal: number
+    status: RecordStatus
+    startTime: Date | null
+    endTime: Date | null
+    createTime: Date
+    updateTime: Date
+    episodeWatchedNum: number | null
+    episodeWatchedRecords: EpisodeWatchedRecordEntry[] | null
+    followType: FollowType | null
+    platform: string[]
+}
+
+// =============================================================================
+// Schema — API 返回
+// =============================================================================
+
+export interface RecordSubscriptionProjectSchema extends ProjectSimpleSchema {
+    episodeTotalNum: number | null
+    episodePublishedNum: number | null
+    platform: string[]
+}
+
+export interface RecordSubscriptionSchema {
+    project: RecordSubscriptionProjectSchema
+    episodeWatchedNum: number | null
+    followType: FollowType | null
+    platform: string[]
+}
+
+export interface RecordPreviewSchema {
+    specialAttention: boolean
+    status: RecordStatus
+    progressCount: number
+    startTime: Date | null
+    endTime: Date | null
+    episodeWatchedNum: number | null
+    latestWatchedTime: Date | null
+}
+
+export interface RecordProgressDetailItem {
+    ordinal: number
+    status: RecordStatus
+    startTime: Date | null
+    endTime: Date | null
+    episodeWatchedNum: number | null
+    episodeWatchedRecords: EpisodeWatchedRecordEntry[] | null
+    followType: FollowType | null
+    platform: string[]
+}
+
+export interface RecordDetailSchema {
+    specialAttention: boolean
+    status: RecordStatus
+    progressCount: number
+    startTime: Date | null
+    endTime: Date | null
+    progresses: RecordProgressDetailItem[]
+}
+
+// =============================================================================
+// Form
+// =============================================================================
 
 export const recordProgressSupplementForm = z.object({
     startTime: z.date().nullable(),
     endTime: z.date().nullable(),
-    episodeWatchedNum: z.number().min(0).nullable(),
+    episodeWatchedNum: z.number().min(0).nullable()
 })
 
 export const recordCreateForm = z.object({
     createMode: z.enum(["SUBSCRIBE", "SUPPLEMENT", "ONLY_RECORD"]),
-    progress: z.array(z.object({
-        startTime: z.date().nullable(),
-        endTime: z.date().nullable(),
-        episodeWatchedNum: z.number().min(0).nullable().optional(),
-    })).optional()
+    progress: z
+        .array(
+            z.object({
+                startTime: z.date().nullable(),
+                endTime: z.date().nullable(),
+                episodeWatchedNum: z.number().min(0).nullable().optional()
+            })
+        )
+        .optional()
 })
 
 export const recordUpdateForm = z.object({
@@ -58,52 +118,20 @@ export const recordUpdateForm = z.object({
 export const recordProgressUpsertForm = z.object({
     startTime: z.date().nullable().optional(),
     endTime: z.date().nullable().optional(),
-    episodeWatchedNum: z.number().min(0).nullable().optional(),
+    episodeWatchedNum: z.number().min(0).nullable().optional()
 })
 
-export const recordSubscriptionSchema = z.object({
-    project: projectSimpleSchema.extend({
-        episodeTotalNum: z.number().nullable(),
-        episodePublishedNum: z.number().nullable(),
-        platform: z.array(z.string()),
-    }),
-    episodeWatchedNum: z.number().nullable(),
-    followType: z.enum(FOLLOW_TYPE).nullable(),
-    platform: z.array(z.string())
-})
+export type RecordCreateForm = z.infer<typeof recordCreateForm>
+export type RecordUpdateForm = z.infer<typeof recordUpdateForm>
+export type RecordProgressUpsertForm = z.infer<typeof recordProgressUpsertForm>
+export type RecordProgressSupplementForm = z.infer<typeof recordProgressSupplementForm>
 
-export const recordPreviewSchema = z.object({
-    specialAttention: z.boolean(),
-    status: z.enum(RECORD_STATUS),
-    progressCount: z.number(),
-    startTime: z.date().nullable(),
-    endTime: z.date().nullable(),
-    episodeWatchedNum: z.number().nullable(),
-    latestWatchedTime: z.date().nullable(),
-})
+// =============================================================================
+// Parse
+// =============================================================================
 
-export const recordDetailSchema = z.object({
-    specialAttention: z.boolean(),
-    status: z.enum(RECORD_STATUS),
-    progressCount: z.number(),
-    startTime: z.date().nullable(),
-    endTime: z.date().nullable(),
-    progresses: z.array(z.object({
-        ordinal: z.number(),
-        status: z.enum(RECORD_STATUS),
-        startTime: z.date().nullable(),
-        endTime: z.date().nullable(),
-        episodeWatchedNum: z.number().nullable(),
-        episodeWatchedRecords: z.array(z.object({
-            watchedTime: z.string()
-        }).nullable()).nullable(),
-        followType: z.enum(FOLLOW_TYPE).nullable(),
-        platform: z.array(z.string())
-    }))
-})
-
-export function parsePreviewSchema(data: Record, progress: RecordProgress | null): RecordPreviewSchema {
-    const episodeWatchedRecord = (progress?.episodeWatchedRecords as ({watchedTime: string} | null)[])?.findLast(r => r !== null)
+export function parsePreviewSchema(data: PrismaRecord, progress: RecordProgress | null): RecordPreviewSchema {
+    const episodeWatchedRecord = (progress?.episodeWatchedRecords as EpisodeWatchedRecordEntry[] | null)?.findLast(r => r !== null)
     return {
         specialAttention: data.specialAttention,
         status: data.status,
@@ -111,11 +139,11 @@ export function parsePreviewSchema(data: Record, progress: RecordProgress | null
         startTime: data.startTime,
         endTime: data.endTime,
         episodeWatchedNum: progress?.episodeWatchedNum ?? null,
-        latestWatchedTime: episodeWatchedRecord ? new Date(episodeWatchedRecord.watchedTime) : null,
+        latestWatchedTime: episodeWatchedRecord ? new Date(episodeWatchedRecord.watchedTime) : null
     }
 }
 
-export function parseDetailSchema(data: Record, progresses: RecordProgress[]): RecordDetailSchema {
+export function parseDetailSchema(data: PrismaRecord, progresses: RecordProgress[]): RecordDetailSchema {
     return {
         specialAttention: data.specialAttention,
         status: data.status,
@@ -128,17 +156,9 @@ export function parseDetailSchema(data: Record, progresses: RecordProgress[]): R
             startTime: progress.startTime,
             endTime: progress.endTime,
             episodeWatchedNum: progress.episodeWatchedNum,
-            episodeWatchedRecords: progress.episodeWatchedRecords as ({watchedTime: string} | null)[],
+            episodeWatchedRecords: progress.episodeWatchedRecords as EpisodeWatchedRecordEntry[] | null,
             followType: progress.followType,
             platform: progress.platform
         }))
     }
 }
-
-export type RecordModel = z.infer<typeof recordModel>
-export type RecordProgressModel = z.infer<typeof recordProgressModel>
-export type RecordCreateForm = z.infer<typeof recordCreateForm>
-export type RecordUpdateForm = z.infer<typeof recordUpdateForm>
-export type RecordProgressUpsertForm = z.infer<typeof recordProgressUpsertForm>
-export type RecordPreviewSchema = z.infer<typeof recordPreviewSchema>
-export type RecordDetailSchema = z.infer<typeof recordDetailSchema>

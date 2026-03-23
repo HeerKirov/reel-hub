@@ -1,106 +1,132 @@
 import { z } from "zod"
-import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag, ProjectType } from "@/prisma/generated"
+import { BoardcastType, OnlineType, OriginalType, Project, ProjectStaffRelation, ProjectTagRelation, ProjectType, Staff, Tag } from "@/prisma/generated"
 import { RATING_SEX, RATING_VIOLENCE, REGION, PROJECT_TYPE, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, Region, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
-import { ONLINE_TYPE } from "@/constants/game"
-import { ORIGINAL_TYPE, BOARDCAST_TYPE } from "@/constants/anime"
 import { arrays } from "@/helpers/primitive"
 import { parseStaffSchema } from "./staff"
 
-export const projectListFilter = z.object({
-    search: z.string().optional(),
-    page: z.number().optional(),
-    size: z.number().optional(),
-    type: z.enum(PROJECT_TYPE).optional(),
-    ratingS: z.enum(RATING_SEX).optional(),
-    ratingV: z.enum(RATING_VIOLENCE).optional(),
-    publishTime: z.string().regex(/^\d{4}(-\d{2})?$/).optional(),
-    tag: z.string().optional(),
-    staff: z.string().optional(),
-})
-
-export const projectRelationModel = z.record(z.string(), z.array(z.string())).refine(
-    (val) => {
-        const keys = Object.keys(val)
-        return keys.every(key => RELATION_TYPE_VALUES.includes(key as RelationType))
-    },
-    {
-        message: "Relation keys must be valid RelationType values"
-    }
-)
+// =============================================================================
+// Model — 与 Prisma Project 行结构一致，便于 `as` 强转
+// =============================================================================
 
 export type ProjectRelationModel = Partial<Record<RelationType, string[]>>
 
-export type ProjectRelationType = Record<RelationType, z.infer<typeof projectRelationItemSchema>[]>
+/** 剧集发布记录（Model / 业务字段） */
+export interface EpisodePublishRecordModel {
+    index: number
+    publishTime: string | null
+    actualEpisodeNum: number | null
+    episodeTitle: string | null
+}
 
-export type EpisodePublishRecord = z.infer<typeof episodePublishRecordSchema>
+/** 与数据库 Project 表字段一一对应（Json 字段使用应用层类型） */
+export interface ProjectModel {
+    id: string
+    title: string
+    subtitles: string
+    description: string
+    keywords: string
+    type: ProjectType
+    publishTime: string | null
+    ratingS: number | null
+    ratingV: number | null
+    region: string | null
+    relations: ProjectRelationModel
+    relationsTopology: ProjectRelationModel
+    resources: Record<string, string>
+    createTime: Date
+    updateTime: Date
+    creator: string
+    updator: string
+    originalType: OriginalType | null
+    boardcastType: BoardcastType | null
+    episodeDuration: number | null
+    episodeTotalNum: number | null
+    episodePublishedNum: number | null
+    episodePublishedRecords: EpisodePublishRecordModel[] | null
+    episodePublishPlan: EpisodePublishRecordModel[] | null
+    platform: string[]
+    onlineType: OnlineType | null
+}
 
-export type ProjectModel = z.infer<typeof projectModel>
+export type EpisodePublishRecord = EpisodePublishRecordModel
 
-export type ProjectListFilter = z.infer<typeof projectListFilter>
+// =============================================================================
+// Schema — API 返回结构（纯类型，无 Zod）
+// =============================================================================
 
-export type ProjectSimpleSchema = z.infer<typeof projectSimpleSchema>
+export interface ProjectRelationItem {
+    id: string
+    title: string
+    resources: Record<string, string>
+}
 
-export type ProjectListSchema = z.infer<typeof projectListSchema>
+export interface ProjectTagItem {
+    id: number
+    name: string
+    description: string
+}
 
-export type ProjectDetailSchema = z.infer<typeof projectDetailSchema>
+export interface ProjectStaffMember {
+    id: number
+    name: string
+    otherNames: string[]
+    description: string
+}
 
-export const episodePublishRecordSchema = z.object({
+export interface ProjectStaffItem {
+    type: string
+    members: ProjectStaffMember[]
+}
+
+export type ProjectRelationSchema = Partial<Record<RelationType, ProjectRelationItem[]>>
+
+export interface ProjectSimpleSchema {
+    id: string
+    type: ProjectType
+    title: string
+    resources: Record<string, string>
+}
+
+export interface ProjectListSchema extends ProjectSimpleSchema {
+    subtitles: string[]
+    description: string
+    keywords: string[]
+    publishTime: string | null
+    ratingS: (typeof RATING_SEX)[number] | null
+    ratingV: (typeof RATING_VIOLENCE)[number] | null
+    region: Region | null
+    createTime: Date
+    updateTime: Date
+    creator: string
+    updator: string
+}
+
+export interface ProjectDetailSchema extends ProjectListSchema {
+    relations: ProjectRelationSchema
+    relationsTopology: ProjectRelationSchema
+    tags: ProjectTagItem[]
+    staffs: ProjectStaffItem[]
+}
+
+// =============================================================================
+// Form — Zod 校验用户输入
+// =============================================================================
+
+const projectRelationForm = z
+    .record(z.string(), z.array(z.string()))
+    .refine(
+        val => Object.keys(val).every(key => RELATION_TYPE_VALUES.includes(key as RelationType)),
+        { message: "Relation keys must be valid RelationType values" }
+    )
+
+export const episodePublishRecordFormSchema = z.object({
     index: z.number(),
     publishTime: z.string().nullable(),
     actualEpisodeNum: z.number().nullable(),
     episodeTitle: z.string().nullable()
 })
 
-export const projectRelationItemSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    resources: z.record(z.string(), z.string())
-})
-
-export const projectTagItemSchema = z.object({
-    id: z.number(),
-    name: z.string(),
-    description: z.string()
-})
-
-export const projectStaffItemSchema = z.object({
-    type: z.string(),
-    members: z.array(z.object({
-        id: z.number(),
-        name: z.string(),
-        otherNames: z.array(z.string()),
-        description: z.string()
-    }))
-})
-
-export const projectModel = z.object({
-    id: z.string(),
-    title: z.string(),
-    subtitles: z.string(),
-    description: z.string(),
-    keywords: z.string(),
-    type: z.enum(PROJECT_TYPE),
-    publishTime: z.string().nullable(),
-    ratingS: z.number().nullable(),
-    ratingV: z.number().nullable(),
-    region: z.string().nullable(),
-    relations: projectRelationModel,
-    relationsTopology: projectRelationModel,
-    resources: z.record(z.string(), z.string()),
-    createTime: z.date(),
-    updateTime: z.date(),
-    creator: z.string(),
-    updator: z.string(),
-    originalType: z.enum(ORIGINAL_TYPE).nullable(),
-    boardcastType: z.enum(BOARDCAST_TYPE).nullable(),
-    episodeDuration: z.number().nullable(),
-    episodeTotalNum: z.number().nullable(),
-    episodePublishedNum: z.number().nullable(),
-    episodePublishedRecords: z.array(episodePublishRecordSchema).nullable(),
-    episodePublishPlan: z.array(episodePublishRecordSchema).nullable(),
-    platform: z.array(z.string()),
-    onlineType: z.enum(ONLINE_TYPE).nullable()
-})
+export type EpisodePublishRecordForm = z.infer<typeof episodePublishRecordFormSchema>
 
 export const projectCommonForm = z.object({
     title: z.string().min(1).optional(),
@@ -111,49 +137,57 @@ export const projectCommonForm = z.object({
     ratingS: z.enum(RATING_SEX).nullable().optional(),
     ratingV: z.enum(RATING_VIOLENCE).nullable().optional(),
     region: z.enum(REGION).nullable().optional(),
-    relations: projectRelationModel.optional(),
+    relations: projectRelationForm.optional(),
     tags: z.array(z.string()).optional(),
-    staffs: z.array(z.object({
-        type: z.string(),
-        members: z.array(z.string())
-    })).optional()
+    staffs: z
+        .array(
+            z.object({
+                type: z.string(),
+                members: z.array(z.string())
+            })
+        )
+        .optional()
 })
 
-export const projectSimpleSchema = z.object({
-    id: z.string(),
-    type: z.enum(PROJECT_TYPE),
-    title: z.string(),
-    resources: z.record(z.string(), z.string())
+export type ProjectCommonForm = z.infer<typeof projectCommonForm>
+
+// =============================================================================
+// Filter — Zod 校验列表/查询参数
+// =============================================================================
+
+export const projectListFilter = z.object({
+    search: z.string().optional(),
+    page: z.number().optional(),
+    size: z.number().optional(),
+    type: z.enum(PROJECT_TYPE).optional(),
+    ratingS: z.enum(RATING_SEX).optional(),
+    ratingV: z.enum(RATING_VIOLENCE).optional(),
+    publishTime: z.string().regex(/^\d{4}(-\d{2})?$/).optional(),
+    tag: z.string().optional(),
+    staff: z.string().optional()
 })
 
-export const projectListSchema = projectSimpleSchema.extend({
-    subtitles: z.array(z.string()),
-    description: z.string(),
-    keywords: z.array(z.string()),
-    publishTime: z.string().nullable(),
-    ratingS: z.enum(RATING_SEX).nullable(),
-    ratingV: z.enum(RATING_VIOLENCE).nullable(),
-    region: z.enum(REGION).nullable(),
-    createTime: z.date(),
-    updateTime: z.date(),
-    creator: z.string(),
-    updator: z.string()
-})
+export type ProjectListFilter = z.infer<typeof projectListFilter>
 
-export const projectDetailSchema = projectListSchema.extend({
-    relations: z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(projectRelationItemSchema)),
-    relationsTopology: z.record(z.enum(RELATION_TYPE_VALUES as [RelationType, ...RelationType[]]), z.array(projectRelationItemSchema)),
-    tags: z.array(projectTagItemSchema),
-    staffs: z.array(projectStaffItemSchema)
-})
+// =============================================================================
+// Parse — Model / DB → Schema
+// =============================================================================
 
-export function parseProjectSimpleSchema(i: {id: string, type: ProjectType, title: string, resources: any}): ProjectSimpleSchema {
+export function parseProjectRelationItem(data: Pick<Project, "id" | "title" | "resources">): ProjectRelationItem {
+    return {
+        id: data.id,
+        title: data.title,
+        resources: data.resources as Record<string, string>
+    }
+}
+
+export function parseProjectSimpleSchema(i: Pick<Project, "id" | "type" | "title" | "resources">): ProjectSimpleSchema {
     return {
         id: i.id,
         title: i.title,
         type: i.type,
         resources: Object.fromEntries(
-            Object.entries(i.resources)
+            Object.entries(i.resources as Record<string, string>)
                 .filter(([_, value]) => value)
                 .map(([key, value]) => [key, `/api/resources/${value}`])
         )
@@ -161,7 +195,7 @@ export function parseProjectSimpleSchema(i: {id: string, type: ProjectType, titl
 }
 
 export function parseProjectListSchema(data: Project): ProjectListSchema {
-    const i = data as ProjectModel
+    const i = data as unknown as ProjectModel
     return {
         ...parseProjectSimpleSchema(data),
         subtitles: i.subtitles.split("|").filter(s => s !== ""),
@@ -179,18 +213,21 @@ export function parseProjectListSchema(data: Project): ProjectListSchema {
 }
 
 export function parseProjectDetailSchema(
-    data: Project & {staffs: (ProjectStaffRelation & {staff: Staff})[], tags: (ProjectTagRelation & {tag: Tag})[]}, 
-    relations: ProjectRelationType, 
-    relationsTopology: ProjectRelationType,
+    data: Project & { staffs: (ProjectStaffRelation & { staff: Staff })[]; tags: (ProjectTagRelation & { tag: Tag })[] },
+    relations: ProjectRelationSchema,
+    relationsTopology: ProjectRelationSchema
 ): ProjectDetailSchema {
-    const tags = data.tags.map(t => ({id: t.tag.id, name: t.tag.name, description: t.tag.description}))
-    const staffs = Object.entries(arrays.groupByTo(data.staffs, s => s.staffType, s => parseStaffSchema(s.staff))).map(([type, members]) => ({type, members}))
+    const tags = data.tags.map(t => ({ id: t.tag.id, name: t.tag.name, description: t.tag.description }))
+    const staffs = Object.entries(arrays.groupByTo(data.staffs, s => s.staffType, s => parseStaffSchema(s.staff))).map(([type, members]) => ({
+        type,
+        members
+    }))
 
     return {
         ...parseProjectListSchema(data),
         tags,
         staffs,
-        relations: relations,
-        relationsTopology: relationsTopology
+        relations,
+        relationsTopology
     }
 }

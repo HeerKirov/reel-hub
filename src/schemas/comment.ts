@@ -1,18 +1,43 @@
 import { z } from "zod"
 import { Comment, Project } from "@/prisma/generated"
 import { PROJECT_TYPE } from "@/constants/project"
-import { parseProjectSimpleSchema, projectSimpleSchema } from "./project"
+import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "./project"
 
-export const commentModel = z.object({
-    id: z.number(),
-    ownerId: z.string(),
-    projectId: z.string(),
-    score: z.number().nullable(),
-    title: z.string().nullable(),
-    article: z.string().nullable(),
-    createTime: z.date(),
-    updateTime: z.date()
-})
+// =============================================================================
+// Model
+// =============================================================================
+
+export interface CommentModel {
+    id: number
+    ownerId: string
+    projectId: string
+    score: number | null
+    title: string | null
+    article: string | null
+    createTime: Date
+    updateTime: Date
+}
+
+// =============================================================================
+// Schema — API 返回
+// =============================================================================
+
+export interface CommentSchema {
+    id: number
+    ownerId: string
+    projectId: string
+    score: number | null
+    title: string | null
+    article: string | null
+    createTime: Date
+    updateTime: Date
+}
+
+export type CommentWithProjectSchema = CommentSchema & { project: ProjectSimpleSchema }
+
+// =============================================================================
+// Filter
+// =============================================================================
 
 export const commentListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
@@ -22,36 +47,47 @@ export const commentListFilter = z.object({
     orderBy: z.enum(["updateTime", "score"]).optional()
 })
 
-export const commentUpsertSchema = z.object({
+export type CommentListFilter = z.infer<typeof commentListFilter>
+
+// =============================================================================
+// Form
+// =============================================================================
+
+export const commentUpsertForm = z.object({
     score: z.number().nullable().optional(),
     title: z.string().nullable().optional(),
     article: z.string().nullable().optional()
 })
 
-export const commentSchema = commentUpsertSchema.extend({
-    createTime: z.date(),
-    updateTime: z.date()
-})
+export const commentUpsertSchema = commentUpsertForm
 
-export const commentWithProjectSchema = commentSchema.extend({
-    project: projectSimpleSchema
-})
+export type CommentUpsertForm = z.infer<typeof commentUpsertForm>
 
+export type CommentUpsertSchema = CommentUpsertForm
 
-export const parseCommentSchema = (data: Comment): CommentSchema => {
-    return commentSchema.parse(data)
-}
+// =============================================================================
+// Parse
+// =============================================================================
 
-export const parseCommentWithProjectSchema = (data: Comment & { project: Pick<Project, "id" | "type" | "title" | "resources"> }): CommentWithProjectSchema => {
-    const base = commentSchema.parse(data)
+export function parseCommentSchema(data: Comment): CommentSchema {
+    const m = data as CommentModel
     return {
-        ...base,
-        project: parseProjectSimpleSchema(data.project)
+        id: m.id,
+        ownerId: m.ownerId,
+        projectId: m.projectId,
+        score: m.score,
+        title: m.title,
+        article: m.article,
+        createTime: m.createTime,
+        updateTime: m.updateTime
     }
 }
 
-export type CommentModel = z.infer<typeof commentModel>
-export type CommentListFilter = z.infer<typeof commentListFilter>
-export type CommentUpsertSchema = z.infer<typeof commentUpsertSchema>
-export type CommentSchema = z.infer<typeof commentSchema>
-export type CommentWithProjectSchema = z.infer<typeof commentWithProjectSchema>
+export function parseCommentWithProjectSchema(
+    data: Comment & { project: Pick<Project, "id" | "type" | "title" | "resources"> }
+): CommentWithProjectSchema {
+    return {
+        ...parseCommentSchema(data),
+        project: parseProjectSimpleSchema(data.project)
+    }
+}

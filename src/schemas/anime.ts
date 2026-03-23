@@ -1,5 +1,16 @@
 import { z } from "zod"
-import { episodePublishRecordSchema, parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectDetailSchema, projectListFilter, projectListSchema, ProjectModel, ProjectRelationType } from "./project"
+import {
+    episodePublishRecordFormSchema,
+    parseProjectDetailSchema,
+    parseProjectListSchema,
+    projectCommonForm,
+    projectListFilter,
+    type EpisodePublishRecordModel,
+    type ProjectDetailSchema,
+    type ProjectListSchema,
+    type ProjectModel,
+    type ProjectRelationSchema
+} from "./project"
 import { BOARDCAST_TYPE, ORIGINAL_TYPE } from "@/constants/anime"
 import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
 
@@ -8,45 +19,52 @@ export const animeListFilter = projectListFilter.extend({
     boardcastType: z.enum(BOARDCAST_TYPE).optional()
 })
 
-const animeSelfSchema = z.object({
-    originalType: z.enum(ORIGINAL_TYPE).nullable(),
-    boardcastType: z.enum(BOARDCAST_TYPE).nullable(),
-    episodeDuration: z.number().nullable(),
-    episodeTotalNum: z.number(),
-    episodePublishedNum: z.number(),
-})
-
 export const animeForm = projectCommonForm.extend({
     originalType: z.enum(ORIGINAL_TYPE).nullable().optional(),
     boardcastType: z.enum(BOARDCAST_TYPE).nullable().optional(),
     episodeDuration: z.number().nullable().optional(),
     episodeTotalNum: z.number().optional(),
     episodePublishedNum: z.number().optional(),
-    episodePublishedRecords: z.array(episodePublishRecordSchema).optional(),
-    episodePublishPlan: z.array(episodePublishRecordSchema).optional()
+    episodePublishedRecords: z.array(episodePublishRecordFormSchema).optional(),
+    episodePublishPlan: z.array(episodePublishRecordFormSchema).optional()
 })
 
-export const animeListSchema = projectListSchema.and(animeSelfSchema)
+export type AnimeListSchema = ProjectListSchema & {
+    originalType: (typeof ORIGINAL_TYPE)[number] | null
+    boardcastType: (typeof BOARDCAST_TYPE)[number] | null
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+}
 
-export const animeDetailSchema = projectDetailSchema.and(animeSelfSchema.extend({
-    episodePublishPlan: z.array(episodePublishRecordSchema).nullable(),
-    episodePublishedRecords: z.array(episodePublishRecordSchema).nullable()
-}))
+export type AnimeDetailSchema = ProjectDetailSchema & {
+    originalType: (typeof ORIGINAL_TYPE)[number] | null
+    boardcastType: (typeof BOARDCAST_TYPE)[number] | null
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+    episodePublishPlan: EpisodePublishRecordModel[]
+    episodePublishedRecords: EpisodePublishRecordModel[]
+}
 
 export function parseAnimeListSchema(data: Project): AnimeListSchema {
-    const i = data as ProjectModel
+    const i = data as unknown as ProjectModel
     return {
         ...parseProjectListSchema(data),
         originalType: i.originalType,
         boardcastType: i.boardcastType,
         episodeDuration: i.episodeDuration,
         episodeTotalNum: i.episodeTotalNum ?? 1,
-        episodePublishedNum: i.episodePublishedNum ?? 0,
+        episodePublishedNum: i.episodePublishedNum ?? 0
     }
 }
 
-export function parseAnimeDetailSchema(data: Project & {staffs: (ProjectStaffRelation & {staff: Staff})[], tags: (ProjectTagRelation & {tag: Tag})[]}, relations: ProjectRelationType, relationsTopology: ProjectRelationType): AnimeDetailSchema {
-    const i = data as any as ProjectModel
+export function parseAnimeDetailSchema(
+    data: Project & { staffs: (ProjectStaffRelation & { staff: Staff })[]; tags: (ProjectTagRelation & { tag: Tag })[] },
+    relations: ProjectRelationSchema,
+    relationsTopology: ProjectRelationSchema
+): AnimeDetailSchema {
+    const i = data as unknown as ProjectModel
     return {
         ...parseProjectDetailSchema(data, relations, relationsTopology),
         originalType: i.originalType,
@@ -62,7 +80,3 @@ export function parseAnimeDetailSchema(data: Project & {staffs: (ProjectStaffRel
 export type AnimeListFilter = z.infer<typeof animeListFilter>
 
 export type AnimeForm = z.infer<typeof animeForm>
-
-export type AnimeListSchema = z.infer<typeof animeListSchema>
-
-export type AnimeDetailSchema = z.infer<typeof animeDetailSchema>

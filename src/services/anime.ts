@@ -183,8 +183,8 @@ export async function updateProjectAnime(id: string, form: AnimeForm) {
         const { publishedNum, publishPlan, publishedRecords } = processEpisodePlan(
             validate.data.episodeTotalNum ?? record.episodeTotalNum ?? 0, 
             validate.data.episodePublishedNum ?? record.episodePublishedNum ?? 0, 
-            validate.data.episodePublishPlan ?? (record.episodePublishPlan as EpisodePublishRecord[]) ?? [], 
-            validate.data.episodePublishedRecords ?? (record.episodePublishedRecords as EpisodePublishRecord[]) ?? [], 
+            validate.data.episodePublishPlan ?? (record.episodePublishPlan as unknown as EpisodePublishRecord[]) ?? [], 
+            validate.data.episodePublishedRecords ?? (record.episodePublishedRecords as unknown as EpisodePublishRecord[]) ?? [], 
             now
         )
 

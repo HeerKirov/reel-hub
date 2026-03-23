@@ -1,10 +1,10 @@
 import { memo } from "react"
 import NextLink from "next/link"
-import { ProjectRelationType } from "@/schemas/project"
+import { ProjectRelationSchema } from "@/schemas/project"
 import { RELATION_TYPE_NAMES, RelationType } from "@/constants/project"
 import { Flex, SimpleGrid, Image, Link, Badge, Box, Text } from "@chakra-ui/react"
 
-export const RelationDisplay = memo(function RelationDisplay({ relations }: {relations: Partial<ProjectRelationType>}) {
+export const RelationDisplay = memo(function RelationDisplay({ relations }: {relations: Partial<ProjectRelationSchema>}) {
     if(Object.keys(relations).length <= 0) {
         return undefined
     }

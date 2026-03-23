@@ -1,16 +1,35 @@
 import { z } from "zod"
 import { Staff } from "@/prisma/generated"
 
-export const staffModel = z.object({
-    id: z.number(),
-    name: z.string(),
-    otherNames: z.string(),
-    description: z.string(),
-    createTime: z.date(),
-    updateTime: z.date(),
-    creator: z.string(),
-    updator: z.string()
-})
+// =============================================================================
+// Model
+// =============================================================================
+
+export interface StaffModel {
+    id: number
+    name: string
+    otherNames: string
+    description: string
+    createTime: Date
+    updateTime: Date
+    creator: string
+    updator: string
+}
+
+// =============================================================================
+// Schema — API 返回
+// =============================================================================
+
+export interface StaffSchema {
+    id: number
+    name: string
+    otherNames: string[]
+    description: string
+}
+
+// =============================================================================
+// Filter
+// =============================================================================
 
 export const staffListFilter = z.object({
     search: z.string().optional(),
@@ -19,6 +38,10 @@ export const staffListFilter = z.object({
 })
 
 export type StaffListFilter = z.infer<typeof staffListFilter>
+
+// =============================================================================
+// Form
+// =============================================================================
 
 export const staffCreateFormSchema = z.object({
     name: z.string().min(1),
@@ -32,12 +55,13 @@ export const staffUpdateFormSchema = z.object({
     description: z.string().optional()
 })
 
-export const staffSchema = z.object({
-    id: z.number(),
-    name: z.string(),
-    otherNames: z.array(z.string()),
-    description: z.string()
-})
+export type StaffCreateFormSchema = z.infer<typeof staffCreateFormSchema>
+
+export type StaffUpdateFormSchema = z.infer<typeof staffUpdateFormSchema>
+
+// =============================================================================
+// Parse
+// =============================================================================
 
 export function parseStaffSchema(data: Staff): StaffSchema {
     const i = data as StaffModel
@@ -45,14 +69,6 @@ export function parseStaffSchema(data: Staff): StaffSchema {
         id: i.id,
         name: i.name,
         otherNames: i.otherNames.split("|"),
-        description: i.description,
+        description: i.description
     }
 }
-
-export type StaffModel = z.infer<typeof staffModel>
-
-export type StaffCreateFormSchema = z.infer<typeof staffCreateFormSchema>
-
-export type StaffUpdateFormSchema = z.infer<typeof staffUpdateFormSchema>
-
-export type StaffSchema = z.infer<typeof staffSchema> 

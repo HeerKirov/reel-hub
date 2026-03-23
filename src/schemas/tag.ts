@@ -1,17 +1,36 @@
 import { z } from "zod"
 import { PROJECT_TYPE } from "@/constants/project"
-import { Tag } from "@/prisma/generated"
+import { ProjectType, Tag } from "@/prisma/generated"
 
-export const tagModel = z.object({
-    id: z.number(),
-    type: z.enum(PROJECT_TYPE),
-    name: z.string(),
-    description: z.string(),
-    createTime: z.date(),
-    updateTime: z.date(),
-    creator: z.string(),
-    updator: z.string()
-})
+// =============================================================================
+// Model
+// =============================================================================
+
+export interface TagModel {
+    id: number
+    type: ProjectType
+    name: string
+    description: string
+    createTime: Date
+    updateTime: Date
+    creator: string
+    updator: string
+}
+
+// =============================================================================
+// Schema — API 返回
+// =============================================================================
+
+export interface TagSchema {
+    id: number
+    type: ProjectType
+    name: string
+    description: string
+}
+
+// =============================================================================
+// Filter
+// =============================================================================
 
 export const tagListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
@@ -19,6 +38,12 @@ export const tagListFilter = z.object({
     page: z.number().optional(),
     size: z.number().optional()
 })
+
+export type TagListFilter = z.infer<typeof tagListFilter>
+
+// =============================================================================
+// Form
+// =============================================================================
 
 export const tagCreateFormSchema = z.object({
     type: z.enum(PROJECT_TYPE),
@@ -31,9 +56,13 @@ export const tagUpdateFormSchema = z.object({
     description: z.string().optional()
 })
 
-export const tagSchema = tagCreateFormSchema.extend({
-    id: z.number()
-})
+export type TagCreateFormSchema = z.infer<typeof tagCreateFormSchema>
+
+export type TagUpdateFormSchema = z.infer<typeof tagUpdateFormSchema>
+
+// =============================================================================
+// Parse
+// =============================================================================
 
 export function parseTagSchema(data: Tag): TagSchema {
     const i = data as TagModel
@@ -41,18 +70,6 @@ export function parseTagSchema(data: Tag): TagSchema {
         id: i.id,
         type: i.type,
         name: i.name,
-        description: i.description,
+        description: i.description
     }
 }
-
-export type TagModel = z.infer<typeof tagModel>
-
-export type TagListFilter = z.infer<typeof tagListFilter>
-
-export type TagCreateFormSchema = z.infer<typeof tagCreateFormSchema>
-
-export type TagUpdateFormSchema = z.infer<typeof tagUpdateFormSchema>
-
-export type TagSchema = z.infer<typeof tagSchema>
-
-

@@ -1,6 +1,6 @@
 "use server"
 import { prisma } from "@/lib/prisma"
-import { ProjectRelationModel, ProjectRelationType, projectRelationItemSchema, ProjectListFilter, projectListFilter } from "@/schemas/project"
+import { ProjectRelationModel, ProjectRelationSchema, parseProjectRelationItem, ProjectListFilter, projectListFilter } from "@/schemas/project"
 import { arrays, records } from "@/helpers/primitive"
 import { ProjectType, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { Staff, Tag } from "@/prisma/generated"
@@ -43,14 +43,14 @@ export async function listProject(filter: ProjectListFilter): Promise<{id: strin
     }))
 }
 
-export async function getRelations(relations: ProjectRelationModel, relationsTopology: ProjectRelationModel): Promise<{relations: ProjectRelationType, relationsTopology: ProjectRelationType}> {
+export async function getRelations(relations: ProjectRelationModel, relationsTopology: ProjectRelationModel): Promise<{relations: ProjectRelationSchema, relationsTopology: ProjectRelationSchema}> {
     const ids = Object.values(relations).flat().concat(Object.values(relationsTopology).flat())
     const r = await prisma.project.findMany({where: {id: {in: ids}}})
-    const items = r.map(i => projectRelationItemSchema.parse(i))
+    const items = r.map(i => parseProjectRelationItem(i))
     const maps = arrays.associateBy(items, i => i.id)
     return {
-        relations: records.map(relations, a => a.map(i => maps[i])),
-        relationsTopology: records.map(relationsTopology, a => a.map(i => maps[i]))
+        relations: records.map(relations as Record<string, string[]>, a => a.map(i => maps[i])),
+        relationsTopology: records.map(relationsTopology as Record<string, string[]>, a => a.map(i => maps[i]))
     }
 }
 

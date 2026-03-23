@@ -9,7 +9,7 @@ import { Select, Input, NumberInput, DateTimePicker } from "@/components/form"
 import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor, EpisodePublishedRecordEditor, EpisodePublishPlanEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
 import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
-import { EpisodePublishRecord, ProjectRelationModel, ProjectRelationType } from "@/schemas/project"
+import { EpisodePublishRecord, ProjectRelationModel, ProjectRelationSchema } from "@/schemas/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS, ProjectType } from "@/constants/project"
 import { BoardcastType, OriginalType } from "@/constants/anime"
@@ -44,7 +44,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
     const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
     const [episodePublishedRecords, setEpisodePublishedRecords] = useState<EpisodePublishRecord[]>(data?.episodePublishedRecords ?? [])
-    const [relations, setRelations] = useState<Partial<ProjectRelationType>>(data?.relations ?? {})
+    const [relations, setRelations] = useState<Partial<ProjectRelationSchema>>(data?.relations ?? {})
     const [resourceCover, setResourceCover] = useState<string | Blob | null>(data?.resources?.["cover"] ?? null)
     const [resourceAvatar, setResourceAvatar] = useState<string | Blob | null>(data?.resources?.["avatar"] ?? null)
 
@@ -304,8 +304,8 @@ const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
 
 interface RelationTabProps {
     projectType: ProjectType
-    relations: Partial<ProjectRelationType>
-    setRelations: (relations: Partial<ProjectRelationType>) => void
+    relations: Partial<ProjectRelationSchema>
+    setRelations: (relations: Partial<ProjectRelationSchema>) => void
 }
 
 const RelationTab = memo(function RelationTab(props: RelationTabProps) {
