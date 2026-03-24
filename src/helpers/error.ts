@@ -64,6 +64,22 @@ export function mapServiceError(error: BaseException<string, unknown>): UiError 
                 severity: "info",
                 retryable: false
             }
+        case "UNAUTHORIZED":
+            return {
+                code: error.code,
+                title: "未登录",
+                description: "请在登录后访问该内容",
+                severity: "error",
+                retryable: false
+            }
+        case "FORBIDDEN":
+            return {
+                code: error.code,
+                title: "禁止访问",
+                description: "您没有权限访问该内容",
+                severity: "error",
+                retryable: false
+            }
         default:
             return {
                 code: error.code,

@@ -1,10 +1,12 @@
 import { nanoid } from "nanoid"
 import { getUserId } from "@/helpers/next"
+import { requireAccess } from "@/helpers/auth-guard"
 import { deleteFile, existFile, uploadFile } from "@/lib/oss"
 import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+    await requireAccess("project", "write")
     const form = await request.formData()
     const projectId = form.get("projectId") as string
     const userId = await getUserId()

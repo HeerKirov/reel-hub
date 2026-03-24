@@ -1,6 +1,7 @@
 "use server"
 import { cache } from "react"
 import { getUserId } from "@/helpers/next"
+import { requireAccess } from "@/helpers/auth-guard"
 import { objects } from "@/helpers/primitive"
 import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
@@ -117,6 +118,7 @@ export const retrieveProjectAnime = cache(async function(id: string): Promise<An
 
 export async function createProjectAnime(form: AnimeForm): Promise<Result<string, CreateProjectAnimeError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("project", "write")
         const userId = await getUserId()
         const now = new Date()
 
@@ -189,6 +191,7 @@ export async function createProjectAnime(form: AnimeForm): Promise<Result<string
 
 export async function updateProjectAnime(id: string, form: AnimeForm): Promise<Result<void, UpdateProjectAnimeError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("project", "write")
         const userId = await getUserId()
         const now = new Date()
 
@@ -267,6 +270,7 @@ export async function updateProjectAnime(id: string, form: AnimeForm): Promise<R
 
 export async function deleteProjectAnime(id: string): Promise<Result<void, DeleteProjectAnimeError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("project", "write")
         const r = await prisma.project.findUnique({where: {id}})
         if(!r) return err(exceptionResourceNotExist("projectId", id))
 

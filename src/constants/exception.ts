@@ -42,6 +42,16 @@ export type ResourceNotSuitable<P extends string, V> = BaseException<"NOT_SUITAB
 export type AlreadyExists<R extends string, P extends string, V> = BaseException<"ALREADY_EXISTS", {relationName: R, resourceName: P, resourceValue: V}>
 
 /**
+ * 未授权。该错误指当前请求未授权。
+ */
+export type Unauthorized = BaseException<"UNAUTHORIZED", null>
+
+/**
+ * 禁止访问。该错误指当前请求被禁止访问。
+ */
+export type Forbidden = BaseException<"FORBIDDEN", null>
+
+/**
  * 内部服务器错误。该错误指服务器在处理请求时发生了未知的错误。
  */
 export type InternalServerError = BaseException<"INTERNAL_SERVER_ERROR", null>
@@ -68,6 +78,14 @@ export function exceptionAlreadyExists<R extends string, P extends string, V>(re
         message: `${relationName} already exists`,
         info: { relationName, resourceName, resourceValue }
     }
+}
+
+export function exceptionUnauthorized(): Unauthorized {
+    return { code: "UNAUTHORIZED", message: "Unauthorized", info: null }
+}
+
+export function exceptionForbidden(): Forbidden {
+    return { code: "FORBIDDEN", message: "Forbidden", info: null }
 }
 
 export function exceptionInternalServerError(message: string = "Internal server error"): InternalServerError {
@@ -105,6 +123,9 @@ export async function safeExecuteResult<T, E extends BaseException<string, unkno
     try {
         return await fn()
     } catch(error) {
+        if(isBaseException(error)) {
+            return { ok: false, err: error as E }
+        }
         console.error("[safeExecuteResult] unexpected exception", error)
         return { ok: false, err: exceptionInternalServerError() }
     }

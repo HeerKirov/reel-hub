@@ -1,5 +1,6 @@
 "use server"
 import { getUserId } from "@/helpers/next"
+import { requireAccess } from "@/helpers/auth-guard"
 import { prisma } from "@/lib/prisma"
 import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
@@ -29,6 +30,7 @@ export async function listStaffs(filter: StaffListFilter): Promise<Result<StaffS
 
 export async function createStaff(form: StaffCreateFormSchema): Promise<Result<StaffSchema, CreateStaffError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("staff", "write")
         const userId = await getUserId()
         const now = new Date()
 
@@ -58,6 +60,7 @@ export async function retrieveStaff(id: number): Promise<StaffSchema | null> {
 
 export async function updateStaff(id: number, form: StaffUpdateFormSchema): Promise<Result<StaffSchema, UpdateStaffError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("staff", "write")
         const userId = await getUserId()
         const now = new Date()
 
@@ -80,6 +83,7 @@ export async function updateStaff(id: number, form: StaffUpdateFormSchema): Prom
 
 export async function deleteStaff(id: number): Promise<Result<void, DeleteStaffError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("staff", "write")
         await prisma.staff.delete({where: { id }})
         await prisma.projectStaffRelation.deleteMany({where: {staffId: id}})
         return ok(undefined)

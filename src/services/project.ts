@@ -10,6 +10,7 @@ import { exceptionParamError, exceptionResourceNotExist, ParamError, safeExecute
 import { ListProjectError, ProjectFindAllError, RemoveProjectInTopologyError, SaveStaffsError, SaveTagsError, UpdateAllRelationTopologyError, UpdateRelationsError } from "@/schemas/error"
 import { createTag } from "./tag"
 import { createStaff } from "./staff"
+import { requireAccess } from "@/helpers/auth-guard"
 
 export async function listProject(filter: ProjectListFilter): Promise<Result<{id: string, type: ProjectType, title: string, subtitles: string[]}[], ListProjectError>> {
     return safeExecuteResult(async () => {
@@ -59,6 +60,7 @@ export async function getRelations(relations: ProjectRelationModel, relationsTop
 }
 
 export async function saveTags(projectId: string, type: ProjectType, tags: string[]): Promise<Result<void, SaveTagsError>> {
+    await requireAccess("project", "write")
     // 获取所有已存在的tag
     const existingTags = tags.length > 0 ? await prisma.tag.findMany({
         where: {
@@ -125,6 +127,7 @@ export async function saveTags(projectId: string, type: ProjectType, tags: strin
 }
 
 export async function saveStaffs(projectId: string, staffs: {type: string, members: string[]}[]): Promise<Result<void, SaveStaffsError>> {
+    await requireAccess("project", "write")
     // 获取所有staff名字
     const staffNames = Array.from(new Set(staffs.flatMap(s => s.members)))
 
@@ -210,6 +213,7 @@ export async function saveStaffs(projectId: string, staffs: {type: string, membe
  */
 export async function updateRelations(projectId: string, relations: Partial<ProjectRelationModel>): Promise<Result<void, UpdateRelationsError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("project", "write")
     const relationResult = validateRelation(relations)
     if(!relationResult.ok) return relationResult
     const newRelations = relationResult.value
@@ -317,6 +321,7 @@ export async function updateRelations(projectId: string, relations: Partial<Proj
  */
 export async function updateAllRelationTopology(): Promise<Result<number, UpdateAllRelationTopologyError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("project", "write")
     const elements = await prisma.project.findMany({
         select: {
             id: true,
@@ -374,6 +379,7 @@ export async function updateAllRelationTopology(): Promise<Result<number, Update
  */
 export async function removeProjectInTopology(projectId: string, topology: ProjectRelationModel): Promise<Result<void, RemoveProjectInTopologyError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("project", "write")
     // 节点列表
     const elements = new Map<string, ProjectModel>()
     

@@ -1,6 +1,7 @@
 "use server"
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
+import { requireAccess } from "@/helpers/auth-guard"
 import { parsePreviewSchema, recordCreateForm, RecordCreateForm, RecordPreviewSchema, RecordDetailSchema, parseDetailSchema, RecordUpdateForm, recordUpdateForm, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { err, ok, Result } from "@/schemas/all"
 import { exceptionAlreadyExists, exceptionParamError, exceptionParamRequired, exceptionResourceNotExist, exceptionResourceNotSuitable, safeExecuteResult } from "@/constants/exception"
@@ -12,6 +13,7 @@ import { BoardcastType, FollowType, ProjectType, RecordStatus } from "@/prisma/g
 
 export async function retrieveRecordPreview(projectId: string): Promise<Result<RecordPreviewSchema | null, RecordPreviewError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("record", "read")
         const userId = await getUserId()
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
@@ -28,6 +30,7 @@ export async function retrieveRecordPreview(projectId: string): Promise<Result<R
 
 export async function retrieveRecord(projectId: string): Promise<Result<RecordDetailSchema | null, RecordDetailError>> {
     return safeExecuteResult(async () => {
+        await requireAccess("record", "read")
         const userId = await getUserId()
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
@@ -49,6 +52,7 @@ export async function retrieveRecord(projectId: string): Promise<Result<RecordDe
 
 export async function createRecord(projectId: string, form: RecordCreateForm): Promise<Result<void, CreateRecordError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
     const now = new Date()
 
@@ -275,6 +279,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
 
 export async function updateRecord(projectId: string, form: RecordUpdateForm): Promise<Result<void, UpdateRecordError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
 
     const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
@@ -298,6 +303,7 @@ export async function updateRecord(projectId: string, form: RecordUpdateForm): P
 
 export async function deleteRecord(projectId: string): Promise<Result<void, DeleteRecordError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
 
     const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
@@ -311,6 +317,7 @@ export async function deleteRecord(projectId: string): Promise<Result<void, Dele
 
 export async function createProgress(projectId: string, form: RecordProgressUpsertForm): Promise<Result<void, CreateProgressError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
     const now = new Date()
 
@@ -519,6 +526,7 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
 
 export async function updateLatestProgress(projectId: string, ordinal: number, form: RecordProgressUpsertForm): Promise<Result<void, UpdateLatestProgressError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
     const now = new Date()
 
@@ -624,6 +632,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
 
 export async function nextEpisode(projectId: string): Promise<Result<number, NextEpisodeError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
     const now = new Date()
 
@@ -734,6 +743,7 @@ export async function nextEpisode(projectId: string): Promise<Result<number, Nex
 
 export async function deleteProgress(projectId: string, ordinal: number): Promise<Result<void, DeleteProgressError>> {
     return safeExecuteResult(async () => {
+    await requireAccess("record", "write")
     const userId = await getUserId()
     const now = new Date()
 
