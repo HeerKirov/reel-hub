@@ -16,6 +16,7 @@ import { BoardcastType, OriginalType } from "@/constants/anime"
 import { listTags } from "@/services/tag"
 import { listStaffs } from "@/services/staff"
 import { listProject } from "@/services/project"
+import { unwrapQueryResult } from "@/helpers/result"
 
 const CropperImage = dynamic(() => import("@/components/cropper").then(mod => mod.CropperFileUploader), { ssr: false })
 
@@ -124,8 +125,8 @@ interface BasicInfoTabProps {
 const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
     const search = useCallback(async (text: string): Promise<string[]> => {
         const tagsResult = await listTags({search: text, type: "ANIME"})
-        if(!tagsResult.ok) return []
-        return tagsResult.value.map(t => t.name)
+        const { data, error } = unwrapQueryResult(tagsResult)
+        return error ? [] : data.list.map(t => t.name)
     }, [])
 
     return (
@@ -209,8 +210,8 @@ interface StaffTabProps {
 const StaffTab = memo(function StaffTab(props: StaffTabProps) {
     const search = useCallback(async (text: string): Promise<string[]> => {
         const staffsResult = await listStaffs({search: text})
-        if(!staffsResult.ok) return []
-        return staffsResult.value.map(t => t.name)
+        const { data, error } = unwrapQueryResult(staffsResult)
+        return error ? [] : data.list.map(t => t.name)
     }, [])
 
     return (

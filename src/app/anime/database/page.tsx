@@ -6,7 +6,7 @@ import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter, PublishTimeFilterHeader, StaffFilterHeader, TagFilterHeader } from "@/components/server/filters"
 import { PublishTimePicker, SearchBox, TagPicker, StaffPicker } from "@/components/filters"
-import { listProjectAnime, countProjectAnime } from "@/services/anime"
+import { listProjectAnime } from "@/services/project-anime"
 import { AnimeListFilter, AnimeListSchema } from "@/schemas/anime"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS } from "@/constants/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
@@ -27,16 +27,13 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
 
     const isAdmin = await hasPermission("admin")
 
-    const [listResult, totalResult] = await Promise.all([
-        listProjectAnime({...searchParams, page, size: 15}),
-        countProjectAnime({...searchParams})
-    ])
-    const { data: list, error: listError } = unwrapQueryResult(listResult)
-    const { data: total, error: totalError } = unwrapQueryResult(totalResult)
+    const listResult = await listProjectAnime({...searchParams, page, size: 15})
+    const { data, error } = unwrapQueryResult(listResult)
 
-    if(listError || totalError) {
-        return <InlineError error={listError ?? totalError!}/>
+    if(error) {
+        return <InlineError error={error}/>
     }
+    const { list, total } = data
 
     return (
         <ListPageLayout

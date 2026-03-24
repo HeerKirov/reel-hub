@@ -23,9 +23,6 @@ export interface CommentModel {
 // =============================================================================
 
 export interface CommentSchema {
-    id: number
-    ownerId: string
-    projectId: string
     score: number | null
     title: string | null
     article: string | null
@@ -72,9 +69,6 @@ export type CommentUpsertSchema = CommentUpsertForm
 export function parseCommentSchema(data: Comment): CommentSchema {
     const m = data as CommentModel
     return {
-        id: m.id,
-        ownerId: m.ownerId,
-        projectId: m.projectId,
         score: m.score,
         title: m.title,
         article: m.article,

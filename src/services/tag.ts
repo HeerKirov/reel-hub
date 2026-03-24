@@ -3,28 +3,35 @@ import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { prisma } from "@/lib/prisma"
 import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
-import { err, ok, Result } from "@/schemas/all"
+import { err, ListResult, ok, Result } from "@/schemas/all"
 import { CreateTagError, DeleteTagError, ListTagsError, UpdateTagError } from "@/schemas/error"
 import { TagCreateFormSchema, TagListFilter, tagCreateFormSchema, TagSchema, tagListFilter, tagUpdateFormSchema, TagUpdateFormSchema, parseTagSchema } from "@/schemas/tag"
 
-export async function listTags(filter: TagListFilter): Promise<Result<TagSchema[], ListTagsError>> {
+export async function listTags(filter: TagListFilter): Promise<Result<ListResult<TagSchema>, ListTagsError>> {
     return safeExecuteResult(async () => {
         const validate = tagListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const r = await prisma.tag.findMany({
-            where: {
-                type: validate.data.type,
-                name: validate.data.search ? {contains: validate.data.search} : undefined
-            },
-            orderBy: {
-                createTime: "desc"
-            },
-            skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-            take: validate.data.size ?? 15
-        })
+        const where = {
+            type: validate.data.type,
+            name: validate.data.search ? {contains: validate.data.search} : undefined
+        }
+        const [r, total] = await Promise.all([
+            prisma.tag.findMany({
+                where,
+                orderBy: {
+                    createTime: "desc"
+                },
+                skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+                take: validate.data.size ?? 15
+            }),
+            prisma.tag.count({ where })
+        ])
 
-        return ok(r.map(parseTagSchema))
+        return ok({
+            list: r.map(parseTagSchema),
+            total
+        })
     })
 }
 

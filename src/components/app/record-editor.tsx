@@ -2,13 +2,13 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { RiFileEditLine, RiDeleteBinLine } from "react-icons/ri"
-import { Box, Button, Flex, IconButton, Table, Text } from "@chakra-ui/react"
+import { Box, IconButton, Table, Text } from "@chakra-ui/react"
 import { EditorWithTabLayout } from "@/components/layout"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { RecordDetailSchema } from "@/schemas/record"
 import { ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
-import { deleteProgress } from "@/services/record"
+import { deleteProgress } from "@/services/record-progress"
 import { handleActionResult } from "@/helpers/action"
 
 export function RecordEditor({ type, project, record }: {type: ProjectType, project: ProjectDetailSchema, record: RecordDetailSchema}) {

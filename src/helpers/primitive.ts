@@ -116,6 +116,9 @@ export const dates = {
             return d
         }
     },
+    toDateText(date: Date): string {
+        return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
+    },
     toDailyText(date: Date, now?: Date): string {
         const current = now ?? new Date()
         const today = new Date(current.getFullYear(), current.getMonth(), current.getDate())

@@ -1,6 +1,6 @@
 import React from "react"
 import { notFound } from "next/navigation"
-import { retrieveProjectAnime } from "@/services/anime"
+import { retrieveProjectAnime } from "@/services/project-anime"
 import { AnimationDatabaseEditContent } from "./components"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {

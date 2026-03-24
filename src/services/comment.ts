@@ -4,64 +4,46 @@ import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
-import { err, ok, Result } from "@/schemas/all"
-import { CountCommentsError, DeleteCommentError, ListCommentsError, RetrieveCommentError, UpsertCommentError } from "@/schemas/error"
+import { err, ListResult, ok, Result } from "@/schemas/all"
+import { DeleteCommentError, ListCommentsError, RetrieveCommentError, UpsertCommentError } from "@/schemas/error"
 
-export async function listComments(filter: CommentListFilter): Promise<Result<CommentWithProjectSchema[], ListCommentsError>> {
+export async function listComments(filter: CommentListFilter): Promise<Result<ListResult<CommentWithProjectSchema>, ListCommentsError>> {
     return safeExecuteResult(async () => {
         await requireAccess("comment", "read")
         const validate = commentListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const userId = await getUserId()
+        const where = {
+            ownerId: userId,
+            project: validate.data.search ? {
+                OR: [
+                    { title: { contains: validate.data.search } },
+                    { subtitles: { contains: validate.data.search } },
+                    { keywords: { contains: validate.data.search } }
+                ]
+            } : undefined
+        }
 
-        const r = await prisma.comment.findMany({
-            where: {
-                ownerId: userId,
-                project: validate.data.search ? {
-                    OR: [
-                        { title: { contains: validate.data.search } },
-                        { subtitles: { contains: validate.data.search } },
-                        { keywords: { contains: validate.data.search } }
-                    ]
-                } : undefined
-            },
-            orderBy: {
-                [filter.orderBy ?? "updateTime"]: "desc"
-            },
-            skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-            take: validate.data.size ?? 15,
-            include: {
-                project: {select: {id: true, type: true, title: true, resources: true}}
-            }
+        const [r, total] = await Promise.all([
+            prisma.comment.findMany({
+                where,
+                orderBy: {
+                    [filter.orderBy ?? "updateTime"]: "desc"
+                },
+                skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+                take: validate.data.size ?? 15,
+                include: {
+                    project: {select: {id: true, type: true, title: true, resources: true}}
+                }
+            }),
+            prisma.comment.count({ where })
+        ])
+
+        return ok({
+            list: r.map(parseCommentWithProjectSchema),
+            total
         })
-
-        return ok(r.map(parseCommentWithProjectSchema))
-    })
-}
-
-export async function countComments(filter: CommentListFilter): Promise<Result<number, CountCommentsError>> {
-    return safeExecuteResult(async () => {
-        await requireAccess("comment", "read")
-        const validate = commentListFilter.safeParse(filter)
-        if(!validate.success) return err(exceptionParamError(validate.error.message))
-            
-        const userId = await getUserId()
-        
-        const r = await prisma.comment.count({
-            where: {
-                ownerId: userId,
-                project: validate.data.search ? {
-                    OR: [
-                        { title: { contains: validate.data.search } },
-                        { subtitles: { contains: validate.data.search } },
-                        { keywords: { contains: validate.data.search } }
-                    ]
-                } : undefined
-            }
-        })
-
-        return ok(r)
     })
 }
 

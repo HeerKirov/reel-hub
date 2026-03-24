@@ -16,7 +16,7 @@ export const NAVIGATIONS: NavigationItem[] = [
         children: [
             {label: "数据库", href: "/anime/database", icon: <RiDatabase2Fill/>},
             {label: "订阅", href: "/anime/subscription", icon: <RiBookmark3Line/>},
-            {label: "时间线", href: "/anime/timeline", icon: <RiPulseFill/>},
+            {label: "时间线", href: "/anime/record", icon: <RiPulseFill/>},
             {label: "评价", href: "/anime/comment", icon: <RiPenNibLine/>},
             {label: "统计", href: "/anime/statistics", icon: <RiBarChartBoxAiLine/>},
         ]

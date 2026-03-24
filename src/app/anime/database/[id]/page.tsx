@@ -10,7 +10,7 @@ import { CommentBox } from "@/components/app/comment-display"
 import { AnimeDetailSchema } from "@/schemas/anime"
 import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
-import { retrieveProjectAnime } from "@/services/anime"
+import { retrieveProjectAnime } from "@/services/project-anime"
 import emptyCover from "@/assets/empty.jpg"
 import { RecordBox } from "@/components/app/record-display"
 

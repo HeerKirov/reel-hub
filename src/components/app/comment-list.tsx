@@ -6,7 +6,7 @@ import { SearchBox } from "@/components/filters"
 import { Starlight } from "@/components/form"
 import { ProjectType } from "@/constants/project"
 import { CommentWithProjectSchema } from "@/schemas/comment"
-import { countComments, listComments } from "@/services/comment"
+import { listComments } from "@/services/comment"
 import { dates } from "@/helpers/primitive"
 import { staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
@@ -19,16 +19,13 @@ export async function CommentList(props: {searchParams: Promise<CommentListSearc
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
-    const [listResult, totalResult] = await Promise.all([
-        listComments({type, page, size: 15, search: searchParams.search, orderBy: searchParams.view === "table" ? "score" : "updateTime"}),
-        countComments({type, search: searchParams.search})
-    ])
-    const { data: list, error: listError } = unwrapQueryResult(listResult)
-    const { data: total, error: totalError } = unwrapQueryResult(totalResult)
+    const listResult = await listComments({type, page, size: 15, search: searchParams.search, orderBy: searchParams.view === "table" ? "score" : "updateTime"})
+    const { data, error } = unwrapQueryResult(listResult)
 
-    if(listError || totalError) {
-        return <InlineError error={listError ?? totalError!}/>
+    if(error) {
+        return <InlineError error={error}/>
     }
+    const { list, total } = data
 
     return (
         <ListPageLayout
@@ -109,7 +106,7 @@ function ContentActivity({ list, type }: {list: CommentWithProjectSchema[], type
 }
 
 function ContentTable({ list, type }: {list: CommentWithProjectSchema[], type: ProjectType}) {
-    return <Table.Root>
+    return <Table.Root size="sm">
         <Table.Header>
             <Table.Row>
                 <Table.ColumnHeader width="50px"></Table.ColumnHeader>

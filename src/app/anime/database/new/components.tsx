@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { AnimeForm } from "@/schemas/anime"
-import { createProjectAnime } from "@/services/anime"
+import { createProjectAnime } from "@/services/project-anime"
 import { Editor } from "@/components/app/project-editor"
 import { handleActionResult } from "@/helpers/action"
 

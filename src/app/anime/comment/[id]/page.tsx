@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { retrieveProjectAnime } from "@/services/anime"
+import { retrieveProjectAnime } from "@/services/project-anime"
 import { retrieveComment } from "@/services/comment"
 import { CommentDisplay } from "@/components/app/comment-display"
 import { InlineError } from "@/components/app/inline-error"

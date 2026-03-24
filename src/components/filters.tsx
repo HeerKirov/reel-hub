@@ -139,8 +139,8 @@ export const TagPicker = memo(function TagPicker() {
 
     const search = async (text: string) => {
         const result = await listTags({search: text, type: "ANIME"})
-        const unwrap = unwrapQueryResult(result)
-        return unwrap.error ? [] : unwrap.data.map(i => i.name)
+        const { data, error } = unwrapQueryResult(result)
+        return error ? [] : data.list.map(i => i.name)
     }
 
     return <TagEditor value={[]} onValueChange={onValueChange} search={search}/>
@@ -162,8 +162,8 @@ export const StaffPicker = memo(function StaffPicker() {
 
     const search = async (text: string) => {
         const result = await listStaffs({search: text})
-        const unwrap = unwrapQueryResult(result)
-        return unwrap.error ? [] : unwrap.data.map(i => i.name)
+        const { data, error } = unwrapQueryResult(result)
+        return error ? [] : data?.list.map(i => i.name) ?? []
     }
 
     return <TagEditor value={[]} onValueChange={onValueChange} search={search}/>

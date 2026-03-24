@@ -3,28 +3,35 @@ import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { prisma } from "@/lib/prisma"
 import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
-import { err, ok, Result } from "@/schemas/all"
+import { err, ListResult, ok, Result } from "@/schemas/all"
 import { CreateStaffError, DeleteStaffError, ListStaffsError, UpdateStaffError } from "@/schemas/error"
 import { StaffCreateFormSchema, StaffListFilter, staffCreateFormSchema, StaffSchema, staffListFilter, staffUpdateFormSchema, StaffUpdateFormSchema, parseStaffSchema } from "@/schemas/staff"
 
-export async function listStaffs(filter: StaffListFilter): Promise<Result<StaffSchema[], ListStaffsError>> {
+export async function listStaffs(filter: StaffListFilter): Promise<Result<ListResult<StaffSchema>, ListStaffsError>> {
     return safeExecuteResult(async () => {
         const validate = staffListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
-        
-        const r = await prisma.staff.findMany({
-            where: {
-                name: validate.data.search ? {contains: validate.data.search, mode: 'insensitive'} : undefined,
-                otherNames: validate.data.search ? {contains: validate.data.search, mode: 'insensitive'} : undefined
-            },
-            orderBy: {
-                createTime: "desc"
-            },
-            skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-            take: validate.data.size ?? 15
-        })
 
-        return ok(r.map(parseStaffSchema))
+        const where = {
+            name: validate.data.search ? {contains: validate.data.search, mode: "insensitive" as const} : undefined,
+            otherNames: validate.data.search ? {contains: validate.data.search, mode: "insensitive" as const} : undefined
+        }
+        const [r, total] = await Promise.all([
+            prisma.staff.findMany({
+                where,
+                orderBy: {
+                    createTime: "desc"
+                },
+                skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+                take: validate.data.size ?? 15
+            }),
+            prisma.staff.count({ where })
+        ])
+
+        return ok({
+            list: r.map(parseStaffSchema),
+            total
+        })
     })
 }
 

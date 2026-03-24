@@ -5,95 +5,64 @@ import { requireAccess } from "@/helpers/auth-guard"
 import { objects } from "@/helpers/primitive"
 import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
-import { err, ok, Result } from "@/schemas/all"
+import { err, ListResult, ok, Result } from "@/schemas/all"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
 import { exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
 import { getPublishTimeRange } from "@/helpers/data"
-import { CountProjectAnimeError, CreateProjectAnimeError, DeleteProjectAnimeError, ListProjectAnimeError, UpdateProjectAnimeError } from "@/schemas/error"
+import { CreateProjectAnimeError, DeleteProjectAnimeError, ListProjectAnimeError, UpdateProjectAnimeError } from "@/schemas/error"
 import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
 import { syncAnimeRecordProgressAfterEpisodeMetaChange } from "@/services/record"
 
-export async function listProjectAnime(filter: AnimeListFilter): Promise<Result<AnimeListSchema[], ListProjectAnimeError>> {
+export async function listProjectAnime(filter: AnimeListFilter): Promise<Result<ListResult<AnimeListSchema>, ListProjectAnimeError>> {
     return safeExecuteResult(async () => {
         const validate = animeListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const r = await prisma.project.findMany({
-            where: {
-                type: ProjectType.ANIME,
-                OR: validate.data.search ? [
-                    {title: {contains: validate.data.search}},
-                    {subtitles: {contains: validate.data.search}},
-                    {keywords: {contains: validate.data.search}}
-                ] : undefined,
-                ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
-                ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
-                boardcastType: validate.data.boardcastType,
-                originalType: validate.data.originalType,
-                publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
-                tags: validate.data.tag ? {
-                    some: {
-                        tag: {
-                            name: validate.data.tag
-                        }
+        const where = {
+            type: ProjectType.ANIME,
+            OR: validate.data.search ? [
+                {title: {contains: validate.data.search}},
+                {subtitles: {contains: validate.data.search}},
+                {keywords: {contains: validate.data.search}}
+            ] : undefined,
+            ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
+            ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
+            boardcastType: validate.data.boardcastType,
+            originalType: validate.data.originalType,
+            publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
+            tags: validate.data.tag ? {
+                some: {
+                    tag: {
+                        name: validate.data.tag
                     }
-                } : undefined,
-                staffs: validate.data.staff ? {
-                    some: {
-                        staff: {
-                            name: validate.data.staff
-                        }
+                }
+            } : undefined,
+            staffs: validate.data.staff ? {
+                some: {
+                    staff: {
+                        name: validate.data.staff
                     }
-                } : undefined
-            },
-            orderBy: {
-                publishTime: "desc"
-            },
-            skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
-            take: validate.data.size ?? 15
+                }
+            } : undefined
+        }
+
+        const [r, total] = await Promise.all([
+            prisma.project.findMany({
+                where,
+                orderBy: {
+                    publishTime: "desc"
+                },
+                skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
+                take: validate.data.size ?? 15
+            }),
+            prisma.project.count({ where })
+        ])
+
+        return ok<ListResult<AnimeListSchema>, ListProjectAnimeError>({
+            list: r.map(parseAnimeListSchema),
+            total
         })
-
-        return ok<AnimeListSchema[], ListProjectAnimeError>(r.map(parseAnimeListSchema))
-    })
-}
-
-export async function countProjectAnime(filter: AnimeListFilter): Promise<Result<number, CountProjectAnimeError>> {
-    return safeExecuteResult(async () => {
-        const validate = animeListFilter.safeParse(filter)
-        if(!validate.success) return err(exceptionParamError(validate.error.message))
-
-        const total = await prisma.project.count({
-            where: {
-                type: ProjectType.ANIME,
-                OR: validate.data.search ? [
-                    {title: {contains: validate.data.search}},
-                    {subtitles: {contains: validate.data.search}},
-                    {keywords: {contains: validate.data.search}}
-                ] : undefined,
-                ratingS: validate.data.ratingS !== undefined ? RATING_SEX_TO_INDEX[validate.data.ratingS] : undefined,
-                ratingV: validate.data.ratingV !== undefined ? RATING_VIOLENCE_TO_INDEX[validate.data.ratingV] : undefined,
-                boardcastType: validate.data.boardcastType,
-                originalType: validate.data.originalType,
-                publishTime: validate.data.publishTime !== undefined ? getPublishTimeRange(validate.data.publishTime) : undefined,
-                tags: validate.data.tag ? {
-                    some: {
-                        tag: {
-                            name: validate.data.tag
-                        }
-                    }
-                } : undefined,
-                staffs: validate.data.staff ? {
-                    some: {
-                        staff: {
-                            name: validate.data.staff
-                        }
-                    }
-                } : undefined
-            }
-        })
-
-        return ok<number, CountProjectAnimeError>(total)
     })
 }
 

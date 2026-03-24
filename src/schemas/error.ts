@@ -40,6 +40,8 @@ export type CreateRecordError =
 export type UpdateRecordError = ParamError | ResourceNotExist<"recordId", string> | InternalServerError
 
 export type DeleteRecordError = ResourceNotExist<"recordId", string> | InternalServerError
+export type ListRecordActivityError = ParamError | InternalServerError
+export type ListRecordHistoryError = ParamError | InternalServerError
 
 export type CreateProgressError =
   | ParamError
@@ -71,8 +73,6 @@ export type DeleteProgressError =
 // --- comment ---
 
 export type ListCommentsError = ParamError | InternalServerError
-
-export type CountCommentsError = ParamError | InternalServerError
 
 export type RetrieveCommentError = InternalServerError
 
@@ -106,8 +106,6 @@ export type DeleteStaffError = InternalServerError
 // --- anime ---
 
 export type ListProjectAnimeError = ParamError | InternalServerError
-
-export type CountProjectAnimeError = ParamError | InternalServerError
 
 export type CreateProjectAnimeError =
   | ParamError

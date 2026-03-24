@@ -1,12 +1,17 @@
 import { z } from "zod"
-import type { Record as PrismaRecord, RecordProgress } from "@/prisma/generated"
+import type { Project, Record as PrismaRecord, RecordProgress } from "@/prisma/generated"
 import { RECORD_STATUS, FOLLOW_TYPE, RecordStatus, FollowType } from "@/constants/record"
 import { PROJECT_TYPE } from "@/constants/project"
-import type { ProjectSimpleSchema } from "./project"
+import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "./project"
 
 // =============================================================================
 // Model
 // =============================================================================
+
+export interface ActivityEvent {
+    type: "CREATE_RECORD" | "CREATE_PROGRESS" | "WATCH_EPISODE" | "EDIT_PROGRESS"
+    episodeNum?: number
+}
 
 export interface RecordModel {
     id: number
@@ -88,6 +93,50 @@ export interface RecordDetailSchema {
     progresses: RecordProgressDetailItem[]
 }
 
+export interface RecordActivityListSchema {
+    specialAttention: boolean
+    status: RecordStatus
+    progressCount: number
+    startTime: Date | null
+    endTime: Date | null
+    activityTime: Date | null
+    activityEvent: Record<string, unknown>
+    project: ProjectSimpleSchema
+    watchedEpisode: number | null
+    totalEpisode: number | null
+}
+
+export interface RecordHistoryListSchema {
+    ordinal: number
+    status: RecordStatus
+    startTime: Date | null
+    endTime: Date
+    project: ProjectSimpleSchema
+    watchedEpisode: number | null
+    totalEpisode: number | null
+}
+
+// =============================================================================
+// Filter
+// =============================================================================
+
+export const recordActivityListFilter = z.object({
+    type: z.enum(PROJECT_TYPE),
+    search: z.string().optional(),
+    page: z.number().optional(),
+    size: z.number().optional()
+})
+
+export const recordHistoryListFilter = z.object({
+    type: z.enum(PROJECT_TYPE),
+    search: z.string().optional(),
+    page: z.number().optional(),
+    size: z.number().optional()
+})
+
+export type RecordActivityListFilter = z.infer<typeof recordActivityListFilter>
+export type RecordHistoryListFilter = z.infer<typeof recordHistoryListFilter>
+
 // =============================================================================
 // Form
 // =============================================================================
@@ -160,5 +209,41 @@ export function parseDetailSchema(data: PrismaRecord, progresses: RecordProgress
             followType: progress.followType,
             platform: progress.platform
         }))
+    }
+}
+
+export function parseRecordActivityListSchema(
+    data: PrismaRecord & {
+        project: Pick<Project, "id" | "type" | "title" | "resources"> & { episodeTotalNum: number | null }
+        progresses?: Pick<RecordProgress, "episodeWatchedNum">[]
+    }
+): RecordActivityListSchema {
+    return {
+        specialAttention: data.specialAttention,
+        status: data.status,
+        progressCount: data.progressCount,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        activityTime: data.lastActivityTime,
+        activityEvent: (data.lastActivityEvent as Record<string, unknown>) ?? {},
+        project: parseProjectSimpleSchema(data.project),
+        watchedEpisode: data.progresses?.[0]?.episodeWatchedNum ?? null,
+        totalEpisode: data.project.type === "ANIME" ? data.project.episodeTotalNum : null
+    }
+}
+
+export function parseRecordHistoryListSchema(
+    data: RecordProgress & {
+        record: { project: Pick<Project, "id" | "type" | "title" | "resources"> & { episodeTotalNum: number | null } }
+    }
+): RecordHistoryListSchema {
+    return {
+        ordinal: data.ordinal,
+        status: data.status,
+        startTime: data.startTime,
+        endTime: data.endTime!,
+        project: parseProjectSimpleSchema(data.record.project),
+        watchedEpisode: data.record.project.type === "ANIME" ? data.episodeWatchedNum : null,
+        totalEpisode: data.record.project.type === "ANIME" ? data.record.project.episodeTotalNum : null
     }
 }

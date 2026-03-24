@@ -7,6 +7,11 @@ export type Result<T, E> = {
     err: E
 }
 
+export interface ListResult<T> {
+    list: T[]
+    total: number
+}
+
 export function ok<T, E>(value: T): Result<T, E> {
     return { ok: true, value }
 }

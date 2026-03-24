@@ -1,7 +1,7 @@
 "use client"
 import React from "react"
 import { useRouter } from "next/navigation"
-import { updateProjectAnime, deleteProjectAnime } from "@/services/anime"
+import { updateProjectAnime, deleteProjectAnime } from "@/services/project-anime"
 import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
 import { Editor } from "@/components/app/project-editor"
 import { handleActionResult } from "@/helpers/action"
