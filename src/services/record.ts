@@ -20,7 +20,7 @@ export async function retrieveRecordPreview(projectId: string): Promise<Result<R
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
         if(!record) return ok(null)
 
-        const recordProgress = record.progressCount > 0 ? await prisma.recordProgress.findFirst({where: {recordId: record.id, ordinal: record.progressCount}}) : null
+        const recordProgress = record.progressCount > 0 ? await prisma.recordProgress.findFirst({where: {recordId: record.id, isLatest: true}}) : null
 
         return ok(parsePreviewSchema(record, recordProgress))
     })
@@ -87,6 +87,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
             data: {
                 projectId, recordId: record.id,
                 ordinal: 1,
+                isLatest: true,
                 status: RecordStatus.WATCHING,
                 startTime: now,
                 endTime: null,
@@ -242,6 +243,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 data: {
                     projectId, recordId: record.id,
                     ordinal,
+                    isLatest: isLast,
                     status: getRecordStatus(ordinal, finalEndTime, episodeTotalNum, episodeWatchedNum),
                     startTime: p.startTimeFilled,
                     endTime: finalEndTime,

@@ -45,7 +45,7 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
                         }
                     },
                     progresses: validate.data.type === "ANIME" ? {
-                        orderBy: { ordinal: "desc" },
+                        where: { isLatest: true },
                         select: {
                             episodeWatchedNum: true
                         },

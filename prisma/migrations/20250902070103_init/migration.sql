@@ -136,6 +136,7 @@ CREATE TABLE "RecordProgress" (
     "projectId" TEXT NOT NULL,
     "recordId" INTEGER NOT NULL,
     "ordinal" INTEGER NOT NULL,
+    "isLatest" BOOLEAN NOT NULL DEFAULT false,
     "status" "RecordStatus" NOT NULL,
     "startTime" TIMESTAMP(3),
     "endTime" TIMESTAMP(3),

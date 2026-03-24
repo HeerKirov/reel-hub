@@ -35,6 +35,7 @@ export interface RecordProgressModel {
     projectId: string
     recordId: number
     ordinal: number
+    isLatest: boolean
     status: RecordStatus
     startTime: Date | null
     endTime: Date | null
@@ -75,6 +76,7 @@ export interface RecordPreviewSchema {
 
 export interface RecordProgressDetailItem {
     ordinal: number
+    isLatest: boolean
     status: RecordStatus
     startTime: Date | null
     endTime: Date | null
@@ -201,6 +203,7 @@ export function parseDetailSchema(data: PrismaRecord, progresses: RecordProgress
         endTime: data.endTime,
         progresses: progresses.map(progress => ({
             ordinal: progress.ordinal,
+            isLatest: progress.isLatest,
             status: progress.status,
             startTime: progress.startTime,
             endTime: progress.endTime,
