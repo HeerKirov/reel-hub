@@ -10,6 +10,7 @@ import { CommentSchema } from "@/schemas/comment"
 import { deleteComment, upsertComment } from "@/services/comment"
 import { ProjectType } from "@/constants/project"
 import { SCORE_DESCRIPTIONS } from "@/constants/comment"
+import { handleActionResult } from "@/helpers/action"
 
 export function CommentEditor({ type, project, comment }: {type: ProjectType, project: ProjectDetailSchema, comment: CommentSchema | null}) {
     const router = useRouter()
@@ -27,12 +28,20 @@ export function CommentEditor({ type, project, comment }: {type: ProjectType, pr
     const tabs = [{label: "评价", icon: <RiFileEditLine/>, content: <CommentTab type={type} score={score} title={title} article={article} setScore={setScore} setTitle={setTitle} setArticle={setArticle}/>}]
 
     const onSave = async () => {
-        await upsertComment(project.id, {score, title, article})
+        const result = handleActionResult(
+            await upsertComment(project.id, {score, title, article}),
+            { successTitle: "评价已保存" }
+        )
+        if(!result.ok) return
         router.push(`/${type.toLowerCase()}/comment/${project.id}`)
     }
 
     const onDelete = comment === null ? undefined : async () => {
-        await deleteComment(project.id)
+        const result = handleActionResult(
+            await deleteComment(project.id),
+            { successTitle: "评价已删除" }
+        )
+        if(!result.ok) return
         router.push(`/${type.toLowerCase()}/database/${project.id}`)
     }
 

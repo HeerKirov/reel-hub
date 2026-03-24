@@ -2,7 +2,9 @@ import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/anime"
 import { retrieveRecord } from "@/services/record"
 import { RecordDisplay } from "@/components/app/record-display"
+import { InlineError } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
+import { unwrapQueryResult } from "@/helpers/result"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -25,9 +27,13 @@ export default async function AnimationRecordDetail({ params }: {params: Promise
         notFound()
     }
 
-    const data = await retrieveRecord(project.id)
+    const result = await retrieveRecord(project.id)
+    const { data, error } = unwrapQueryResult(result)
+    if(error) {
+        return <InlineError error={error}/>
+    }
     if(!data) {
-        notFound()  
+        notFound()
     }
 
     return <RecordDisplay type={ProjectType.ANIME} project={project} record={data}/>

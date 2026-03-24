@@ -6,17 +6,10 @@ import { arrays, records } from "@/helpers/primitive"
 import { ProjectType, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { Staff, Tag } from "@/prisma/generated"
 import { RelationGraph } from "@/helpers/relation-graph"
-import { InternalServerError, ParamError, ResourceNotExist, exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError, exceptionResourceNotExist, ParamError, safeExecuteResult } from "@/constants/exception"
+import { ListProjectError, ProjectFindAllError, RemoveProjectInTopologyError, SaveStaffsError, SaveTagsError, UpdateAllRelationTopologyError, UpdateRelationsError } from "@/schemas/error"
 import { createTag } from "./tag"
 import { createStaff } from "./staff"
-
-export type ListProjectError = ParamError | InternalServerError
-export type SaveTagsError = ParamError | ResourceNotExist<"tagIds", string>
-export type SaveStaffsError = ParamError | ResourceNotExist<"staffIds", string>
-export type UpdateRelationsError = ParamError | ResourceNotExist<"projectId" | "projectIds", string> | ResourceNotExist<"tagIds", string> | ResourceNotExist<"staffIds", string> | InternalServerError
-export type UpdateAllRelationTopologyError = InternalServerError
-export type RemoveProjectInTopologyError = ResourceNotExist<"projectIds", string> | InternalServerError
-type FindAllError = ResourceNotExist<"projectIds", string>
 
 export async function listProject(filter: ProjectListFilter): Promise<Result<{id: string, type: ProjectType, title: string, subtitles: string[]}[], ListProjectError>> {
     return safeExecuteResult(async () => {
@@ -460,7 +453,7 @@ async function find(projectId: string): Promise<ProjectModel | null> {
 /**
  * 从数据库查找全部id的project的拓扑关系。
  */
-async function findAll(projectIds: string[]): Promise<Result<ProjectModel[], FindAllError>> {
+async function findAll(projectIds: string[]): Promise<Result<ProjectModel[], ProjectFindAllError>> {
     if (projectIds.length === 0) {
         return ok([])
     }

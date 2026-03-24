@@ -4,12 +4,17 @@ import { useRouter } from "next/navigation"
 import { updateProjectAnime, deleteProjectAnime } from "@/services/anime"
 import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
 import { Editor } from "@/components/app/project-editor"
+import { handleActionResult } from "@/helpers/action"
 
 export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}) {
     const router = useRouter()
 
     const onSubmit = async (form: AnimeForm, resources?: Record<string, Blob>) => {
-        await updateProjectAnime(data.id, form)
+        const result = handleActionResult(
+            await updateProjectAnime(data.id, form),
+            { successTitle: "项目已更新" }
+        )
+        if(!result.ok) return
         if(resources !== undefined) {
             const form = new FormData()
             form.append("projectId", data.id)
@@ -21,7 +26,11 @@ export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}
     }
 
     const onDelete = async () => {
-        await deleteProjectAnime(data.id)
+        const result = handleActionResult(
+            await deleteProjectAnime(data.id),
+            { successTitle: "项目已删除" }
+        )
+        if(!result.ok) return
         router.push("/anime/database")
     }
 

@@ -9,10 +9,16 @@ import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record
 import { RecordBoxDialogContent, RecordDisplayActions } from "./record-display.client"
 import { RecordDetailSchema } from "@/schemas/record"
 import { DetailPageLayout } from "@/components/server/layout"
+import { unwrapQueryResult } from "@/helpers/result"
+import { InlineError } from "@/components/app/inline-error"
 import emptyCover from "@/assets/empty.jpg"
 
 export async function RecordBox({ project, type }: {project: ProjectDetailSchema | AnimeDetailSchema, type: ProjectType}) {
-    const data = await retrieveRecordPreview(project.id)
+    const result = await retrieveRecordPreview(project.id)
+    const { data, error } = unwrapQueryResult(result)
+    if(error) {
+        return <InlineError error={error} compact/>
+    }
     if(!data) {
         return (
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">

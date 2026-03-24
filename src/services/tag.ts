@@ -1,13 +1,12 @@
 "use server"
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
-import { exceptionParamError, InternalServerError, ParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
+import { CreateTagError, DeleteTagError, ListTagsError, UpdateTagError } from "@/schemas/error"
 import { TagCreateFormSchema, TagListFilter, tagCreateFormSchema, TagSchema, tagListFilter, tagUpdateFormSchema, TagUpdateFormSchema, parseTagSchema } from "@/schemas/tag"
 
-type TagServiceError = ParamError | InternalServerError
-
-export async function listTags(filter: TagListFilter): Promise<Result<TagSchema[], TagServiceError>> {
+export async function listTags(filter: TagListFilter): Promise<Result<TagSchema[], ListTagsError>> {
     return safeExecuteResult(async () => {
         const validate = tagListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -28,7 +27,7 @@ export async function listTags(filter: TagListFilter): Promise<Result<TagSchema[
     })
 }
 
-export async function createTag(form: TagCreateFormSchema): Promise<Result<TagSchema, TagServiceError>> {
+export async function createTag(form: TagCreateFormSchema): Promise<Result<TagSchema, CreateTagError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -58,7 +57,7 @@ export async function retrieveTag(id: number): Promise<TagSchema | null> {
     return parseTagSchema(r)
 }
 
-export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<Result<void, TagServiceError>> {
+export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<Result<void, UpdateTagError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -79,7 +78,7 @@ export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<
     })
 }
 
-export async function deleteTag(id: number): Promise<Result<void, TagServiceError>> {
+export async function deleteTag(id: number): Promise<Result<void, DeleteTagError>> {
     return safeExecuteResult(async () => {
         await prisma.tag.delete({where: { id }})
         await prisma.projectTagRelation.deleteMany({where: {tagId: id}})

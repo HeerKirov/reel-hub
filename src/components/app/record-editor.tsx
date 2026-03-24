@@ -9,6 +9,7 @@ import { RecordDetailSchema } from "@/schemas/record"
 import { ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
 import { deleteProgress } from "@/services/record"
+import { handleActionResult } from "@/helpers/action"
 
 export function RecordEditor({ type, project, record }: {type: ProjectType, project: ProjectDetailSchema, record: RecordDetailSchema}) {
     const router = useRouter()
@@ -43,15 +44,13 @@ function ProgressTab({ type, record, project }: {type: ProjectType, record: Reco
         }
 
         setDeletingOrdinal(ordinal)
-        try {
-            await deleteProgress(project.id, ordinal)
-            router.refresh()
-        } catch(error) {
-            console.error("Failed to delete progress:", error)
-            alert(error instanceof Error ? error.message : "删除进度失败")
-        } finally {
-            setDeletingOrdinal(null)
-        }
+        const result = handleActionResult(
+            await deleteProgress(project.id, ordinal),
+            { successTitle: "进度已删除" }
+        )
+        setDeletingOrdinal(null)
+        if(!result.ok) return
+        router.refresh()
     }
 
     return (

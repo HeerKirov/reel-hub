@@ -7,6 +7,7 @@ import { SessionProvider, signIn, signOut } from "next-auth/react"
 import { RiArrowDownSFill, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine } from "react-icons/ri"
 import { Avatar, Box, Button, Collapsible, Heading, Menu, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
+import { Toaster } from "@/components/ui/toaster"
 import { NavigationItem, NAVIGATIONS, NavigationSubItem } from "@/constants/ui"
 
 const headerFont = Lora({
@@ -19,6 +20,7 @@ export function Wrapper({ children }: { children: React.ReactNode }) {
     return <SessionProvider>
         <Provider>
             {children}
+            <Toaster/>
         </Provider>
     </SessionProvider>
 }

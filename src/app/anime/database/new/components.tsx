@@ -3,12 +3,18 @@ import { useRouter } from "next/navigation"
 import { AnimeForm } from "@/schemas/anime"
 import { createProjectAnime } from "@/services/anime"
 import { Editor } from "@/components/app/project-editor"
+import { handleActionResult } from "@/helpers/action"
 
 export function Wrap() {
     const router = useRouter()
 
     const onSubmit = async (data: AnimeForm, resources?: Record<string, Blob>) => {
-        const id = await createProjectAnime(data)
+        const result = handleActionResult(
+            await createProjectAnime(data),
+            { successTitle: "项目已创建" }
+        )
+        if(!result.ok) return
+        const id = result.value
         router.push(`/anime/database/${id}`)
         if(resources !== undefined) {
             const form = new FormData()

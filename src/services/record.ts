@@ -3,18 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { parsePreviewSchema, recordCreateForm, RecordCreateForm, RecordPreviewSchema, RecordDetailSchema, parseDetailSchema, RecordUpdateForm, recordUpdateForm, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { err, ok, Result } from "@/schemas/all"
-import { AlreadyExists, InternalServerError, ParamError, ParamRequired, ResourceNotExist, ResourceNotSuitable, exceptionAlreadyExists, exceptionParamError, exceptionParamRequired, exceptionResourceNotExist, exceptionResourceNotSuitable, safeExecuteResult } from "@/constants/exception"
+import { exceptionAlreadyExists, exceptionParamError, exceptionParamRequired, exceptionResourceNotExist, exceptionResourceNotSuitable, safeExecuteResult } from "@/constants/exception"
+import {
+    CreateProgressError, CreateRecordError, DeleteProgressError, DeleteRecordError, NextEpisodeError,
+    RecordDetailError, RecordPreviewError, UpdateLatestProgressError, UpdateRecordError,
+} from "@/schemas/error"
 import { BoardcastType, FollowType, ProjectType, RecordStatus } from "@/prisma/generated"
-
-type RecordPreviewError = ResourceNotExist<"projectId", string> | InternalServerError
-type RecordDetailError = ResourceNotExist<"projectId", string> | InternalServerError
-type CreateRecordError = ParamError | ParamRequired | ResourceNotExist<"projectId", string> | AlreadyExists<"record", "projectId", string> | ResourceNotSuitable<"episodePublishedNum" | "latestProgress", string> | InternalServerError
-type UpdateRecordError = ParamError | ResourceNotExist<"recordId", string> | InternalServerError
-type DeleteRecordError = ResourceNotExist<"recordId", string> | InternalServerError
-type CreateProgressError = ParamError | ParamRequired | ResourceNotExist<"projectId" | "recordId", string> | ResourceNotSuitable<"episodePublishedNum" | "latestProgress", string> | InternalServerError
-type UpdateLatestProgressError = ParamError | ParamRequired | ResourceNotExist<"projectId" | "recordId", string> | ResourceNotExist<"progressOrdinal", number> | ResourceNotSuitable<"episodePublishedNum", string> | InternalServerError
-type NextEpisodeError = ResourceNotExist<"projectId" | "recordId", string> | ResourceNotExist<"progressOrdinal", number> | ResourceNotExist<"nextEpisode", string> | ResourceNotSuitable<"projectType", string> | InternalServerError
-type DeleteProgressError = ResourceNotExist<"projectId" | "recordId", string> | ResourceNotExist<"progressOrdinal", number> | InternalServerError
 
 export async function retrieveRecordPreview(projectId: string): Promise<Result<RecordPreviewSchema | null, RecordPreviewError>> {
     return safeExecuteResult(async () => {

@@ -6,22 +6,14 @@ import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
 import { err, ok, Result } from "@/schemas/all"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
-import { exceptionParamError, exceptionResourceNotExist, InternalServerError, ParamError, ResourceNotExist, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
 import { getPublishTimeRange } from "@/helpers/data"
-import { getRelations, removeProjectInTopology, RemoveProjectInTopologyError, saveStaffs, SaveStaffsError, saveTags, SaveTagsError, updateRelations, UpdateRelationsError } from "./project"
+import { CountProjectAnimeError, CreateProjectAnimeError, DeleteProjectAnimeError, ListProjectAnimeError, UpdateProjectAnimeError } from "@/schemas/error"
+import { getRelations, removeProjectInTopology, saveStaffs, saveTags, updateRelations } from "./project"
 import { syncAnimeRecordProgressAfterEpisodeMetaChange } from "@/services/record"
 
-type AnimeServiceError =
-    | ParamError
-    | ResourceNotExist<"projectId", string>
-    | SaveTagsError
-    | SaveStaffsError
-    | UpdateRelationsError
-    | RemoveProjectInTopologyError
-    | InternalServerError
-
-export async function listProjectAnime(filter: AnimeListFilter): Promise<Result<AnimeListSchema[], AnimeServiceError>> {
+export async function listProjectAnime(filter: AnimeListFilter): Promise<Result<AnimeListSchema[], ListProjectAnimeError>> {
     return safeExecuteResult(async () => {
         const validate = animeListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -61,11 +53,11 @@ export async function listProjectAnime(filter: AnimeListFilter): Promise<Result<
             take: validate.data.size ?? 15
         })
 
-        return ok<AnimeListSchema[], AnimeServiceError>(r.map(parseAnimeListSchema))
+        return ok<AnimeListSchema[], ListProjectAnimeError>(r.map(parseAnimeListSchema))
     })
 }
 
-export async function countProjectAnime(filter: AnimeListFilter): Promise<Result<number, AnimeServiceError>> {
+export async function countProjectAnime(filter: AnimeListFilter): Promise<Result<number, CountProjectAnimeError>> {
     return safeExecuteResult(async () => {
         const validate = animeListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -100,7 +92,7 @@ export async function countProjectAnime(filter: AnimeListFilter): Promise<Result
             }
         })
 
-        return ok<number, AnimeServiceError>(total)
+        return ok<number, CountProjectAnimeError>(total)
     })
 }
 
@@ -123,7 +115,7 @@ export const retrieveProjectAnime = cache(async function(id: string): Promise<An
     return parseAnimeDetailSchema(r, relations, relationsTopology)
 })
 
-export async function createProjectAnime(form: AnimeForm): Promise<Result<string, AnimeServiceError>> {
+export async function createProjectAnime(form: AnimeForm): Promise<Result<string, CreateProjectAnimeError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -191,11 +183,11 @@ export async function createProjectAnime(form: AnimeForm): Promise<Result<string
             if(!relationResult.ok) return err(relationResult.err)
         }
 
-        return ok<string, AnimeServiceError>(r.id)
+        return ok<string, CreateProjectAnimeError>(r.id)
     })
 }
 
-export async function updateProjectAnime(id: string, form: AnimeForm): Promise<Result<void, AnimeServiceError>> {
+export async function updateProjectAnime(id: string, form: AnimeForm): Promise<Result<void, UpdateProjectAnimeError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -269,11 +261,11 @@ export async function updateProjectAnime(id: string, form: AnimeForm): Promise<R
             await syncAnimeRecordProgressAfterEpisodeMetaChange(id, now)
         }
 
-        return ok<void, AnimeServiceError>(undefined)
+        return ok<void, UpdateProjectAnimeError>(undefined)
     })
 }
 
-export async function deleteProjectAnime(id: string): Promise<Result<void, AnimeServiceError>> {
+export async function deleteProjectAnime(id: string): Promise<Result<void, DeleteProjectAnimeError>> {
     return safeExecuteResult(async () => {
         const r = await prisma.project.findUnique({where: {id}})
         if(!r) return err(exceptionResourceNotExist("projectId", id))
@@ -291,7 +283,7 @@ export async function deleteProjectAnime(id: string): Promise<Result<void, Anime
         await prisma.bought.deleteMany({where: {projectId: id}})
         await prisma.comment.deleteMany({where: {projectId: id}})
 
-        return ok<void, AnimeServiceError>(undefined)
+        return ok<void, DeleteProjectAnimeError>(undefined)
     })
 }
 

@@ -8,6 +8,7 @@ import { Input } from "@/components/form"
 import { TagEditor } from "@/components/editor"
 import { listTags } from "@/services/tag"
 import { listStaffs } from "@/services/staff"
+import { unwrapQueryResult } from "@/helpers/result"
 
 export interface SearchBoxProps extends SystemStyleObject {
     value?: string | null
@@ -137,7 +138,9 @@ export const TagPicker = memo(function TagPicker() {
     }
 
     const search = async (text: string) => {
-        return (await listTags({search: text, type: "ANIME"})).map(i => i.name)
+        const result = await listTags({search: text, type: "ANIME"})
+        const unwrap = unwrapQueryResult(result)
+        return unwrap.error ? [] : unwrap.data.map(i => i.name)
     }
 
     return <TagEditor value={[]} onValueChange={onValueChange} search={search}/>
@@ -158,7 +161,9 @@ export const StaffPicker = memo(function StaffPicker() {
     }
 
     const search = async (text: string) => {
-        return (await listStaffs({search: text})).map(i => i.name)
+        const result = await listStaffs({search: text})
+        const unwrap = unwrapQueryResult(result)
+        return unwrap.error ? [] : unwrap.data.map(i => i.name)
     }
 
     return <TagEditor value={[]} onValueChange={onValueChange} search={search}/>

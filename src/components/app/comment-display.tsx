@@ -10,6 +10,8 @@ import { CommentSchema } from "@/schemas/comment"
 import { SCORE_DESCRIPTIONS } from "@/constants/comment"
 import { retrieveComment } from "@/services/comment"
 import emptyCover from "@/assets/empty.jpg"
+import { unwrapQueryResult } from "@/helpers/result"
+import { InlineError } from "@/components/app/inline-error"
 
 export function CommentDisplay({ type, project, comment }: {type: ProjectType, project: ProjectDetailSchema, comment: CommentSchema}) {
     const breadcrumb = {
@@ -68,7 +70,11 @@ function Content({ comment, type }: {comment: CommentSchema, type: ProjectType})
 }
 
 export async function CommentBox({ project, type }: {project: ProjectDetailSchema, type: ProjectType}) {
-    const data = await retrieveComment(project.id)
+    const result = await retrieveComment(project.id)
+    const { data, error } = unwrapQueryResult(result)
+    if(error) {
+        return <InlineError error={error} compact/>
+    }
     if(!data) {
         return (
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">

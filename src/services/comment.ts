@@ -2,12 +2,11 @@
 import { CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchema, commentUpsertSchema, parseCommentSchema, CommentWithProjectSchema, parseCommentWithProjectSchema } from "@/schemas/comment"
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
-import { exceptionParamError, exceptionResourceNotExist, InternalServerError, ParamError, ResourceNotExist, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
+import { CountCommentsError, DeleteCommentError, ListCommentsError, RetrieveCommentError, UpsertCommentError } from "@/schemas/error"
 
-type CommentServiceError = ParamError | ResourceNotExist<"projectId", string> | InternalServerError
-
-export async function listComments(filter: CommentListFilter): Promise<Result<CommentWithProjectSchema[], CommentServiceError>> {
+export async function listComments(filter: CommentListFilter): Promise<Result<CommentWithProjectSchema[], ListCommentsError>> {
     return safeExecuteResult(async () => {
         const validate = commentListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -39,7 +38,7 @@ export async function listComments(filter: CommentListFilter): Promise<Result<Co
     })
 }
 
-export async function countComments(filter: CommentListFilter): Promise<Result<number, CommentServiceError>> {
+export async function countComments(filter: CommentListFilter): Promise<Result<number, CountCommentsError>> {
     return safeExecuteResult(async () => {
         const validate = commentListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -63,17 +62,19 @@ export async function countComments(filter: CommentListFilter): Promise<Result<n
     })
 }
 
-export async function retrieveComment(projectId: string): Promise<CommentSchema | null> {
-    const userId = await getUserId()
+export async function retrieveComment(projectId: string): Promise<Result<CommentSchema | null, RetrieveCommentError>> {
+    return safeExecuteResult(async () => {
+        const userId = await getUserId()
 
-    const r = await prisma.comment.findUnique({
-        where: {ownerId_projectId: {ownerId: userId, projectId}}
+        const r = await prisma.comment.findUnique({
+            where: {ownerId_projectId: {ownerId: userId, projectId}}
+        })
+
+        return ok(r ? parseCommentSchema(r) : null)
     })
-
-    return r ? parseCommentSchema(r) : null
 }
 
-export async function upsertComment(projectId: string, form: CommentUpsertSchema): Promise<Result<void, CommentServiceError>> {
+export async function upsertComment(projectId: string, form: CommentUpsertSchema): Promise<Result<void, UpsertCommentError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -105,7 +106,7 @@ export async function upsertComment(projectId: string, form: CommentUpsertSchema
     })
 }
 
-export async function deleteComment(projectId: string): Promise<Result<void, CommentServiceError>> {
+export async function deleteComment(projectId: string): Promise<Result<void, DeleteCommentError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         await prisma.comment.delete({

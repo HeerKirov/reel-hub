@@ -9,6 +9,7 @@ import { DateTimePicker, NumberInput } from "@/components/form"
 import { RecordCreateForm, RecordProgressUpsertForm } from "@/schemas/record"
 import { RecordDetailSchema } from "@/schemas/record"
 import { AnimeDetailSchema } from "@/schemas/anime"
+import { handleActionResult } from "@/helpers/action"
 
 export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, projectId: string}) {
     const router = useRouter()
@@ -23,39 +24,33 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
         }
 
         setLoading(true)
-        try {
-            const form: RecordCreateForm = {
-                createMode
-            }
-            await createRecord(projectId, form)
-            router.push(`/${type.toLowerCase()}/record/${projectId}`)
-        } catch(error) {
-            console.error("Failed to create record:", error)
-            alert(error instanceof Error ? error.message : "创建记录失败")
-        } finally {
-            setLoading(false)
-        }
+        const form: RecordCreateForm = { createMode }
+        const result = handleActionResult(
+            await createRecord(projectId, form),
+            { successTitle: "记录已创建" }
+        )
+        setLoading(false)
+        if(!result.ok) return
+        router.push(`/${type.toLowerCase()}/record/${projectId}`)
     }
 
     const handleSupplementSubmit = async () => {
         setLoading(true)
-        try {
-            const form: RecordCreateForm = {
-                createMode: "SUPPLEMENT",
-                progress: progressList.map(p => ({
-                    startTime: p.startTime ? new Date(p.startTime) : null,
-                    endTime: p.endTime ? new Date(p.endTime) : null,
-                    episodeWatchedNum: p.episodeWatchedNum ?? undefined
-                }))
-            }
-            await createRecord(projectId, form)
-            router.push(`/${type.toLowerCase()}/record/${projectId}`)
-        } catch(error) {
-            console.error("Failed to create record:", error)
-            alert(error instanceof Error ? error.message : "创建记录失败")
-        } finally {
-            setLoading(false)
+        const form: RecordCreateForm = {
+            createMode: "SUPPLEMENT",
+            progress: progressList.map(p => ({
+                startTime: p.startTime ? new Date(p.startTime) : null,
+                endTime: p.endTime ? new Date(p.endTime) : null,
+                episodeWatchedNum: p.episodeWatchedNum ?? undefined
+            }))
         }
+        const result = handleActionResult(
+            await createRecord(projectId, form),
+            { successTitle: "记录已创建" }
+        )
+        setLoading(false)
+        if(!result.ok) return
+        router.push(`/${type.toLowerCase()}/record/${projectId}`)
     }
 
     const addProgress = () => {
@@ -183,29 +178,22 @@ export function RecordDisplayActions({
         if(type !== ProjectType.ANIME) return
         
         setLoading(true)
-        try {
-            await nextEpisode(projectId)
-            router.refresh()
-        } catch(error) {
-            console.error("Failed to next episode:", error)
-            alert(error instanceof Error ? error.message : "步进失败")
-        } finally {
-            setLoading(false)
-        }
+        const result = handleActionResult(await nextEpisode(projectId))
+        setLoading(false)
+        if(!result.ok) return
+        router.refresh()
     }
 
     const handleNewProgress = async () => {
         setLoading(true)
-        try {
-            const form: RecordProgressUpsertForm = {}
-            await createProgress(projectId, form)
-            router.refresh()
-        } catch(error) {
-            console.error("Failed to create progress:", error)
-            alert(error instanceof Error ? error.message : "创建进度失败")
-        } finally {
-            setLoading(false)
-        }
+        const form: RecordProgressUpsertForm = {}
+        const result = handleActionResult(
+            await createProgress(projectId, form),
+            { successTitle: "已新建进度" }
+        )
+        setLoading(false)
+        if(!result.ok) return
+        router.refresh()
     }
 
     return (

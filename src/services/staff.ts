@@ -1,13 +1,12 @@
 "use server"
 import { getUserId } from "@/helpers/next"
 import { prisma } from "@/lib/prisma"
-import { exceptionParamError, InternalServerError, ParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
+import { CreateStaffError, DeleteStaffError, ListStaffsError, UpdateStaffError } from "@/schemas/error"
 import { StaffCreateFormSchema, StaffListFilter, staffCreateFormSchema, StaffSchema, staffListFilter, staffUpdateFormSchema, StaffUpdateFormSchema, parseStaffSchema } from "@/schemas/staff"
 
-type StaffServiceError = ParamError | InternalServerError
-
-export async function listStaffs(filter: StaffListFilter): Promise<Result<StaffSchema[], StaffServiceError>> {
+export async function listStaffs(filter: StaffListFilter): Promise<Result<StaffSchema[], ListStaffsError>> {
     return safeExecuteResult(async () => {
         const validate = staffListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -28,7 +27,7 @@ export async function listStaffs(filter: StaffListFilter): Promise<Result<StaffS
     })
 }
 
-export async function createStaff(form: StaffCreateFormSchema): Promise<Result<StaffSchema, StaffServiceError>> {
+export async function createStaff(form: StaffCreateFormSchema): Promise<Result<StaffSchema, CreateStaffError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -57,7 +56,7 @@ export async function retrieveStaff(id: number): Promise<StaffSchema | null> {
     return parseStaffSchema(r)
 }
 
-export async function updateStaff(id: number, form: StaffUpdateFormSchema): Promise<Result<StaffSchema, StaffServiceError>> {
+export async function updateStaff(id: number, form: StaffUpdateFormSchema): Promise<Result<StaffSchema, UpdateStaffError>> {
     return safeExecuteResult(async () => {
         const userId = await getUserId()
         const now = new Date()
@@ -79,7 +78,7 @@ export async function updateStaff(id: number, form: StaffUpdateFormSchema): Prom
     })
 }
 
-export async function deleteStaff(id: number): Promise<Result<void, StaffServiceError>> {
+export async function deleteStaff(id: number): Promise<Result<void, DeleteStaffError>> {
     return safeExecuteResult(async () => {
         await prisma.staff.delete({where: { id }})
         await prisma.projectStaffRelation.deleteMany({where: {staffId: id}})

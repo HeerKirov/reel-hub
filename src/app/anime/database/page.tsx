@@ -11,6 +11,8 @@ import { AnimeListFilter, AnimeListSchema } from "@/schemas/anime"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS } from "@/constants/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 import { hasPermission } from "@/helpers/next"
+import { unwrapQueryResult } from "@/helpers/result"
+import { InlineError } from "@/components/app/inline-error"
 import emptyCover from "@/assets/empty.jpg"
 
 type SearchParams = Omit<AnimeListFilter, "page" | "size"> & { page?: string }
@@ -25,10 +27,16 @@ export default async function AnimationDatabase(props: {searchParams: Promise<Se
 
     const isAdmin = await hasPermission("admin")
 
-    const [list, total] = await Promise.all([
+    const [listResult, totalResult] = await Promise.all([
         listProjectAnime({...searchParams, page, size: 15}),
         countProjectAnime({...searchParams})
     ])
+    const { data: list, error: listError } = unwrapQueryResult(listResult)
+    const { data: total, error: totalError } = unwrapQueryResult(totalResult)
+
+    if(listError || totalError) {
+        return <InlineError error={listError ?? totalError!}/>
+    }
 
     return (
         <ListPageLayout

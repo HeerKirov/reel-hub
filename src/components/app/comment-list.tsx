@@ -9,6 +9,8 @@ import { CommentWithProjectSchema } from "@/schemas/comment"
 import { countComments, listComments } from "@/services/comment"
 import { dates } from "@/helpers/primitive"
 import { staticHref } from "@/helpers/ui"
+import { unwrapQueryResult } from "@/helpers/result"
+import { InlineError } from "@/components/app/inline-error"
 
 export type CommentListSearchParams = { page?: string, search?: string, view?: "activity" | "table" }
 
@@ -17,10 +19,16 @@ export async function CommentList(props: {searchParams: Promise<CommentListSearc
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
-    const [list, total] = await Promise.all([
+    const [listResult, totalResult] = await Promise.all([
         listComments({type, page, size: 15, search: searchParams.search, orderBy: searchParams.view === "table" ? "score" : "updateTime"}),
         countComments({type, search: searchParams.search})
     ])
+    const { data: list, error: listError } = unwrapQueryResult(listResult)
+    const { data: total, error: totalError } = unwrapQueryResult(totalResult)
+
+    if(listError || totalError) {
+        return <InlineError error={listError ?? totalError!}/>
+    }
 
     return (
         <ListPageLayout
