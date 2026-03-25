@@ -79,7 +79,7 @@ Record是用户对某个项目的观看/游玩/阅读记录，总之是使用记
 * `id`: 唯一ID，主键，在数据库层自动自增
 * `ownerId`: 用户ID
 * `projectId`: 项目ID
-* `specialAttention`: 特别关注；一个类似收藏的标记，表示当前记录是否正处于特别关注下 (form可选，默认false)
+* `specialAttention`: 订阅；一个类似收藏的标记，表示当前记录是否正处于特别关注下 (form可选，默认false)
 * `status`: 当前状态；这是一个根据关联的RecordProgress的状态得来的状态，是一个缓存字段
 * `progressCount`: 进度数量；与Record关联的RecordProgress数量是一致的，是一个缓存字段
 * `startTime`, `endTime`: 记录开始与结束时间，它总是关联的RecordProgress中第一条进度的开始时间与最后一条进度的结束时间，是一个缓存字段

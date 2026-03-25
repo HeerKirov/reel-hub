@@ -176,8 +176,7 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                     endTime: latestProgress?.endTime ?? record.endTime,
                     lastActivityTime: now,
                     lastActivityEvent: createProgressEvent as unknown as Prisma.InputJsonValue,
-                    updateTime: now,
-                    specialAttention: project.type === ProjectType.ANIME && latestEpisodeWatchedNum !== null && latestEpisodeWatchedNum < project.episodeTotalNum!
+                    updateTime: now
                 }
             })
         } else {
@@ -225,8 +224,7 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                     endTime: null,
                     lastActivityTime: now,
                     lastActivityEvent: createProgressEvent as unknown as Prisma.InputJsonValue,
-                    updateTime: now,
-                    specialAttention: project.type === ProjectType.ANIME
+                    updateTime: now
                 }
             })
         }
@@ -328,7 +326,8 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
             data: {
                 status: nextRecordStatus,
                 endTime: isAnime ? finalEndTime : record.endTime,
-                specialAttention: isAnime && newEpisodeWatchedNum !== null && newEpisodeWatchedNum < episodeTotalNum!,
+                // 只有从 WATCHING 转换到完成/搁置/放弃时取消订阅；其余情况下保持原值
+                specialAttention: (nextRecordStatus === RecordStatus.COMPLETED || nextRecordStatus === RecordStatus.DROPPED) && record.status === RecordStatus.WATCHING ? false : record.specialAttention,
                 lastActivityTime: now,
                 lastActivityEvent: editProgressEvent as unknown as Prisma.InputJsonValue,
                 updateTime: now
@@ -396,7 +395,8 @@ export async function nextEpisode(projectId: string): Promise<Result<number, Nex
                     lastActivityTime: now,
                     lastActivityEvent: watchEpisodeEvent as unknown as Prisma.InputJsonValue,
                     updateTime: now,
-                    specialAttention: !isComplete
+                    // 只在进入 COMPLETED 时取消订阅
+                    specialAttention: isComplete ? false : record.specialAttention
                 }
             })
 
@@ -445,7 +445,7 @@ export async function nextEpisode(projectId: string): Promise<Result<number, Nex
                 data: {
                     status: isComplete ? RecordStatus.COMPLETED : record.status,
                     endTime: isComplete ? now : record.endTime,
-                    specialAttention: !isComplete,
+                    specialAttention: isComplete ? false : record.specialAttention,
                     lastActivityTime: now,
                     lastActivityEvent: watchEpisodeEvent as unknown as Prisma.InputJsonValue,
                     updateTime: now

@@ -50,268 +50,269 @@ export async function retrieveRecord(projectId: string): Promise<Result<RecordDe
 
 export async function createRecord(projectId: string, form: RecordCreateForm): Promise<Result<void, CreateRecordError>> {
     return safeExecuteResult(async () => {
-    await requireAccess("record", "write")
-    const userId = await getUserId()
-    const now = new Date()
+        await requireAccess("record", "write")
+        const userId = await getUserId()
+        const now = new Date()
 
-    const validate = recordCreateForm.safeParse(form)
-    if(!validate.success) return err(exceptionParamError(validate.error.message))
-    
-    const project = await prisma.project.findUnique({where: {id: projectId}})
-    if(!project) return err(exceptionNotFound("Project not found"))
-    
-    if(await prisma.record.findFirst({where: {ownerId: userId, projectId}})) {
-        return err(exceptionAlreadyExists("record", "projectId", projectId))
-    }
-    
-    const createRecordEvent: ActivityEvent = { type: "CREATE_RECORD" }
-
-    if(validate.data.createMode === "SUBSCRIBE") {
-        const record = await prisma.record.create({
-            data: {
-                ownerId: userId,
-                projectId,
-                status: RecordStatus.WATCHING,
-                progressCount: 1,
-                startTime: now,
-                endTime: null,
-                lastActivityTime: now,
-                lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
-                createTime: now,
-                updateTime: now,
-                //anime
-                specialAttention: project.type === ProjectType.ANIME
-            }
-        })
-        await prisma.recordProgress.create({
-            data: {
-                projectId, recordId: record.id,
-                ordinal: 1,
-                isLatest: true,
-                status: RecordStatus.WATCHING,
-                startTime: now,
-                endTime: null,
-                createTime: now,
-                updateTime: now,
-                //anime
-                episodeWatchedNum: project.type === ProjectType.ANIME ? 0 : null,
-                episodeWatchedRecords: [],
-                followType: project.type === ProjectType.ANIME ? getFollowType(1, project.boardcastType, project.publishTime, now) : null,
-                //game
-                platform: []
-            }
-        })
-    }else if(validate.data.createMode === "SUPPLEMENT") {
-        if(!validate.data.progress || validate.data.progress.length === 0) {
-            return err(exceptionParamRequired("progress"))
+        const validate = recordCreateForm.safeParse(form)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
+        
+        const project = await prisma.project.findUnique({where: {id: projectId}})
+        if(!project) return err(exceptionNotFound("Project not found"))
+        
+        if(await prisma.record.findFirst({where: {ownerId: userId, projectId}})) {
+            return err(exceptionAlreadyExists("record", "projectId", projectId))
         }
+        
+        const createRecordEvent: ActivityEvent = { type: "CREATE_RECORD" }
 
-        const isAnime = project.type === ProjectType.ANIME
-        const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
-        const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
-
-        const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
-        const inputProgresses = validate.data.progress
-        const normalizedProgresses = inputProgresses.map(p => {
-            const startTimeFilled = p.startTime ?? p.endTime ?? null
-            return {
-                startTime: p.startTime,
-                endTime: p.endTime,
-                startTimeFilled,
-                episodeWatchedNum: p.episodeWatchedNum
+        if(validate.data.createMode === "SUBSCRIBE") {
+            const record = await prisma.record.create({
+                data: {
+                    ownerId: userId,
+                    projectId,
+                    status: RecordStatus.WATCHING,
+                    progressCount: 1,
+                    startTime: now,
+                    endTime: null,
+                    lastActivityTime: now,
+                    lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
+                    createTime: now,
+                    updateTime: now,
+                    //anime
+                    specialAttention: project.type === ProjectType.ANIME
+                }
+            })
+            await prisma.recordProgress.create({
+                data: {
+                    projectId, recordId: record.id,
+                    ordinal: 1,
+                    isLatest: true,
+                    status: RecordStatus.WATCHING,
+                    startTime: now,
+                    endTime: null,
+                    createTime: now,
+                    updateTime: now,
+                    //anime
+                    episodeWatchedNum: project.type === ProjectType.ANIME ? 0 : null,
+                    episodeWatchedRecords: [],
+                    followType: project.type === ProjectType.ANIME ? getFollowType(1, project.boardcastType, project.publishTime, now) : null,
+                    //game
+                    platform: []
+                }
+            })
+        }else if(validate.data.createMode === "SUPPLEMENT") {
+            if(!validate.data.progress || validate.data.progress.length === 0) {
+                return err(exceptionParamRequired("progress"))
             }
-        })
 
-        // Chronological & completeness validation
-        for(let i = 0; i < normalizedProgresses.length; i++) {
-            const p = normalizedProgresses[i]
-            const isLast = i === normalizedProgresses.length - 1
+            const isAnime = project.type === ProjectType.ANIME
+            const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
+            const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
 
-            if(!isLast) {
-                if(p.endTime === null) {
-                    return err(exceptionParamError("Only the last progress can be incomplete"))
+            const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
+            const inputProgresses = validate.data.progress
+            const normalizedProgresses = inputProgresses.map(p => {
+                const startTimeFilled = p.startTime ?? p.endTime ?? null
+                return {
+                    startTime: p.startTime,
+                    endTime: p.endTime,
+                    startTimeFilled,
+                    episodeWatchedNum: p.episodeWatchedNum
                 }
-                if(p.startTimeFilled === null) {
-                    return err(exceptionParamRequired("startTime"))
-                }
-                if(p.startTimeFilled > p.endTime) {
-                    return err(exceptionParamError("Start time must be before or equal to end time"))
-                }
-            } else {
-                if(p.endTime !== null) {
-                    // ANIME restriction: incomplete release => cannot have COMPLETED progress
-                    if(isAnime && !episodeFullyPublished) {
-                        // 不满足插入新的未完成进度条件
-                        return err(exceptionRejectCreateProgress("Episode is not fully published"))
+            })
+
+            // Chronological & completeness validation
+            for(let i = 0; i < normalizedProgresses.length; i++) {
+                const p = normalizedProgresses[i]
+                const isLast = i === normalizedProgresses.length - 1
+
+                if(!isLast) {
+                    if(p.endTime === null) {
+                        return err(exceptionParamError("Only the last progress can be incomplete"))
                     }
-                } else {
                     if(p.startTimeFilled === null) {
                         return err(exceptionParamRequired("startTime"))
                     }
+                    if(p.startTimeFilled > p.endTime) {
+                        return err(exceptionParamError("Start time must be before or equal to end time"))
+                    }
+                } else {
+                    if(p.endTime !== null) {
+                        // ANIME restriction: incomplete release => cannot have COMPLETED progress
+                        if(isAnime && !episodeFullyPublished) {
+                            // 不满足插入新的未完成进度条件
+                            return err(exceptionRejectCreateProgress("Episode is not fully published"))
+                        }
+                    } else {
+                        if(p.startTimeFilled === null) {
+                            return err(exceptionParamRequired("startTime"))
+                        }
+                    }
                 }
             }
-        }
 
-        if(isAnime && !episodeFullyPublished) {
-            const hasAnyCompleted = normalizedProgresses.some(p => p.endTime !== null)
-            if(hasAnyCompleted) {
-                // 不满足插入新的未完成进度条件
-                return err(exceptionRejectCreateProgress("Episode is not fully published"))
+            if(isAnime && !episodeFullyPublished) {
+                const hasAnyCompleted = normalizedProgresses.some(p => p.endTime !== null)
+                if(hasAnyCompleted) {
+                    // 不满足插入新的未完成进度条件
+                    return err(exceptionRejectCreateProgress("Episode is not fully published"))
+                }
             }
-        }
 
-        let prevEndTime: Date | null = null
-        for(let i = 0; i < normalizedProgresses.length; i++) {
-            const p = normalizedProgresses[i]
-            if(i === 0) {
+            let prevEndTime: Date | null = null
+            for(let i = 0; i < normalizedProgresses.length; i++) {
+                const p = normalizedProgresses[i]
+                if(i === 0) {
+                    prevEndTime = p.endTime
+                    continue
+                }
+
+                const start = p.startTimeFilled
+                if(prevEndTime && start && start.getTime() <= prevEndTime.getTime()) {
+                    return err(exceptionParamError("Progress must be in chronological order"))
+                }
+
                 prevEndTime = p.endTime
-                continue
             }
 
-            const start = p.startTimeFilled
-            if(prevEndTime && start && start.getTime() <= prevEndTime.getTime()) {
-                return err(exceptionParamError("Progress must be in chronological order"))
-            }
+            const lastIndex = normalizedProgresses.length - 1
+            const lastProgress = normalizedProgresses[lastIndex]
 
-            prevEndTime = p.endTime
-        }
+            const lastEpisodeWatchedNum = isAnime ? (
+                lastProgress.endTime !== null ? (
+                    // 已完成进度：直接取总集数
+                    episodeTotalNum!
+                ) : (
+                    // 未完成进度：取已看集数（缺省为0），并保证不超过已发布集数
+                    (() => {
+                        const raw = lastProgress.episodeWatchedNum ?? 0
+                        const published = episodePublishedNum!
+                        const total = episodeTotalNum!
+                        const clamped = Math.max(0, Math.min(raw ?? 0, published, total))
+                        return clamped
+                    })()
+                )
+            ) : null
 
-        const lastIndex = normalizedProgresses.length - 1
-        const lastProgress = normalizedProgresses[lastIndex]
-
-        const lastEpisodeWatchedNum = isAnime ? (
-            lastProgress.endTime !== null ? (
-                // 已完成进度：直接取总集数
-                episodeTotalNum!
-            ) : (
-                // 未完成进度：取已看集数（缺省为0），并保证不超过已发布集数
-                (() => {
-                    const raw = lastProgress.episodeWatchedNum ?? 0
-                    const published = episodePublishedNum!
-                    const total = episodeTotalNum!
-                    const clamped = Math.max(0, Math.min(raw ?? 0, published, total))
-                    return clamped
-                })()
-            )
-        ) : null
-
-        const lastEndTime = isAnime && lastProgress.endTime === null
-            && episodeFullyPublished
-            && lastEpisodeWatchedNum !== null
-            && lastEpisodeWatchedNum >= episodeTotalNum!
-            ? now
-            : lastProgress.endTime
-
-        const recordStatus = getRecordStatus(normalizedProgresses.length, lastEndTime, episodeTotalNum, lastEpisodeWatchedNum)
-
-        const record = await prisma.record.create({
-            data: {
-                ownerId: userId,
-                projectId,
-                specialAttention: isAnime && recordStatus === RecordStatus.WATCHING,
-                status: recordStatus,
-                progressCount: normalizedProgresses.length,
-                startTime: normalizedProgresses[0].startTimeFilled,
-                endTime: lastEndTime,
-                lastActivityTime: now,
-                lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
-                createTime: now,
-                updateTime: now
-            }
-        })
-
-        for(let i = 0; i < normalizedProgresses.length; i++) {
-            const p = normalizedProgresses[i]
-            const ordinal = i + 1
-            const isLast = i === lastIndex
-
-            const finalEndTime = isAnime && isLast
-                && p.endTime === null
+            const lastEndTime = isAnime && lastProgress.endTime === null
                 && episodeFullyPublished
                 && lastEpisodeWatchedNum !== null
                 && lastEpisodeWatchedNum >= episodeTotalNum!
                 ? now
-                : p.endTime
+                : lastProgress.endTime
 
-            const episodeWatchedNum = isAnime ? (
-                finalEndTime !== null ? episodeTotalNum! : (isLast ? lastEpisodeWatchedNum! : episodeTotalNum!)
-            ) : null
+            const recordStatus = getRecordStatus(normalizedProgresses.length, lastEndTime, episodeTotalNum, lastEpisodeWatchedNum)
 
-            await prisma.recordProgress.create({
+            const record = await prisma.record.create({
                 data: {
-                    projectId, recordId: record.id,
-                    ordinal,
-                    isLatest: isLast,
-                    status: getRecordStatus(ordinal, finalEndTime, episodeTotalNum, episodeWatchedNum),
-                    startTime: p.startTimeFilled,
-                    endTime: finalEndTime,
+                    ownerId: userId,
+                    projectId,
+                    // 只有 SUBSCRIBE 模式会自动添加订阅；SUPPLEMENT/ONLY_RECORD 默认不加入特别关注
+                    specialAttention: false,
+                    status: recordStatus,
+                    progressCount: normalizedProgresses.length,
+                    startTime: normalizedProgresses[0].startTimeFilled,
+                    endTime: lastEndTime,
+                    lastActivityTime: now,
+                    lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
                     createTime: now,
-                    updateTime: now,
-                    // anime
-                    episodeWatchedNum: isAnime ? episodeWatchedNum : null,
-                    episodeWatchedRecords: isAnime ? Array(episodeWatchedNum ?? 0).fill(null) : [],
-                    followType: isAnime ? getFollowType(ordinal, project.boardcastType, project.publishTime, p.startTimeFilled) : null,
-                    // game
-                    platform: []
+                    updateTime: now
+                }
+            })
+
+            for(let i = 0; i < normalizedProgresses.length; i++) {
+                const p = normalizedProgresses[i]
+                const ordinal = i + 1
+                const isLast = i === lastIndex
+
+                const finalEndTime = isAnime && isLast
+                    && p.endTime === null
+                    && episodeFullyPublished
+                    && lastEpisodeWatchedNum !== null
+                    && lastEpisodeWatchedNum >= episodeTotalNum!
+                    ? now
+                    : p.endTime
+
+                const episodeWatchedNum = isAnime ? (
+                    finalEndTime !== null ? episodeTotalNum! : (isLast ? lastEpisodeWatchedNum! : episodeTotalNum!)
+                ) : null
+
+                await prisma.recordProgress.create({
+                    data: {
+                        projectId, recordId: record.id,
+                        ordinal,
+                        isLatest: isLast,
+                        status: getRecordStatus(ordinal, finalEndTime, episodeTotalNum, episodeWatchedNum),
+                        startTime: p.startTimeFilled,
+                        endTime: finalEndTime,
+                        createTime: now,
+                        updateTime: now,
+                        // anime
+                        episodeWatchedNum: isAnime ? episodeWatchedNum : null,
+                        episodeWatchedRecords: isAnime ? Array(episodeWatchedNum ?? 0).fill(null) : [],
+                        followType: isAnime ? getFollowType(ordinal, project.boardcastType, project.publishTime, p.startTimeFilled) : null,
+                        // game
+                        platform: []
+                    }
+                })
+            }
+        }else{
+            await prisma.record.create({
+                data: {
+                    ownerId: userId,
+                    projectId,
+                    specialAttention: false,
+                    status: RecordStatus.ON_HOLD,
+                    progressCount: 0,
+                    startTime: null,
+                    endTime: null,
+                    lastActivityTime: now,
+                    lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
+                    createTime: now,
+                    updateTime: now
                 }
             })
         }
-    }else{
-        await prisma.record.create({
-            data: {
-                ownerId: userId,
-                projectId,
-                specialAttention: false,
-                status: RecordStatus.ON_HOLD,
-                progressCount: 0,
-                startTime: null,
-                endTime: null,
-                lastActivityTime: now,
-                lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
-                createTime: now,
-                updateTime: now
-            }
-        })
-    }
-    return ok(undefined)
+        return ok(undefined)
     })
 }
 
 export async function updateRecord(projectId: string, form: RecordUpdateForm): Promise<Result<void, UpdateRecordError>> {
     return safeExecuteResult(async () => {
-    await requireAccess("record", "write")
-    const userId = await getUserId()
+        await requireAccess("record", "write")
+        const userId = await getUserId()
 
-    const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-    if(!record) return err(exceptionNotFound("Record not found"))
-    
-    const validate = recordUpdateForm.safeParse(form)
-    if(!validate.success) return err(exceptionParamError(validate.error.message))
+        const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
+        if(!record) return err(exceptionNotFound("Record not found"))
+        
+        const validate = recordUpdateForm.safeParse(form)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-    const now = new Date()
+        const now = new Date()
 
-    await prisma.record.update({
-        where: {id: record.id},
-        data: {
-            specialAttention: validate.data.specialAttention,
-            updateTime: now
-        }
-    })
-    return ok(undefined)
+        await prisma.record.update({
+            where: {id: record.id},
+            data: {
+                specialAttention: validate.data.specialAttention,
+                updateTime: now
+            }
+        })
+        return ok(undefined)
     })
 }
 
 export async function deleteRecord(projectId: string): Promise<Result<void, DeleteRecordError>> {
     return safeExecuteResult(async () => {
-    await requireAccess("record", "write")
-    const userId = await getUserId()
+        await requireAccess("record", "write")
+        const userId = await getUserId()
 
-    const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-    if(!record) return err(exceptionNotFound("Record not found"))
+        const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
+        if(!record) return err(exceptionNotFound("Record not found"))
 
-    await prisma.record.delete({where: {id: record.id}})
-    await prisma.recordProgress.deleteMany({where: {recordId: record.id}})
-    return ok(undefined)
+        await prisma.recordProgress.deleteMany({where: {recordId: record.id}})
+        await prisma.record.delete({where: {id: record.id}})
+        return ok(undefined)
     })
 }
 

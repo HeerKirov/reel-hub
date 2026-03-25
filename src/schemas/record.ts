@@ -118,7 +118,7 @@ export interface RecordHistoryListSchema {
     totalEpisode: number | null
 }
 
-/** 特别关注 + 动画订阅列表（无分页、无 total 计数） */
+/** 动画订阅列表（无分页、无 total 计数） */
 export interface RecordSubscriptionAnimeListSchema {
     recordId: number
     specialAttention: boolean

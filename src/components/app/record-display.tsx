@@ -6,7 +6,7 @@ import { ProjectDetailSchema } from "@/schemas/project"
 import { retrieveRecordPreview } from "@/services/record"
 import { AnimeDetailSchema } from "@/schemas/anime"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
-import { RecordBoxDialogContent, RecordDisplayActions } from "./record-display.client"
+import { RecordBoxDialogContent, RecordDisplayActions, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayNextButton } from "./record-display.client"
 import { RecordDetailSchema } from "@/schemas/record"
 import { DetailPageLayout } from "@/components/server/layout"
 import { unwrapQueryResult } from "@/helpers/result"
@@ -90,7 +90,7 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
 
 export function RecordDisplay({ type, project, record }: {type: ProjectType, project: ProjectDetailSchema, record: RecordDetailSchema}) {
     const breadcrumb = {
-        url: `/${type.toLowerCase()}/database/${project.id}`,
+        url: `/${type.toLowerCase()}/record/${project.id}`,
         detail: project.title
     }
 
@@ -138,106 +138,110 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
     
     return (
         <>
-            <Flex mt="2" direction="column" gap="6">
-                {/* 状态标签和按钮区域 */}
-                <Flex gap="2" flexWrap="wrap" alignItems="center">
+            <Flex direction="column" gap="2">
+                <Flex gap="2" alignItems="center" justifyContent="space-between">
                     <Badge colorPalette={VALUE_TO_RECORD_STATUS[record.status].color} fontSize="sm" px="2" py="1">
                         {VALUE_TO_RECORD_STATUS[record.status].label}
                     </Badge>
-                    {record.specialAttention && (
-                        <Button variant="solid" colorPalette="blue" size="sm">
-                            <Icon><RiPushpin2Fill/></Icon>
-                            订阅中
-                        </Button>
-                    )}
-                    {/* 可以添加更多按钮，如"未看过原作"等 */}
+                    <Box flex="1 1 auto"/>
+                    {record.status === RecordStatus.COMPLETED && <RecordDisplayCreateProgressButton size="sm" projectId={project.id} />}
+                    <RecordDisplayAttentionButton projectId={project.id} specialAttention={record.specialAttention}/>
                 </Flex>
 
-                {/* 最新进度信息区域 */}
                 {latestProgress && (
                     <Box borderWidth="1px" rounded="md" p="4" bg="bg.subtle">
                         <Flex direction="column" gap="4">
-                            {/* 周目和百分比 */}
                             <Flex alignItems="center" gap="4">
                                 <Box borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
-                                    <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal}周目</Text>
+                                    <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
                                 </Box>
                                 {anime && latestProgress.episodeWatchedNum !== null && (
                                     <Flex alignItems="center" gap="2" flex="1">
                                         <Text fontSize="sm" color="fg.muted">
                                             {Math.floor((latestProgress.episodeWatchedNum / anime.episodeTotalNum) * 100)}%
                                         </Text>
-                                        <Progress.Root value={(latestProgress.episodeWatchedNum / anime.episodeTotalNum) * 100} flex="1" size="sm" colorPalette="green">
-                                            <Progress.Track>
-                                                <Progress.Range/>
-                                            </Progress.Track>
-                                        </Progress.Root>
+                                        <DualProgressBar
+                                            watched={latestProgress.episodeWatchedNum}
+                                            published={anime.episodePublishedNum}
+                                            total={anime.episodeTotalNum}
+                                        />
                                     </Flex>
                                 )}
                             </Flex>
 
-                            {/* NEXT按钮和已看完信息 */}
-                            <Flex alignItems="center" gap="4" flexWrap="wrap">
-                                {anime && latestProgress.episodeWatchedNum !== null && (
-                                    <Text fontSize="sm" color="fg.muted">
-                                        已看完 {latestProgress.episodeWatchedNum} 话
-                                    </Text>
-                                )}
-                            </Flex>
-
-                            {/* 时间信息 */}
-                            <Flex direction="column" gap="2" fontSize="sm" color="fg.muted">
-                                {latestProgress.startTime && (
+                            {anime && <Flex alignItems="center" justifyContent="space-between" fontSize="sm" color="fg.muted" px="1">
+                                <Text>
+                                    已看完 <Badge px="2" py="1">{latestProgress.episodeWatchedNum}</Badge> 话
+                                </Text>
+                                <Text>
+                                    共&nbsp;
+                                    {anime.episodePublishedNum < anime.episodeTotalNum && <><Badge colorPalette="green" px="2" py="1">{anime.episodePublishedNum}</Badge> / </>}
+                                    <Badge colorPalette="gray" px="2" py="1">{anime.episodeTotalNum}</Badge>&nbsp;话
+                                </Text>
+                            </Flex>}
+                            
+                            <Flex alignItems="flex-end" justifyContent="space-between" pl="1">
+                                <Flex direction="column" gap="2" fontSize="sm" color="fg.muted">
+                                    {latestProgress.startTime && (
+                                        <Flex alignItems="center" gap="2">
+                                            <Icon><RiBookmark3Line/></Icon>
+                                            <Text>订阅时间 {latestProgress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                                        </Flex>
+                                    )}
                                     <Flex alignItems="center" gap="2">
                                         <Icon><RiBookmark3Line/></Icon>
-                                        <Text>订阅时间 {latestProgress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                                        <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
                                     </Flex>
-                                )}
-                                <Flex alignItems="center" gap="2">
-                                    <Icon><RiBookmark3Line/></Icon>
-                                    <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
                                 </Flex>
+                                {anime && latestProgress.episodeWatchedNum! < anime.episodePublishedNum && <RecordDisplayNextButton projectId={project.id} watched={latestProgress.episodeWatchedNum!} />}
                             </Flex>
                         </Flex>
                     </Box>
                 )}
 
-                {/* 交互按钮区域 */}
-                <RecordDisplayActions record={record} type={type} project={anime} projectId={project.id} />
-                
-                {/* 历史进度列表 */}
-                {record.progresses.length > 1 && (
-                    <Box>
-                        <Heading size="md" mb="3">进度历史</Heading>
-                        <Flex direction="column" gap="3">
-                            {record.progresses.slice(0, -1).reverse().map((progress) => {
-                                const isComplete = progress.endTime !== null
-                                return (
-                                    <Box key={progress.ordinal} borderWidth="1px" rounded="md" p="3" bg="bg.subtle">
-                                        <Flex alignItems="center" gap="4" flexWrap="wrap">
-                                            <Box borderWidth="1px" rounded="md" px="2" py="1" bg="bg.default">
-                                                <Text fontSize="sm">{progress.ordinal}周目</Text>
-                                            </Box>
-                                            {anime && progress.episodeWatchedNum !== null && isComplete && (
-                                                <Text fontSize="sm" fontWeight="medium">{progress.episodeWatchedNum}话已完成</Text>
+                {record.progresses.length > 1 && <>
+                    <Heading size="md" py="1.5">历史进度</Heading>
+                    <Flex direction="column" gap="3">
+                        {record.progresses.slice(0, -1).reverse().map((progress) => {
+                            const isComplete = progress.endTime !== null
+                            return (
+                                <Box key={progress.ordinal} borderWidth="1px" rounded="md" p="3" bg="bg.subtle">
+                                    <Flex alignItems="center" gap="4" justifyContent="space-between">
+                                        <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="2" py="1" bg="bg.default">
+                                            <Text fontSize="sm">{progress.ordinal}周目</Text>
+                                        </Box>
+                                        {anime && progress.episodeWatchedNum !== null && isComplete && (
+                                            <Text width="full" fontSize="sm" fontWeight="medium">{progress.episodeWatchedNum}话完成</Text>
+                                        )}
+                                        <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">
+                                            <Text>{progress.startTime ? progress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未知时间)"}</Text>
+                                            {progress.endTime && (
+                                                <>
+                                                    <Icon><RiArrowRightLine/></Icon>
+                                                    <Text>{progress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                                                </>
                                             )}
-                                            <Flex alignItems="center" gap="2" fontSize="sm" color="fg.muted" flex="1">
-                                                <Text>{progress.startTime ? progress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未知时间)"}</Text>
-                                                {progress.endTime && (
-                                                    <>
-                                                        <Icon><RiArrowRightLine/></Icon>
-                                                        <Text>{progress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
-                                                    </>
-                                                )}
-                                            </Flex>
                                         </Flex>
-                                    </Box>
-                                )
-                            })}
-                        </Flex>
-                    </Box>
-                )}
+                                    </Flex>
+                                </Box>
+                            )
+                        })}
+                    </Flex>
+                </>}
             </Flex>
         </>
+    )
+}
+
+function DualProgressBar({ watched, published, total }: { watched: number, published: number, total: number }) {
+    const safeTotal = total <= 0 ? 1 : total
+    const watchedPercent = Math.max(0, Math.min(100, (watched / safeTotal) * 100))
+    const publishedPercent = Math.max(0, Math.min(100, (published / safeTotal) * 100))
+
+    return (
+        <Box flex="1" position="relative" h="10px" rounded="full" bg="border" borderWidth="1px" borderColor="border" overflow="hidden">
+            <Box position="absolute" left="0" top="0" h="100%" w={`${publishedPercent}%`} transition="width 0.3s ease-in-out" bg="bg" rounded="full"/>
+            <Box position="absolute" left="0" top="0" h="100%" w={`${watchedPercent}%`} transition="width 0.3s ease-in-out" bg="green" rounded="full"/>
+        </Box>
     )
 }

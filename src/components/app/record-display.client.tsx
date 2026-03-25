@@ -1,10 +1,10 @@
 "use client"
-import { useState } from "react"
+import { useCallback, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Box, Button, CloseButton, Dialog, Flex, Icon, Text, Table, IconButton } from "@chakra-ui/react"
-import { RiBookmark3Line, RiEyeCloseFill, RiPenNibFill, RiAddLine, RiDeleteBinLine, RiArrowRightLine } from "react-icons/ri"
+import { Box, Button, CloseButton, Dialog, Flex, Icon, Text, Table, IconButton, ButtonProps } from "@chakra-ui/react"
+import { RiBookmark3Line, RiEyeCloseFill, RiPenNibFill, RiAddLine, RiDeleteBinLine, RiArrowRightLine, RiPushpin2Fill, RiFlightTakeoffLine, RiFileAddLine } from "react-icons/ri"
 import { ProjectType } from "@/constants/project"
-import { createRecord } from "@/services/record"
+import { createRecord, updateRecord } from "@/services/record"
 import { createProgress, nextEpisode } from "@/services/record-progress"
 import { DateTimePicker, NumberInput } from "@/components/form"
 import { RecordCreateForm, RecordProgressUpsertForm } from "@/schemas/record"
@@ -156,6 +156,59 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
                 <CloseButton size="sm" />
             </Dialog.CloseTrigger>
         </Dialog.Content>
+    )
+}
+
+export function RecordDisplayAttentionButton({ projectId, specialAttention }: { projectId: string, specialAttention: boolean }) {
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+
+    const toggleClick = useCallback(async () => {
+        if(isPending) return
+        const result = handleActionResult(await updateRecord(projectId, { specialAttention: !specialAttention }))
+        if(result.ok) startTransition(() => router.refresh())
+    }, [projectId, specialAttention, isPending])
+    
+    return (
+        <Button variant="outline" colorPalette={specialAttention ? "yellow" : undefined} size="sm" onClick={toggleClick} opacity={isPending ? 0.6 : 1}>
+            <RiPushpin2Fill/> {specialAttention ? "订阅中" : "未订阅"}
+        </Button>
+    )
+}
+
+export function RecordDisplayNextButton({ projectId, watched }: { projectId: string, watched: number }) {
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+
+    const nextClick = useCallback(async () => {
+        if(isPending) return
+        const result = handleActionResult(await nextEpisode(projectId))
+        if(result.ok) startTransition(() => router.refresh())
+    }, [projectId, isPending])
+
+    return (
+        <Button variant="outline" size="sm" onClick={nextClick} opacity={isPending ? 0.6 : 1}>
+            <RiFlightTakeoffLine />
+            NEXT 第{watched + 1}话
+        </Button>
+    )
+}
+
+export function RecordDisplayCreateProgressButton({ projectId, ...attrs }: { projectId: string } & ButtonProps) {
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+
+    const createProgressClick = useCallback(async () => {
+        if(isPending) return
+        const result = handleActionResult(await createProgress(projectId, {}))
+        if(result.ok) startTransition(() => router.refresh())
+    }, [projectId, isPending])
+
+    return (
+        <Button variant="outline" size="sm" onClick={createProgressClick} opacity={isPending ? 0.6 : 1} {...attrs}>
+            <RiFileAddLine />
+            新建进度
+        </Button>
     )
 }
 

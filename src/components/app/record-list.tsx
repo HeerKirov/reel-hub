@@ -125,7 +125,7 @@ function ContentActivity({ list, type }: { list: RecordActivityListSchema[], typ
                                     <Text fontSize="md" fontWeight="500">{item.project.title}</Text>
                                     {item.progressCount > 1 && <Badge colorPalette="pink" variant="outline">{item.progressCount}周目</Badge>}
                                     <Badge colorPalette={status.color} variant="subtle">{status.label}</Badge>
-                                    {item.specialAttention && <Badge colorPalette="yellow" variant="outline">特别关注</Badge>}
+                                    {item.specialAttention && <Badge colorPalette="yellow" variant="outline">订阅中</Badge>}
                                 </Flex>
                                 <Text color="fg.muted" fontSize="sm">{item.activityTime ? dates.toDailyText(item.activityTime) : "暂无动态"}</Text>
                             </Flex>
