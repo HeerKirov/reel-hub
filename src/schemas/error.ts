@@ -1,18 +1,12 @@
-import type { AlreadyExists, InternalServerError, ParamError, ParamRequired, ResourceNotExist, ResourceNotSuitable } from "@/constants/exception"
+import type { AlreadyExists, InternalServerError, NotFound, ParamError, ParamRequired, Reject, RejectCreateProgress, RejectNextEpisode, ResourceNotExist } from "@/constants/exception"
 
 // --- project ---
 
 export type ListProjectError = ParamError | InternalServerError
 
-/** `saveTags` 仅在创建新标签失败时返回（内部将 `createTag` 的失败归一为该错误） */
-export type SaveTagsError = ResourceNotExist<"tagIds", string>
-
-/** `saveStaffs` 仅在创建新 staff 失败时返回 */
-export type SaveStaffsError = ResourceNotExist<"staffIds", string>
-
 export type UpdateRelationsError =
   | ParamError
-  | ResourceNotExist<"projectId", string>
+  | NotFound
   | ResourceNotExist<"projectIds", string>
   | InternalServerError
 
@@ -25,49 +19,45 @@ export type ProjectFindAllError = ResourceNotExist<"projectIds", string>
 
 // --- record ---
 
-export type RecordPreviewError = ResourceNotExist<"projectId", string> | InternalServerError
+export type RecordPreviewError = NotFound | InternalServerError
 
-export type RecordDetailError = ResourceNotExist<"projectId", string> | InternalServerError
+export type RecordDetailError = NotFound | InternalServerError
 
 export type CreateRecordError =
   | ParamError
   | ParamRequired
-  | ResourceNotExist<"projectId", string>
+  | NotFound
   | AlreadyExists<"record", "projectId", string>
-  | ResourceNotSuitable<"episodePublishedNum" | "latestProgress", string>
+  | RejectCreateProgress
   | InternalServerError
 
-export type UpdateRecordError = ParamError | ResourceNotExist<"recordId", string> | InternalServerError
+export type UpdateRecordError = ParamError | NotFound | InternalServerError
 
-export type DeleteRecordError = ResourceNotExist<"recordId", string> | InternalServerError
-export type ListRecordActivityError = ParamError | InternalServerError
-export type ListRecordHistoryError = ParamError | InternalServerError
+export type DeleteRecordError = NotFound | InternalServerError
+export type ListRecordError = ParamError | InternalServerError
 
 export type CreateProgressError =
   | ParamError
   | ParamRequired
-  | ResourceNotExist<"projectId" | "recordId", string>
-  | ResourceNotSuitable<"episodePublishedNum" | "latestProgress", string>
+  | NotFound
+  | RejectCreateProgress
   | InternalServerError
 
 export type UpdateLatestProgressError =
   | ParamError
   | ParamRequired
-  | ResourceNotExist<"projectId" | "recordId", string>
-  | ResourceNotExist<"progressOrdinal", number>
+  | NotFound
+  | Reject
   | InternalServerError
 
 export type NextEpisodeError =
-  | ResourceNotExist<"projectId", string>
-  | ResourceNotExist<"recordId", string>
-  | ResourceNotExist<"nextEpisode", string>
-  | ResourceNotExist<"progressOrdinal", number>
-  | ResourceNotSuitable<"projectType", string>
+  | NotFound
+  | Reject
+  | RejectNextEpisode
   | InternalServerError
 
 export type DeleteProgressError =
-  | ResourceNotExist<"projectId" | "recordId", string>
-  | ResourceNotExist<"progressOrdinal", number>
+  | NotFound
   | InternalServerError
 
 // --- comment ---
@@ -78,7 +68,7 @@ export type RetrieveCommentError = InternalServerError
 
 export type UpsertCommentError =
   | ParamError
-  | ResourceNotExist<"projectId", string>
+  | NotFound
   | InternalServerError
 
 export type DeleteCommentError = InternalServerError
@@ -109,20 +99,20 @@ export type ListProjectAnimeError = ParamError | InternalServerError
 
 export type CreateProjectAnimeError =
   | ParamError
-  | SaveTagsError
-  | SaveStaffsError
+  | CreateTagError
+  | CreateStaffError
   | UpdateRelationsError
   | InternalServerError
 
 export type UpdateProjectAnimeError =
   | ParamError
-  | ResourceNotExist<"projectId", string>
-  | SaveTagsError
-  | SaveStaffsError
+  | NotFound
+  | CreateTagError
+  | CreateStaffError
   | UpdateRelationsError
   | InternalServerError
 
 export type DeleteProjectAnimeError =
-  | ResourceNotExist<"projectId", string>
+  | NotFound
   | RemoveProjectInTopologyError
   | InternalServerError

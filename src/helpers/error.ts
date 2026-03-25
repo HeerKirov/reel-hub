@@ -48,6 +48,24 @@ export function mapServiceError(error: BaseException<string, unknown>): UiError 
                 retryable: true
             }
         }
+        case "NOT_FOUND":
+            return {
+                code: error.code,
+                title: "未找到",
+                description: error.message || "目标未找到",
+                severity: "error",
+                retryable: true
+            }
+        case "REJECT":
+        case "REJECT_NEXT_EPISODE":
+        case "REJECT_CREATE_PROGRESS":
+            return {
+                code: error.code,
+                title: "操作被拒绝",
+                description: error.message || "不满足操作条件",
+                severity: "warning",
+                retryable: false
+            }
         case "NOT_SUITABLE":
             return {
                 code: error.code,

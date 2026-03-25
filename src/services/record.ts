@@ -4,7 +4,7 @@ import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { ActivityEvent, parsePreviewSchema, recordCreateForm, RecordCreateForm, RecordPreviewSchema, RecordDetailSchema, parseDetailSchema, RecordUpdateForm, recordUpdateForm, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { err, ok, Result } from "@/schemas/all"
-import { exceptionAlreadyExists, exceptionParamError, exceptionParamRequired, exceptionResourceNotExist, exceptionResourceNotSuitable, safeExecuteResult } from "@/constants/exception"
+import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, exceptionParamRequired, exceptionRejectCreateProgress, safeExecuteResult } from "@/constants/exception"
 import { CreateRecordError, DeleteRecordError, RecordDetailError, RecordPreviewError, UpdateRecordError } from "@/schemas/error"
 import { Prisma, ProjectType, RecordStatus } from "@/prisma/generated"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
@@ -15,7 +15,7 @@ export async function retrieveRecordPreview(projectId: string): Promise<Result<R
         const userId = await getUserId()
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
         if(!record) return ok(null)
@@ -32,7 +32,7 @@ export async function retrieveRecord(projectId: string): Promise<Result<RecordDe
         const userId = await getUserId()
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         const record = await prisma.record.findFirst({
             where: {ownerId: userId, projectId},
@@ -58,7 +58,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
     if(!validate.success) return err(exceptionParamError(validate.error.message))
     
     const project = await prisma.project.findUnique({where: {id: projectId}})
-    if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+    if(!project) return err(exceptionNotFound("Project not found"))
     
     if(await prisma.record.findFirst({where: {ownerId: userId, projectId}})) {
         return err(exceptionAlreadyExists("record", "projectId", projectId))
@@ -107,14 +107,10 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
         }
 
         const isAnime = project.type === ProjectType.ANIME
-        const episodeTotalNum = isAnime ? project.episodeTotalNum : null
-        const episodePublishedNum = isAnime ? project.episodePublishedNum ?? 0 : null
+        const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
+        const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
 
-        if(isAnime && episodeTotalNum === null) {
-            return err(exceptionParamRequired("episodeTotalNum"))
-        }
-
-        const episodeFullyPublished = isAnime && episodePublishedNum !== null && episodeTotalNum !== null && episodePublishedNum >= episodeTotalNum
+        const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
         const inputProgresses = validate.data.progress
         const normalizedProgresses = inputProgresses.map(p => {
             const startTimeFilled = p.startTime ?? p.endTime ?? null
@@ -145,7 +141,8 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 if(p.endTime !== null) {
                     // ANIME restriction: incomplete release => cannot have COMPLETED progress
                     if(isAnime && !episodeFullyPublished) {
-                        return err(exceptionResourceNotSuitable("episodePublishedNum", "not_fully_published"))
+                        // 不满足插入新的未完成进度条件
+                        return err(exceptionRejectCreateProgress("Episode is not fully published"))
                     }
                 } else {
                     if(p.startTimeFilled === null) {
@@ -158,7 +155,8 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
         if(isAnime && !episodeFullyPublished) {
             const hasAnyCompleted = normalizedProgresses.some(p => p.endTime !== null)
             if(hasAnyCompleted) {
-                return err(exceptionResourceNotSuitable("episodePublishedNum", "not_fully_published"))
+                // 不满足插入新的未完成进度条件
+                return err(exceptionRejectCreateProgress("Episode is not fully published"))
             }
         }
 
@@ -285,7 +283,7 @@ export async function updateRecord(projectId: string, form: RecordUpdateForm): P
     const userId = await getUserId()
 
     const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-    if(!record) return err(exceptionResourceNotExist("recordId", projectId))
+    if(!record) return err(exceptionNotFound("Record not found"))
     
     const validate = recordUpdateForm.safeParse(form)
     if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -309,7 +307,7 @@ export async function deleteRecord(projectId: string): Promise<Result<void, Dele
     const userId = await getUserId()
 
     const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-    if(!record) return err(exceptionResourceNotExist("recordId", projectId))
+    if(!record) return err(exceptionNotFound("Record not found"))
 
     await prisma.record.delete({where: {id: record.id}})
     await prisma.recordProgress.deleteMany({where: {recordId: record.id}})

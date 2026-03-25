@@ -70,7 +70,7 @@ export function ListPageLayout<PARAMS extends Record<string, string>>(props: Lis
 
 async function ListPageLayoutSidePanel<PARAMS extends Record<string, string>>({ searchParams, bar, filter, totalRecord, totalPage, currentPage }: Omit<ListPageLayoutProps<PARAMS>, "breadcrumb" | "content">) {
     return (<Box flex="1 0 auto" order={{base: 0, md: 1}} width={{base: "100%", md: "220px", lg: "240px", xl: "260px"}}>
-        <Box display="flex" justifyContent="space-between" borderWidth="1px" rounded="md">
+        <Box display={bar ? "flex" : {base: "flex", md: "none"}} justifyContent="space-between" borderWidth="1px" rounded="md">
             {bar ?? <Box flex="1 1 100%"/>}
 
             <ResponsiveIf show={{base: true, md: false}} asChild>
@@ -101,7 +101,9 @@ async function ListPageLayoutSidePanel<PARAMS extends Record<string, string>>({ 
             <Box mt="1" py="1" px="2" borderWidth="1px" rounded="md">
                 {filter}
             </Box>
-            <CompactPagination mt="1" fullwidth page={currentPage} total={totalPage} searchParams={searchParams}/>
+            {totalPage !== undefined && currentPage !== undefined && (
+                <CompactPagination mt="1" fullwidth page={currentPage} total={totalPage} searchParams={searchParams}/>
+            )}
             {totalRecord !== undefined && <Text>共 {totalRecord} 条记录</Text>}
         </ResponsiveIf>
     </Box>)

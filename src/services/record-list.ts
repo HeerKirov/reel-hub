@@ -1,17 +1,25 @@
 "use server"
+import type { Project, Record as PrismaRecord, RecordProgress } from "@/prisma/generated"
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import {
-    parseRecordActivityListSchema, parseRecordHistoryListSchema, recordActivityListFilter, recordHistoryListFilter,
-    RecordActivityListFilter, RecordActivityListSchema, RecordHistoryListFilter, RecordHistoryListSchema
+    parseRecordActivityListSchema, parseRecordHistoryListSchema, parseRecordSubscriptionAnimeListSchema,
+    recordActivityListFilter, recordHistoryListFilter, recordSubscriptionAnimeListFilter,
+    RecordActivityListFilter, RecordActivityListSchema, RecordHistoryListFilter, RecordHistoryListSchema,
+    RecordSubscriptionAnimeListFilter, RecordSubscriptionAnimeListSchema
 } from "@/schemas/record"
+import type { EpisodePublishRecordModel } from "@/schemas/project"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
-import { ListRecordActivityError, ListRecordHistoryError } from "@/schemas/error"
+import { ListRecordError } from "@/schemas/error"
 import { RecordStatus } from "@/constants/record"
+import {
+    passesSubscriptionMode, resolveServerTimeZone, isValidIanaTimeZone, parseEpisodePublishPlan, getNextPublishPlanItemAfterNow, nextPublishTimeFromItem, sortSubscriptionAnimeRows, 
+    type SubscriptionAnimeSortRow
+} from "@/helpers/subscription"
 
-export async function listRecordActivity(filter: RecordActivityListFilter): Promise<Result<ListResult<RecordActivityListSchema>, ListRecordActivityError>> {
+export async function listRecordActivity(filter: RecordActivityListFilter): Promise<Result<ListResult<RecordActivityListSchema>, ListRecordError>> {
     return safeExecuteResult(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
@@ -68,7 +76,7 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
     })
 }
 
-export async function listRecordHistory(filter: RecordHistoryListFilter): Promise<Result<ListResult<RecordHistoryListSchema>, ListRecordHistoryError>> {
+export async function listRecordHistory(filter: RecordHistoryListFilter): Promise<Result<ListResult<RecordHistoryListSchema>, ListRecordError>> {
     return safeExecuteResult(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
@@ -128,4 +136,111 @@ export async function listRecordHistory(filter: RecordHistoryListFilter): Promis
             total
         })
     })
+}
+
+export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnimeListFilter): Promise<Result<RecordSubscriptionAnimeListSchema[], ListRecordError>> {
+    return safeExecuteResult(async () => {
+        await requireAccess("record", "read")
+        const userId = await getUserId()
+
+        const validate = recordSubscriptionAnimeListFilter.safeParse(filter)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
+
+        const now = new Date()
+        const timeZone = validate.data.timezone && isValidIanaTimeZone(validate.data.timezone)
+            ? validate.data.timezone
+            : resolveServerTimeZone()
+        const direction = validate.data.orderDirection === "desc" ? -1 : 1
+
+        const where = {
+            ownerId: userId,
+            specialAttention: true,
+            project: {
+                type: "ANIME" as const,
+                OR: validate.data.search ? [
+                    { title: { contains: validate.data.search } },
+                    { subtitles: { contains: validate.data.search } },
+                    { keywords: { contains: validate.data.search } }
+                ] : undefined
+            }
+        }
+
+        const records = await prisma.record.findMany({
+            where,
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        type: true,
+                        title: true,
+                        resources: true,
+                        episodeTotalNum: true,
+                        episodePublishedNum: true,
+                        episodePublishPlan: true
+                    }
+                },
+                progresses: {
+                    where: { isLatest: true },
+                    select: { episodeWatchedNum: true },
+                    take: 1
+                }
+            }
+        }) as SubscriptionAnimeRecordRow[]
+
+        const mode = validate.data.mode
+        const withPlan: RowWithPlan[] = []
+        for (const record of records) {
+            const plan = parseEpisodePublishPlan(record.project.episodePublishPlan)
+            const hasPublishPlan = plan.length > 0
+            const nextPublishPlanItem = getNextPublishPlanItemAfterNow(plan, now)
+            const nextPublishTime = nextPublishTimeFromItem(nextPublishPlanItem)
+            const hasProgress = record.progresses.length > 0
+            const watched = record.progresses[0]?.episodeWatchedNum ?? null
+
+            if (!passesSubscriptionMode(mode, hasProgress, watched, record.project.episodePublishedNum, record.project.episodeTotalNum, hasPublishPlan)) {
+                continue
+            }
+            withPlan.push({ record, nextPublishPlanItem, nextPublishTime })
+        }
+
+        const sortRows: SubscriptionAnimeSortRow[] = withPlan.map(({ record, nextPublishTime }) => {
+            const watched = record.progresses[0]?.episodeWatchedNum ?? null
+            return {
+                recordId: record.id,
+                watchedEpisodes: watched,
+                publishedEpisodes: record.project.episodePublishedNum ?? 0,
+                subscriptionTime: record.createTime,
+                status: record.status,
+                nextPublishTime
+            }
+        })
+
+        const sorted = sortSubscriptionAnimeRows(sortRows, validate.data.order, direction, {
+            now,
+            timeZone,
+            nightTimeTable: validate.data.nightTimeTable
+        })
+
+        const orderIndex = new Map(sorted.map((r, i) => [r.recordId, i]))
+        const rowsOrdered = [...withPlan].sort((a, b) => (orderIndex.get(a.record.id)! - orderIndex.get(b.record.id)!))
+
+        const list = rowsOrdered.map(({ record, nextPublishPlanItem }) => parseRecordSubscriptionAnimeListSchema(record, nextPublishPlanItem))
+
+        return ok(list)
+    })
+}
+
+type SubscriptionAnimeRecordRow = PrismaRecord & {
+    project: Pick<Project, "id" | "type" | "title" | "resources"> & {
+        episodeTotalNum: number | null
+        episodePublishedNum: number | null
+        episodePublishPlan: unknown
+    }
+    progresses: Pick<RecordProgress, "episodeWatchedNum">[]
+}
+
+type RowWithPlan = {
+    record: SubscriptionAnimeRecordRow
+    nextPublishPlanItem: EpisodePublishRecordModel | null
+    nextPublishTime: Date | null
 }

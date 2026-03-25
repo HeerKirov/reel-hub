@@ -6,8 +6,8 @@ import { arrays, records } from "@/helpers/primitive"
 import { ProjectType, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { Staff, Tag } from "@/prisma/generated"
 import { RelationGraph } from "@/helpers/relation-graph"
-import { exceptionParamError, exceptionResourceNotExist, ParamError, safeExecuteResult } from "@/constants/exception"
-import { ListProjectError, ProjectFindAllError, RemoveProjectInTopologyError, SaveStaffsError, SaveTagsError, UpdateAllRelationTopologyError, UpdateRelationsError } from "@/schemas/error"
+import { exceptionNotFound, exceptionParamError, exceptionResourceNotExist, ParamError, safeExecuteResult } from "@/constants/exception"
+import { CreateStaffError, CreateTagError, ListProjectError, ProjectFindAllError, RemoveProjectInTopologyError, UpdateAllRelationTopologyError, UpdateRelationsError } from "@/schemas/error"
 import { createTag } from "./tag"
 import { createStaff } from "./staff"
 import { requireAccess } from "@/helpers/auth-guard"
@@ -59,7 +59,7 @@ export async function getRelations(relations: ProjectRelationModel, relationsTop
     }
 }
 
-export async function saveTags(projectId: string, type: ProjectType, tags: string[]): Promise<Result<void, SaveTagsError>> {
+export async function saveTags(projectId: string, type: ProjectType, tags: string[]): Promise<Result<void, CreateTagError>> {
     await requireAccess("project", "write")
     // 获取所有已存在的tag
     const existingTags = tags.length > 0 ? await prisma.tag.findMany({
@@ -77,7 +77,7 @@ export async function saveTags(projectId: string, type: ProjectType, tags: strin
     if(newTagNames.length > 0) {
         const newTagResults = await Promise.all(newTagNames.map(name => createTag({name, description: "", type})))
         for(const r of newTagResults) {
-            if(!r.ok) return err(exceptionResourceNotExist("tagIds", newTagNames.join(", ")))
+            if(!r.ok) return err(r.err)
             allTags.push({
                 ...r.value,
                 type: r.value.type as ProjectType
@@ -126,7 +126,7 @@ export async function saveTags(projectId: string, type: ProjectType, tags: strin
     return ok(undefined)
 }
 
-export async function saveStaffs(projectId: string, staffs: {type: string, members: string[]}[]): Promise<Result<void, SaveStaffsError>> {
+export async function saveStaffs(projectId: string, staffs: {type: string, members: string[]}[]): Promise<Result<void, CreateStaffError>> {
     await requireAccess("project", "write")
     // 获取所有staff名字
     const staffNames = Array.from(new Set(staffs.flatMap(s => s.members)))
@@ -143,7 +143,7 @@ export async function saveStaffs(projectId: string, staffs: {type: string, membe
     if(newStaffNames.length > 0) {
         const newStaffResults = await Promise.all(newStaffNames.map(name => createStaff({name, otherNames: [], description: ""})))
         for(const r of newStaffResults) {
-            if(!r.ok) return err(exceptionResourceNotExist("staffIds", newStaffNames.join(", ")))
+            if(!r.ok) return err(r.err)
             allStaffs.push({
                 ...r.value,
                 otherNames: r.value.otherNames.join("|")
@@ -220,7 +220,7 @@ export async function updateRelations(projectId: string, relations: Partial<Proj
     
     // 查到主对象
     const thisProject = await find(projectId)
-    if (!thisProject) return err(exceptionResourceNotExist("projectId", projectId))
+    if (!thisProject) return err(exceptionNotFound("Project not found"))
 
     // 比对主对象的旧关联拓扑和新关联拓扑，找出新增的那些节点
     // 而如果关联拓扑没有变化，那么退出这个方法

@@ -3,7 +3,7 @@ import { CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchem
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
-import { exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { DeleteCommentError, ListCommentsError, RetrieveCommentError, UpsertCommentError } from "@/schemas/error"
 
@@ -70,7 +70,7 @@ export async function upsertComment(projectId: string, form: CommentUpsertSchema
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         await prisma.comment.upsert({
             where: {

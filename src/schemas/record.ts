@@ -2,7 +2,7 @@ import { z } from "zod"
 import type { Project, Record as PrismaRecord, RecordProgress } from "@/prisma/generated"
 import { RECORD_STATUS, FOLLOW_TYPE, RecordStatus, FollowType } from "@/constants/record"
 import { PROJECT_TYPE } from "@/constants/project"
-import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "./project"
+import { parseProjectSimpleSchema, type EpisodePublishRecordModel, type ProjectSimpleSchema } from "./project"
 
 // =============================================================================
 // Model
@@ -118,6 +118,19 @@ export interface RecordHistoryListSchema {
     totalEpisode: number | null
 }
 
+/** 特别关注 + 动画订阅列表（无分页、无 total 计数） */
+export interface RecordSubscriptionAnimeListSchema {
+    recordId: number
+    specialAttention: boolean
+    status: RecordStatus
+    project: ProjectSimpleSchema
+    totalEpisode: number
+    publishedEpisode: number
+    watchedEpisode: number | null
+    /** 当前时刻之后 publishPlan 中的下一项（无则 null） */
+    nextPublishPlanItem: EpisodePublishRecordModel | null
+}
+
 // =============================================================================
 // Filter
 // =============================================================================
@@ -136,8 +149,23 @@ export const recordHistoryListFilter = z.object({
     size: z.number().optional()
 })
 
+export const RECORD_SUBSCRIPTION_ANIME_MODE = ["active", "watchable", "updating", "completed", "shelve"] as const
+
+export const RECORD_SUBSCRIPTION_ANIME_ORDER = ["weekly_calendar", "update_soon", "subscription_time"] as const
+
+export const recordSubscriptionAnimeListFilter = z.object({
+    mode: z.enum(RECORD_SUBSCRIPTION_ANIME_MODE).optional().default("active"),
+    order: z.enum(RECORD_SUBSCRIPTION_ANIME_ORDER).optional().default("weekly_calendar"),
+    orderDirection: z.enum(["asc", "desc"]).optional().default("asc"),
+    search: z.string().optional(),
+    nightTimeTable: z.boolean().optional().default(true),
+    /** IANA 时区；缺省为运行环境（服务器）时区 */
+    timezone: z.string().optional()
+})
+
 export type RecordActivityListFilter = z.infer<typeof recordActivityListFilter>
 export type RecordHistoryListFilter = z.infer<typeof recordHistoryListFilter>
+export type RecordSubscriptionAnimeListFilter = z.input<typeof recordSubscriptionAnimeListFilter>
 
 // =============================================================================
 // Form
@@ -248,5 +276,29 @@ export function parseRecordHistoryListSchema(
         project: parseProjectSimpleSchema(data.record.project),
         watchedEpisode: data.record.project.type === "ANIME" ? data.episodeWatchedNum : null,
         totalEpisode: data.record.project.type === "ANIME" ? data.record.project.episodeTotalNum : null
+    }
+}
+
+export function parseRecordSubscriptionAnimeListSchema(
+    data: PrismaRecord & {
+        project: Pick<Project, "id" | "type" | "title" | "resources"> & {
+            episodeTotalNum: number | null
+            episodePublishedNum: number | null
+            episodePublishPlan: unknown
+        }
+        progresses?: Pick<RecordProgress, "episodeWatchedNum">[]
+    },
+    nextPublishPlanItem: EpisodePublishRecordModel | null
+): RecordSubscriptionAnimeListSchema {
+    const watched = data.progresses?.[0]?.episodeWatchedNum ?? null
+    return {
+        recordId: data.id,
+        specialAttention: data.specialAttention,
+        status: data.status,
+        project: parseProjectSimpleSchema(data.project),
+        totalEpisode: data.project.episodeTotalNum!,
+        publishedEpisode: data.project.episodePublishedNum!,
+        watchedEpisode: watched,
+        nextPublishPlanItem
     }
 }

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { Prisma, ProjectType, RecordStatus } from "@/prisma/generated"
-import { exceptionParamError, exceptionParamRequired, exceptionResourceNotExist, exceptionResourceNotSuitable, safeExecuteResult } from "@/constants/exception"
+import { exceptionInternalServerError, exceptionNotFound, exceptionParamError, exceptionParamRequired, exceptionReject, exceptionRejectCreateProgress, exceptionRejectNextEpisode, safeExecuteResult } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
 import { ActivityEvent, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { CreateProgressError, DeleteProgressError, NextEpisodeError, UpdateLatestProgressError } from "@/schemas/error"
@@ -19,10 +19,10 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-        if(!record) return err(exceptionResourceNotExist("recordId", projectId))
+        if(!record) return err(exceptionNotFound("Record not found"))
 
         const existingProgresses = await prisma.recordProgress.findMany({
             where: {recordId: record.id},
@@ -35,14 +35,9 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
 
         if(isSupplement) {
             const isAnime = project.type === ProjectType.ANIME
-            const episodeTotalNum = isAnime ? project.episodeTotalNum : null
-            const episodePublishedNum = isAnime ? project.episodePublishedNum ?? 0 : null
-
-            if(isAnime && episodeTotalNum === null) {
-                return err(exceptionParamRequired("episodeTotalNum"))
-            }
-
-            const episodeFullyPublished = isAnime && episodePublishedNum !== null && episodeTotalNum !== null && episodePublishedNum >= episodeTotalNum
+            const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
+            const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
+            const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
 
             const startTimeRaw = validate.data.startTime === undefined ? null : validate.data.startTime
             const endTimeRaw = validate.data.endTime === undefined ? null : validate.data.endTime
@@ -97,7 +92,8 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                 if(lastProgress.endTime !== null) {
                     insertOrdinal = existingProgresses.length + 1
                 } else {
-                    return err(exceptionResourceNotSuitable("latestProgress", "not_completed"))
+                        // 不满足插入新的未完成进度条件
+                        return err(exceptionRejectCreateProgress("Latest progress is not completed"))
                 }
             }
 
@@ -127,7 +123,8 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                 // Completed progress => require full release
                 if(newEndTime !== null) {
                     if(!episodeFullyPublished) {
-                        return err(exceptionResourceNotSuitable("episodePublishedNum", "not_fully_published"))
+                        // 不满足插入新的已完成进度条件
+                        return err(exceptionRejectCreateProgress("Episode is not fully published"))
                     }
                     episodeWatchedNum = episodeTotalNum!
                 } else {
@@ -187,7 +184,8 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
             // 新建进度模式：要求上一条进度必须是已完成状态（如果存在）
             const latestProgress = existingProgresses.length > 0 ? existingProgresses[existingProgresses.length - 1] : null
             if(latestProgress !== null && latestProgress.endTime === null) {
-                return err(exceptionResourceNotSuitable("latestProgress", "not_completed"))
+                // 不满足插入新的未完成进度条件
+                return err(exceptionRejectCreateProgress("Latest progress is not completed"))
             }
 
             const newOrdinal = existingProgresses.length + 1
@@ -246,24 +244,24 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-        if(!record) return err(exceptionResourceNotExist("recordId", projectId))
+        if(!record) return err(exceptionNotFound("Record not found"))
 
         // 只能更新最新进度
         if(ordinal !== record.progressCount) {
-            return err(exceptionParamError("Can only update the latest progress"))
+            return err(exceptionReject("Can only update the latest progress"))
         }
 
         if(record.progressCount === 0) {
-            return err(exceptionResourceNotExist("progressOrdinal", ordinal))
+            return err(exceptionNotFound("Progress not found"))
         }
 
         const progress = await prisma.recordProgress.findFirst({
             where: {recordId: record.id, ordinal}
         })
-        if(!progress) return err(exceptionResourceNotExist("progressOrdinal", ordinal))
+        if(!progress) return err(exceptionNotFound("Progress not found"))
 
         // 只更新episodeWatchedNum（类似旧代码的updateLatestProgress）
         if(validate.data.episodeWatchedNum === undefined) {
@@ -272,12 +270,8 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         }
         
         const isAnime = project.type === ProjectType.ANIME
-        const episodeTotalNum = isAnime ? project.episodeTotalNum : null
-        const episodePublishedNum = isAnime ? project.episodePublishedNum ?? 0 : null
-
-        if(isAnime && episodeTotalNum === null) {
-            return err(exceptionParamRequired("episodeTotalNum"))
-        }
+        const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
+        const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
 
         const newEpisodeWatchedNum = isAnime ? (() => {
             const raw = validate.data.episodeWatchedNum ?? 0
@@ -307,7 +301,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
             }
         }
 
-        const episodeFullyPublished = isAnime && episodePublishedNum !== null && episodeTotalNum !== null && episodePublishedNum >= episodeTotalNum
+        const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
         const shouldComplete = isAnime && episodeFullyPublished && (newEpisodeWatchedNum ?? 0) >= (episodeTotalNum ?? 0)
         const finalEndTime = shouldComplete ? now : null
         const finalStatus = getRecordStatus(ordinal, finalEndTime, episodeTotalNum, newEpisodeWatchedNum)
@@ -345,23 +339,24 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
 }
 
 export async function nextEpisode(projectId: string): Promise<Result<number, NextEpisodeError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteResult<number, NextEpisodeError>(async () => {
         await requireAccess("record", "write")
         const userId = await getUserId()
         const now = new Date()
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-        if(!record) return err(exceptionResourceNotExist("recordId", projectId))
+        if(!record) return err(exceptionNotFound("Record not found"))
 
         if(project.type !== ProjectType.ANIME) {
-            return err(exceptionResourceNotSuitable("projectType", String(project.type)))
+            return err(exceptionReject("Project is not an anime"))
         }
 
         if(project.episodePublishedNum === null || project.episodePublishedNum === 0) {
-            return err(exceptionResourceNotExist("nextEpisode", projectId))
+            // 不满足 next 条件
+            return err(exceptionRejectNextEpisode())
         }
 
         const episodeTotalNum = project.episodeTotalNum ?? 0
@@ -411,11 +406,13 @@ export async function nextEpisode(projectId: string): Promise<Result<number, Nex
             const progress = await prisma.recordProgress.findFirst({
                 where: {recordId: record.id, isLatest: true}
             })
-            if(!progress) return err(exceptionResourceNotExist("progressOrdinal", record.progressCount))
+            // record.progressCount > 0 时却找不到 latest progress：应当是数据不一致
+            if(!progress) return err(exceptionInternalServerError("Progress not found"))
 
             const currentEpisodeWatchedNum = progress.episodeWatchedNum ?? 0
             if(currentEpisodeWatchedNum >= project.episodePublishedNum) {
-                return err(exceptionResourceNotExist("nextEpisode", projectId))
+                // 不满足 next 条件
+                return err(exceptionRejectNextEpisode("Next episode is not available"))
             }
 
             const newEpisodeWatchedNum = currentEpisodeWatchedNum + 1
@@ -467,15 +464,15 @@ export async function deleteProgress(projectId: string, ordinal: number): Promis
         const now = new Date()
 
         const project = await prisma.project.findUnique({where: {id: projectId}})
-        if(!project) return err(exceptionResourceNotExist("projectId", projectId))
+        if(!project) return err(exceptionNotFound("Project not found"))
 
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
-        if(!record) return err(exceptionResourceNotExist("recordId", projectId))
+        if(!record) return err(exceptionNotFound("Record not found"))
 
         const progress = await prisma.recordProgress.findFirst({
             where: {recordId: record.id, ordinal}
         })
-        if(!progress) return err(exceptionResourceNotExist("progressOrdinal", ordinal))
+        if(!progress) return err(exceptionNotFound("Progress not found"))
 
         // 删除进度
         await prisma.recordProgress.delete({where: {id: progress.id}})

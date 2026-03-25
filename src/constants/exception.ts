@@ -40,34 +40,45 @@ export type ResourceNotSuitable<P extends string, V> = BaseException<"NOT_SUITAB
  * 资源已存在。该错误指创建或修改唯一性资源时已存在的情况。
  */
 export type AlreadyExists<R extends string, P extends string, V> = BaseException<"ALREADY_EXISTS", {relationName: R, resourceName: P, resourceValue: V}>
+/**
+ * 拒绝操作。通常用于业务逻辑上的拒绝。这是一个通用的拒绝错误。
+ */
+export type Reject = BaseException<"REJECT", null>
+/**
+ * 拒绝操作。表示NextEpisode中推进到下一话的操作不满足条件。
+ */
+export type RejectNextEpisode = BaseException<"REJECT_NEXT_EPISODE", null>
+/**
+ * 拒绝操作。表示CreateProgress中创建新的进度操作不满足条件。
+ */
+export type RejectCreateProgress = BaseException<"REJECT_CREATE_PROGRESS", null>
 
 /**
  * 未授权。该错误指当前请求未授权。
  */
 export type Unauthorized = BaseException<"UNAUTHORIZED", null>
-
 /**
  * 禁止访问。该错误指当前请求被禁止访问。
  */
 export type Forbidden = BaseException<"FORBIDDEN", null>
-
 /**
  * 内部服务器错误。该错误指服务器在处理请求时发生了未知的错误。
  */
 export type InternalServerError = BaseException<"INTERNAL_SERVER_ERROR", null>
-/**
- * 未知错误。该错误指服务器在处理请求时发生了未知的错误。
- */
-export type UnknownError = BaseException<"UNKNOWN_ERROR", null>
 
-export function exceptionParamError(message: string): ParamError {
-    return { code: "PARAM_ERROR", message, info: message }
-}
 
 export function exceptionResourceNotExist<P extends string, V>(resourceName: P, resourceValue: V): ResourceNotExist<P, V> {
     return {
         code: "NOT_EXIST",
         message: `${resourceName} not exist`,
+        info: { resourceName, resourceValue }
+    }
+}
+
+export function exceptionResourceNotSuitable<P extends string, V>(resourceName: P, resourceValue: V): ResourceNotSuitable<P, V> {
+    return {
+        code: "NOT_SUITABLE",
+        message: `${resourceName} is not suitable`,
         info: { resourceName, resourceValue }
     }
 }
@@ -92,6 +103,10 @@ export function exceptionInternalServerError(message: string = "Internal server 
     return { code: "INTERNAL_SERVER_ERROR", message, info: null }
 }
 
+export function exceptionParamError(message: string): ParamError {
+    return { code: "PARAM_ERROR", message, info: message }
+}
+
 export function exceptionParamRequired(paramName: string): ParamRequired {
     return { code: "PARAM_REQUIRED", message: `${paramName} is required`, info: paramName }
 }
@@ -104,12 +119,16 @@ export function exceptionNotFound(message: string = "Not found"): NotFound {
     return { code: "NOT_FOUND", message, info: null }
 }
 
-export function exceptionResourceNotSuitable<P extends string, V>(resourceName: P, resourceValue: V): ResourceNotSuitable<P, V> {
-    return {
-        code: "NOT_SUITABLE",
-        message: `${resourceName} is not suitable`,
-        info: { resourceName, resourceValue }
-    }
+export function exceptionReject(message: string = "Rejected"): Reject {
+    return { code: "REJECT", message, info: null }
+}
+
+export function exceptionRejectNextEpisode(message: string = "Next episode is not available"): RejectNextEpisode {
+    return { code: "REJECT_NEXT_EPISODE", message, info: null }
+}
+
+export function exceptionRejectCreateProgress(message: string = "Create progress is not available"): RejectCreateProgress {
+    return { code: "REJECT_CREATE_PROGRESS", message, info: null }
 }
 
 export function isBaseException(error: unknown): error is BaseException<string, unknown> {
@@ -117,9 +136,7 @@ export function isBaseException(error: unknown): error is BaseException<string, 
     return "code" in error && "message" in error && "info" in error
 }
 
-export async function safeExecuteResult<T, E extends BaseException<string, unknown>>(
-    fn: () => Promise<Result<T, E>>
-): Promise<Result<T, E | InternalServerError>> {
+export async function safeExecuteResult<T, E extends BaseException<string, unknown>>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E | InternalServerError>> {
     try {
         return await fn()
     } catch(error) {

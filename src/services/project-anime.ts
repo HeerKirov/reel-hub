@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
-import { exceptionParamError, exceptionResourceNotExist, safeExecuteResult } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { EpisodePublishRecord, ProjectRelationModel } from "@/schemas/project"
 import { getPublishTimeRange } from "@/helpers/data"
 import { CreateProjectAnimeError, DeleteProjectAnimeError, ListProjectAnimeError, UpdateProjectAnimeError } from "@/schemas/error"
@@ -168,7 +168,7 @@ export async function updateProjectAnime(id: string, form: AnimeForm): Promise<R
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const record = await prisma.project.findUnique({where: {id}})
-        if(!record) return err(exceptionResourceNotExist("projectId", id))
+        if(!record) return err(exceptionNotFound("Project not found"))
 
         if((validate.data.episodeTotalNum !== undefined && validate.data.episodePublishedNum !== record.episodePublishedNum)
             || (validate.data.episodePublishedNum !== undefined && validate.data.episodePublishedNum !== record.episodePublishedNum)
@@ -241,7 +241,7 @@ export async function deleteProjectAnime(id: string): Promise<Result<void, Delet
     return safeExecuteResult(async () => {
         await requireAccess("project", "write")
         const r = await prisma.project.findUnique({where: {id}})
-        if(!r) return err(exceptionResourceNotExist("projectId", id))
+        if(!r) return err(exceptionNotFound("Project not found"))
 
         if(Object.keys(r.relationsTopology as ProjectRelationModel).length > 0) {
             const removeResult = await removeProjectInTopology(id, r.relationsTopology as ProjectRelationModel)
