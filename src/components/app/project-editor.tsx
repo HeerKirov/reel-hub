@@ -68,7 +68,7 @@ export function Editor({ data, onSubmit, onDelete, onCancel }: EditorProps) {
             setOriginalType={setOriginalType} setBoardcastType={setBoardcastType} setEpisodePublishPlan={setEpisodePublishPlan} setEpisodePublishedRecords={setEpisodePublishedRecords}
             setEpisodeDuration={setEpisodeDuration} setEpisodeTotalNum={setEpisodeTotalNum} setEpisodePublishedNum={setEpisodePublishedNum} 
         />},
-        {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab staffs={staffs} setStaffs={setStaffs}/>},
+        {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab projectType={ProjectType.ANIME} staffs={staffs} setStaffs={setStaffs}/>},
         {label: "关联", icon: <RiLink/>, content: <RelationTab projectType={ProjectType.ANIME} relations={relations} setRelations={setRelations}/>},
     ]
 
@@ -198,6 +198,7 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
 })
 
 interface StaffTabProps {
+    projectType: ProjectType
     staffs: {type: string, members: string[]}[]
     setStaffs:(staffs: {type: string, members: string[]}[]) => void
 }
@@ -210,18 +211,7 @@ const StaffTab = memo(function StaffTab(props: StaffTabProps) {
     }, [])
 
     return (
-        <Flex direction="column" gap="1">
-            <Flex gap="4">
-                <Flex direction="column" flex="1" gap="1">
-                    <Field.Root>
-                        <Field.Label>
-                            STAFF
-                        </Field.Label>
-                        <StaffEditor value={props.staffs} onValueChange={props.setStaffs} width="full" search={search}/>
-                    </Field.Root>
-                </Flex>
-            </Flex>
-        </Flex>
+        <StaffEditor value={props.staffs} onValueChange={props.setStaffs} width="full" search={search} projectType={props.projectType}/>
     )
 })
 

@@ -77,21 +77,25 @@ export type DeleteCommentError = InternalServerError
 
 export type ListTagsError = ParamError | InternalServerError
 
-export type CreateTagError = ParamError | InternalServerError
+export type CreateTagError = ParamError | AlreadyExists<"tag", "name", string> | NotFound | InternalServerError
 
-export type UpdateTagError = ParamError | InternalServerError
+export type UpdateTagError = ParamError | AlreadyExists<"tag", "name", string> | NotFound | InternalServerError
 
-export type DeleteTagError = InternalServerError
+export type DeleteTagError = NotFound | InternalServerError
 
 // --- staff ---
 
 export type ListStaffsError = ParamError | InternalServerError
 
-export type CreateStaffError = ParamError | InternalServerError
+export type CreateStaffError = ParamError | AlreadyExists<"staff", "name", string> | InternalServerError
 
-export type UpdateStaffError = ParamError | InternalServerError
+export type UpdateStaffError = ParamError | AlreadyExists<"staff", "name", string> | NotFound | InternalServerError
 
-export type DeleteStaffError = InternalServerError
+export type DeleteStaffError = NotFound | InternalServerError
+
+// --- staff type ---
+
+export type ListStaffTypesError = ParamError | InternalServerError
 
 // --- anime ---
 

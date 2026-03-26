@@ -1,11 +1,13 @@
 "use client"
 import React, { memo, useState, useCallback, useEffect, useMemo } from "react"
-import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field } from "@chakra-ui/react"
+import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field, Combobox, createListCollection, Portal } from "@chakra-ui/react"
 import { useEffectState } from "@/helpers/hooks"
 import { Input, NumberInput, DateTimePicker } from "@/components/form"
 import { PiTrashBold } from "react-icons/pi"
 import { ProjectRelationSchema, EpisodePublishRecord } from "@/schemas/project"
 import { RelationType, RELATION_TYPE_NAMES, RELATION_TYPE_VALUES, ProjectType } from "@/constants/project"
+import { listStaffTypes } from "@/services/staff-type"
+import { unwrapQueryResult } from "@/helpers/result"
 
 export type DynamicInputListProps = {
     value?: string[] | null
@@ -212,9 +214,113 @@ export type StaffEditorProps = {
     value?: {type: string, members: string[]}[]
     onValueChange?: (value: {type: string, members: string[]}[]) => void
     search?: (text: string) => Promise<string[]>
+    projectType?: ProjectType
 } & SystemStyleObject
 
-export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange, search, ...attrs }: StaffEditorProps) {
+type StaffTypeInputProps = {
+    value: string
+    projectType?: ProjectType
+    onValueChange: (value: string) => void
+    onEnter?: (value: string) => void
+    placeholder?: string
+} & SystemStyleObject
+
+const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValueChange, onEnter, placeholder, ...attrs }: StaffTypeInputProps) {
+    const [draft, setDraft] = useState(value)
+    const [searchResults, setSearchResults] = useState<string[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [isComposing, setIsComposing] = useState(false)
+
+    useEffect(() => {
+        setDraft(value)
+    }, [value])
+
+    const items = useMemo(() => searchResults.map(item => ({ label: item, value: item })), [searchResults])
+    const collection = useMemo(() => createListCollection({ items }), [items])
+
+    const doSearch = useCallback(async (text: string) => {
+        if(!projectType) {
+            setSearchResults([])
+            return
+        }
+        setIsSearching(true)
+        try {
+            const result = await listStaffTypes({ projectType, search: text })
+            const { data, error } = unwrapQueryResult(result)
+            if(error) {
+                setSearchResults([])
+                return
+            }
+            setSearchResults(data.list.map(item => item.staffType))
+        } finally {
+            setIsSearching(false)
+        }
+    }, [projectType])
+
+    useEffect(() => {
+        if(isComposing) return
+        const timer = setTimeout(() => {
+            doSearch(draft)
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [draft, doSearch, isComposing])
+
+    const onInputChange = useCallback((details: Combobox.InputValueChangeDetails) => {
+        setDraft(details.inputValue ?? "")
+    }, [])
+
+    const onFocus = useCallback(() => {
+        doSearch(draft)
+    }, [doSearch, draft])
+
+    const commitValue = useCallback((text: string) => {
+        const finalValue = text.trim()
+        if(!finalValue) return
+        setDraft(finalValue)
+        onValueChange(finalValue)
+    }, [onValueChange])
+
+    const onTypeKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+        if(e.key === "Enter" && !isComposing) {
+            commitValue(draft)
+            onEnter?.(draft.trim())
+        }
+    }, [commitValue, draft, isComposing, onEnter])
+
+    const onBlur = useCallback(() => {
+        if(isComposing) return
+        commitValue(draft)
+    }, [commitValue, draft, isComposing])
+
+    return (
+        <Combobox.Root allowCustomValue collection={collection} inputValue={draft} onInputValueChange={onInputChange} openOnClick {...attrs}>
+            <Combobox.Control>
+                <Combobox.Input
+                    placeholder={placeholder}
+                    onFocus={onFocus}
+                    onKeyDown={onTypeKeyDown}
+                    onBlur={onBlur}
+                    onCompositionStart={() => setIsComposing(true)}
+                    onCompositionEnd={() => setIsComposing(false)}
+                />
+            </Combobox.Control>
+            <Portal>
+                <Combobox.Positioner>
+                    <Combobox.Content>
+                        {!isSearching && searchResults.length === 0 && <Combobox.Empty>回车以使用新类型"{draft}"</Combobox.Empty>}
+                        {items.map(item => (
+                            <Combobox.Item item={item} key={item.value} onClick={() => commitValue(item.value)}>
+                                <Combobox.ItemText>{item.label}</Combobox.ItemText>
+                            </Combobox.Item>
+                        ))}
+                    </Combobox.Content>
+                </Combobox.Positioner>
+            </Portal>
+        </Combobox.Root>
+    )
+})
+
+export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange, search, projectType, ...attrs }: StaffEditorProps) {
     const [staffs, setStaffs] = useEffectState<{type: string, members: string[]}[]>(value)
     const [newType, setNewType] = useState("")
 
@@ -248,7 +354,9 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
 
     const handleEnter = useCallback((value: string) => {
         if(value.trim()) {
-            const newStaffs = [...staffs, {type: value, members: []}]
+            const newType = value.trim()
+            if(staffs.some(s => s.type === newType)) return
+            const newStaffs = [...staffs, {type: newType, members: []}]
             setStaffs(newStaffs)
             setNewType("")
             onValueChange?.(newStaffs)
@@ -259,7 +367,13 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         <Box display="flex" flexDirection="column" gap="2" {...attrs}>
             {staffs.map((staff, index) => (
                 <Box key={index} display="flex" gap="2">
-                    <Input flex="1 0 140px" value={staff.type} onValueChange={onTypeChange(staff.type)} placeholder="STAFF类型" />
+                    <StaffTypeInput
+                        flex="1 0 140px"
+                        value={staff.type}
+                        projectType={projectType}
+                        onValueChange={onTypeChange(staff.type)}
+                        placeholder="STAFF类型"
+                    />
                     <TagEditor flex="1 1 100%"
                             value={staff.members} 
                             onValueChange={onMembersChange(staff.type)}
@@ -273,7 +387,14 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
                 </Box>
             ))}
             <Box display="flex" gap="4">
-                <Input flex="1 0 140px" value={newType} onValueChange={setNewType} placeholder="新STAFF类型" onEnter={handleEnter}/>
+                <StaffTypeInput
+                    flex="1 0 140px"
+                    value={newType}
+                    projectType={projectType}
+                    onValueChange={setNewType}
+                    onEnter={handleEnter}
+                    placeholder="新STAFF类型"
+                />
                 <Box flex="1 1 100%" />
                 <Box flex="0 0 auto" />
             </Box>

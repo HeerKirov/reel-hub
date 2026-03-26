@@ -1,18 +1,18 @@
 import NextLink from "next/link"
 import { notFound } from "next/navigation"
-import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Stat, Badge, Button } from "@chakra-ui/react"
+import { Text, Image, Table, HStack, Tag, Link, Flex, Icon, Box, Button } from "@chakra-ui/react"
 import { PiGenderIntersexBold, PiKnifeFill } from "react-icons/pi"
-import { RiEdit2Line, RiPushpin2Fill } from "react-icons/ri"
+import { RiEdit2Line } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
 import { RelationDisplay } from "@/components/display"
 import { CommentBox } from "@/components/app/comment-display"
+import { RecordBox } from "@/components/app/record-display"
 import { AnimeDetailSchema } from "@/schemas/anime"
 import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import { retrieveProjectAnime } from "@/services/project-anime"
 import emptyCover from "@/assets/empty.jpg"
-import { RecordBox } from "@/components/app/record-display"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -98,7 +98,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                     <Tag.Label>{k}</Tag.Label>
                 </Tag.Root>)}
                 {tags.map(tag => <Tag.Root key={tag.id} size="lg" asChild>
-                    <NextLink href={`/anime/database/tags/${encodeURIComponent(tag.name)}`}>
+                    <NextLink href={`/anime/database/tags/${tag.id}`}>
                         <Tag.Label>{tag.name}</Tag.Label>
                     </NextLink>
                 </Tag.Root>)}
@@ -133,7 +133,7 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                         <Table.Cell>
                             <HStack>
                                 {staff.members.map(member => <Link key={member.id} colorPalette="blue" asChild>
-                                    <NextLink href={`/anime/database/staff/${encodeURIComponent(member.name)}`}>{member.name}</NextLink>
+                                    <NextLink href={`/anime/database/staff/${member.id}`}>{member.name}</NextLink>
                                 </Link>)}
                             </HStack>
                         </Table.Cell>

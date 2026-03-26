@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { PROJECT_TYPE } from "@/constants/project"
 import { Staff } from "@/prisma/generated"
 
 // =============================================================================
@@ -32,6 +33,7 @@ export interface StaffSchema {
 // =============================================================================
 
 export const staffListFilter = z.object({
+    type: z.enum(PROJECT_TYPE).optional(),
     search: z.string().optional(),
     page: z.number().optional(),
     size: z.number().optional()

@@ -137,6 +137,7 @@ model ProjectStaffRelation {
   staff   Staff   @relation(fields: [staffId], references: [id])
 
   @@id([projectId, staffId, staffType])
+  @@index([staffType, projectId])
 }
 
 model Tag {

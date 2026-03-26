@@ -2,7 +2,7 @@
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { prisma } from "@/lib/prisma"
-import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { CreateStaffError, DeleteStaffError, ListStaffsError, UpdateStaffError } from "@/schemas/error"
 import { StaffCreateFormSchema, StaffListFilter, staffCreateFormSchema, StaffSchema, staffListFilter, staffUpdateFormSchema, StaffUpdateFormSchema, parseStaffSchema } from "@/schemas/staff"
@@ -12,9 +12,13 @@ export async function listStaffs(filter: StaffListFilter): Promise<Result<ListRe
         const validate = staffListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
+        const search = validate.data.search?.trim()
         const where = {
-            name: validate.data.search ? {contains: validate.data.search, mode: "insensitive" as const} : undefined,
-            otherNames: validate.data.search ? {contains: validate.data.search, mode: "insensitive" as const} : undefined
+            projects: validate.data.type ? { some: { project: { type: validate.data.type } } } : undefined,
+            OR: search ? [
+                { name: { contains: search, mode: "insensitive" as const } },
+                { otherNames: { contains: search, mode: "insensitive" as const } }
+            ] : undefined
         }
         const [r, total] = await Promise.all([
             prisma.staff.findMany({
@@ -43,6 +47,13 @@ export async function createStaff(form: StaffCreateFormSchema): Promise<Result<S
 
         const validate = staffCreateFormSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
+
+        const exists = await prisma.staff.findFirst({
+            where: {
+                name: validate.data.name
+            }
+        })
+        if(exists) return err(exceptionAlreadyExists("staff", "name", validate.data.name))
         
         const created = await prisma.staff.create({
             data: {
@@ -74,6 +85,18 @@ export async function updateStaff(id: number, form: StaffUpdateFormSchema): Prom
         const validate = staffUpdateFormSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
+        const self = await prisma.staff.findUnique({ where: { id } })
+        if(!self) return err(exceptionNotFound("Staff not found"))
+
+        if(validate.data.name) {
+            const exists = await prisma.staff.findFirst({
+                where: {
+                    id: { not: id },
+                    name: validate.data.name
+                }
+            })
+            if(exists) return err(exceptionAlreadyExists("staff", "name", validate.data.name))
+        }
         const updated = await prisma.staff.update({
             where: { id },
             data: {
@@ -91,8 +114,12 @@ export async function updateStaff(id: number, form: StaffUpdateFormSchema): Prom
 export async function deleteStaff(id: number): Promise<Result<void, DeleteStaffError>> {
     return safeExecuteResult(async () => {
         await requireAccess("staff", "write")
-        await prisma.staff.delete({where: { id }})
+
+        const self = await prisma.staff.findUnique({ where: { id } })
+        if(!self) return err(exceptionNotFound("Staff not found"))
+
         await prisma.projectStaffRelation.deleteMany({where: {staffId: id}})
+        await prisma.staff.delete({where: { id }})
         return ok(undefined)
     })
-} 
+}

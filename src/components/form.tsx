@@ -1,17 +1,20 @@
 "use client"
 import React, { memo, useRef, useCallback, KeyboardEvent, useMemo, useState, useEffect } from "react"
 import {
-    InputProps as ChakraInputProps, NumberInputRootProps as ChakraNumberInputRootProps, TextareaProps as ChakraTextareaProps, SystemStyleObject,
+    InputProps as ChakraInputProps, NumberInputRootProps as ChakraNumberInputRootProps, 
+    TextareaProps as ChakraTextareaProps, SystemStyleObject,
     Input as ChakraInput, NumberInput as ChakraNumberInput, InputGroup, Textarea as ChakraTextarea,
     RatingGroup, Text, Select as ChakraSelect, Portal, Popover, 
-    createListCollection, Link, Box, Group, Button, IconButton, 
+    createListCollection, Link, Box, Group, Button, IconButton,
+    EditableRootProps, Editable as ChakraEditable, 
 } from "@chakra-ui/react"
 import { RiCalendar2Fill } from "react-icons/ri"
 import { ValueChangeDetails as NumberInputValueChangeDetails } from "@zag-js/number-input"
 import { ValueChangeDetails as RatingValueChangeDetails } from "@zag-js/rating-group"
 import { ValueChangeDetails as SelectValueChangeDetails } from "@zag-js/select"
-import { dates, numbers } from "@/helpers/primitive"
+import { numbers } from "@/helpers/primitive"
 import { PiCheckBold } from "react-icons/pi"
+import { useEffectState } from "@/helpers/hooks"
 
 export interface InputProps extends ChakraInputProps {
     onValueChange?: (value: string) => void
@@ -99,6 +102,34 @@ export const NumberInput = memo(function NumberInput({ value, onValueChange, onE
         <ChakraNumberInput.Input placeholder={placeholder}/>
     </ChakraNumberInput.Root>
 
+})
+
+export interface EditableTextProps extends Omit<EditableRootProps, "value" | "onValueChange"> {
+    value: string
+    onValueChange: (value: string) => void
+    previewProps?: ChakraEditable.PreviewProps
+    inputProps?: ChakraEditable.InputProps
+}
+
+export const EditableText = memo(function EditableText({ value, onValueChange, previewProps, inputProps, ...attrs }: EditableTextProps) {
+    const [currentValue, setCurrentValue] = useEffectState(value)
+
+    const change = useCallback((details: ChakraEditable.ValueChangeDetails) => {
+        setCurrentValue(details.value)
+    }, [])
+
+    const commit = () => {
+        onValueChange?.(currentValue)
+    }
+
+    const revert = () => {
+        setCurrentValue(value)
+    }
+
+    return <ChakraEditable.Root value={currentValue} onValueChange={change} onValueCommit={commit} onValueRevert={revert} {...attrs}>
+        <ChakraEditable.Preview {...previewProps}/>
+        <ChakraEditable.Input {...inputProps}/>
+    </ChakraEditable.Root>
 })
 
 export interface StarlightProps {

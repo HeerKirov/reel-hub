@@ -177,7 +177,11 @@ export function parseProjectRelationItem(data: Pick<Project, "id" | "title" | "r
     return {
         id: data.id,
         title: data.title,
-        resources: data.resources as Record<string, string>
+        resources: Object.fromEntries(
+            Object.entries(data.resources as Record<string, string>)
+                .filter(([_, value]) => value)
+                .map(([key, value]) => [key, `/api/resources/${value}`])
+        )
     }
 }
 
