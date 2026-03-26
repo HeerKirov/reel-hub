@@ -29,7 +29,9 @@ export function CommentDisplay({ type, project, comment }: {type: ProjectType, p
 function Header({ id, title, type }: {id: string, title: string, type: ProjectType}) {
     return (
         <>
-            <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild><NextLink href={`/${type.toLowerCase()}/comment/${id}/edit`}><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink></Button>
+            <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild>
+                <NextLink href={`/${type.toLowerCase()}/comment/${id}/edit`} replace><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink>
+            </Button>
             {title}
         </>
     )
@@ -80,7 +82,9 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
                     <Text color="fg.muted" fontSize="sm">未进行任何评价</Text>
-                    <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild><NextLink href={`/${type.toLowerCase()}/comment/${project.id}/edit`}><RiPenNibLine/> 编写评价</NextLink></Button>
+                    <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild>
+                        <NextLink href={`/${type.toLowerCase()}/comment/${project.id}/edit`}><RiPenNibLine/> 编写评价</NextLink>
+                    </Button>
                 </Box>
             </Box>
         )

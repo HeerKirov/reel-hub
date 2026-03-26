@@ -1,6 +1,6 @@
 "use client"
-import { useState } from "react"
-import { RiCloseLine, RiDeleteBinLine, RiSaveLine } from "react-icons/ri"
+import { useEffect, useState } from "react"
+import { RiCloseLine, RiDeleteBinLine, RiSaveLine, RiNumber3, RiNumber2, RiNumber1, RiCheckFill } from "react-icons/ri"
 import { Box, Button, Flex, Heading, Popover, Portal } from "@chakra-ui/react"
 import { NavigationBreadcrumb } from "./server/layout"
 
@@ -9,9 +9,14 @@ export interface EditorWithTabLayoutProps {
     tabs?: {label: string, icon?: React.ReactNode, content: React.ReactNode}[]
     header?: React.ReactNode
     bottom?: React.ReactNode
+    deleteOptions?: {
+        confirmation?: React.ReactNode
+        countdown?: number
+    }
     onSave?: () => void
     onDelete?: () => void
     onCancel?: () => void
+    onComplete?: () => void
 }
 
 export function EditorWithTabLayout(props: EditorWithTabLayoutProps) {
@@ -34,24 +39,24 @@ export function EditorWithTabLayout(props: EditorWithTabLayoutProps) {
                         ))}
                     </Box>
                     <Flex gap="2" mt="2" flexDirection={{base: "row", sm: "column"}} justifyContent={{base: "stretch", sm: "flex-start"}}>
-                        <Button colorPalette="blue" size="sm" flex="1 0 auto" onClick={props.onSave}><RiSaveLine/> 保存</Button>
-                        {(props.onDelete ?? false) && <Popover.Root>
+                        {(props.onSave ?? false) && <Button colorPalette="blue" size="sm" flex="1 0 auto" onClick={props.onSave}><RiSaveLine/> 保存</Button>}
+                        {(props.onComplete ?? false) && <Button variant="outline" colorPalette="green" size="sm" flex="1 0 auto" onClick={props.onComplete}><RiCheckFill/> 完成</Button>}
+                        {(props.onDelete ?? false) && <Popover.Root lazyMount unmountOnExit={props.deleteOptions?.countdown !== undefined}>
                             <Popover.Trigger asChild>
-                                <Button colorPalette="red" size="sm" flex="1 0 auto"><RiDeleteBinLine/> 删除</Button>
+                                <Button colorPalette="red" variant={props.onComplete ? "outline" : "solid"} size="sm" flex="1 0 auto"><RiDeleteBinLine/> 删除</Button>
                             </Popover.Trigger>
                             <Portal>
                                 <Popover.Positioner>
-                                    <Popover.Content width="150px">
+                                    <Popover.Content width="225px">
                                         <Popover.Arrow />
                                         <Popover.Body>
-                                            <p>确认要删除吗？</p>
-                                            <Button variant="outline" width="full" colorPalette="red" size="sm" mt="2" onClick={props.onDelete}><RiDeleteBinLine/> 删除</Button>
+                                            <DeleteConfirmation confirmation={props.deleteOptions?.confirmation ?? "确认要删除吗？"} onDelete={props.onDelete!} countdown={props.deleteOptions?.countdown}/>
                                         </Popover.Body>
                                     </Popover.Content>
                                 </Popover.Positioner>
                             </Portal>
                         </Popover.Root>}
-                        <Button variant="outline" size="sm" flex="1 0 auto" onClick={props.onCancel}><RiCloseLine/> 取消</Button>
+                        {(props.onCancel ?? false) && <Button variant="outline" size="sm" flex="1 0 auto" onClick={props.onCancel}><RiCloseLine/> 取消</Button>}
                     </Flex>
                 </Box>
                 <Box flex="1 1 100%">
@@ -62,4 +67,28 @@ export function EditorWithTabLayout(props: EditorWithTabLayoutProps) {
             {props.bottom}
         </>
     )
+}
+
+function DeleteConfirmation({ confirmation, onDelete, countdown: initialCountdown }: { confirmation: React.ReactNode, onDelete: () => void, countdown?: number }) {
+    const [countdown, setCountdown] = useState(initialCountdown ?? 0)
+
+    useEffect(() => {
+        if (countdown === 0) return
+        const timer = setTimeout(() => {
+            setCountdown(countdown - 1)
+        }, 1000)
+        return () => clearTimeout(timer)
+    }, [countdown])
+
+    let Icon = RiDeleteBinLine
+    if (countdown > 0) {
+        if (countdown === 3) Icon = RiNumber3
+        else if (countdown === 2) Icon = RiNumber2
+        else if (countdown === 1) Icon = RiNumber1
+    }
+
+    return (<>
+        {confirmation}
+        <p><Button variant="outline" width="full" colorPalette="red" size="sm" mt="2" onClick={onDelete} disabled={countdown > 0}><Icon /> 删除</Button></p>
+    </>)
 }

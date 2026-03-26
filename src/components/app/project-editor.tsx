@@ -1,7 +1,6 @@
 "use client"
 import { memo, useCallback, useState } from "react"
 import dynamic from "next/dynamic"
-import { useRouter } from "next/navigation"
 import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
 import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Field, Flex, Icon, Textarea } from "@chakra-ui/react"
@@ -24,10 +23,10 @@ export type EditorProps = {
     data?: AnimeDetailSchema
     onSubmit?: (data: AnimeForm, resources?: Record<string, Blob>) => void
     onDelete?: () => void
+    onCancel?: () => void
 }
 
-export function Editor({ data, onSubmit, onDelete }: EditorProps) {
-    const router = useRouter()
+export function Editor({ data, onSubmit, onDelete, onCancel }: EditorProps) {
     const [title, setTitle] = useState<string>(data?.title ?? "")
     const [subtitles, setSubtitles] = useState<string[]>(data?.subtitles ?? [])
     const [description, setDescription] = useState<string>(data?.description ?? "")
@@ -50,7 +49,7 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
     const [resourceAvatar, setResourceAvatar] = useState<string | Blob | null>(data?.resources?.["avatar"] ?? null)
 
     const breadcrumb = {
-        url: "/anime/database",
+        url: `/${ProjectType.ANIME.toLowerCase()}/database`,
         detail: data?.title ?? "新建",
         detailIcon: <RiFileAddLine/>
     }
@@ -86,10 +85,6 @@ export function Editor({ data, onSubmit, onDelete }: EditorProps) {
             episodePublishPlan, episodePublishedRecords,
             relations: finalRelations as any
         }, Object.keys(resources).length > 0 ? resources : undefined)
-    }
-
-    const onCancel = () => {
-        router.back()
     }
 
     return (

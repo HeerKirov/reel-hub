@@ -48,7 +48,9 @@ export default async function AnimationDatabaseDetail({ params }: { params: Prom
 function Header({ id, title }: {id: string, title: string}) {
     return (
         <>
-            <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild><NextLink href={`/anime/database/${id}/edit`}><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink></Button>
+            <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild>
+                <NextLink href={`/anime/database/${id}/edit`} replace><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink>
+            </Button>
             {title}
         </>
     )

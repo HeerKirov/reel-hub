@@ -261,33 +261,55 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         })
         if(!progress) return err(exceptionNotFound("Progress not found"))
 
-        // 只更新episodeWatchedNum（类似旧代码的updateLatestProgress）
-        if(validate.data.episodeWatchedNum === undefined) {
-            // 如果没有提供episodeWatchedNum，不需要更新
-            return ok(undefined)
-        }
-        
         const isAnime = project.type === ProjectType.ANIME
-        const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
-        const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
 
-        const newEpisodeWatchedNum = isAnime ? (() => {
-            const raw = validate.data.episodeWatchedNum ?? 0
-            const published = episodePublishedNum!
-            const total = episodeTotalNum!
-            return Math.max(0, Math.min(raw, published, total))
-        })() : null
+        const newStartTime = validate.data.startTime !== undefined ? validate.data.startTime : progress.startTime
+        let newEndTime = validate.data.endTime !== undefined ? validate.data.endTime : progress.endTime
 
-        if(newEpisodeWatchedNum === progress.episodeWatchedNum) {
-            // 如果值没有变化，不需要更新
-            return ok(undefined)
+        // start/end 基础范围校验
+        if(newStartTime !== null && newEndTime !== null && newStartTime.getTime() >= newEndTime.getTime()) {
+            return err(exceptionParamError("Start time must be before end time"))
         }
 
-        // Update episodeWatchedRecords:
-        // - Manual edits (this endpoint) only resize/crop/pad with `null`
-        // - Only `nextEpisode` records `watchedTime`
+        // start 必须晚于上一条进度 end
+        if(ordinal > 1 && newStartTime !== null) {
+            const prevProgress = await prisma.recordProgress.findFirst({
+                where: {recordId: record.id, ordinal: ordinal - 1}
+            })
+            if(!prevProgress || prevProgress.endTime === null) {
+                return err(exceptionParamError("Previous progress must be completed before setting startTime"))
+            }
+            if(newStartTime.getTime() <= prevProgress.endTime.getTime()) {
+                return err(exceptionParamError("Start time must be after previous progress end time"))
+            }
+        }
+
+        let newEpisodeWatchedNum: number | null = null
         let newEpisodeWatchedRecords: ({ watchedTime: string } | null)[] = []
+
         if(isAnime) {
+            const episodeTotalNum = project.episodeTotalNum!
+            const episodePublishedNum = project.episodePublishedNum!
+            const episodeFullyPublished = project.episodePublishedNum !== null && episodeTotalNum > 0 && episodePublishedNum >= episodeTotalNum
+
+            const rawWatchedNum = validate.data.episodeWatchedNum !== undefined ? (validate.data.episodeWatchedNum ?? 0) : (progress.episodeWatchedNum ?? 0)
+
+            // 如果用户把 endTime 从 null 设置成非 null => 试图把进度置为完成
+            if(newEndTime !== null) {
+                if(!episodeFullyPublished) return err(exceptionReject("Episode is not fully published"))
+                // 完成时需要同步已看集数到总集数（与 BUSINESS 一致）
+                newEpisodeWatchedNum = episodeTotalNum
+            } else {
+                // endTime 仍为空：按 watchedNum（如果提供）更新，否则保留当前
+                newEpisodeWatchedNum = Math.max(0, Math.min(rawWatchedNum, episodePublishedNum, episodeTotalNum))
+
+                // 如果 watchedNum 已达总集数且已完全发布 => 自动设置 endTime=now
+                if(episodeFullyPublished && newEpisodeWatchedNum >= episodeTotalNum) {
+                    newEndTime = now
+                }
+            }
+
+            // 手动编辑只裁剪/补全 episodeWatchedRecords（不写 watchedTime）
             const current = (progress.episodeWatchedRecords as ({ watchedTime: string } | null)[] | null) ?? []
             const targetLen = newEpisodeWatchedNum ?? 0
             if(current.length > targetLen) {
@@ -297,42 +319,44 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
             } else {
                 newEpisodeWatchedRecords = current
             }
+        } else {
+            // 非动画类型：只用 start/endTime 计算 status
+            newEpisodeWatchedNum = null
         }
 
-        const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
-        const shouldComplete = isAnime && episodeFullyPublished && (newEpisodeWatchedNum ?? 0) >= (episodeTotalNum ?? 0)
-        const finalEndTime = shouldComplete ? now : null
-        const finalStatus = getRecordStatus(ordinal, finalEndTime, episodeTotalNum, newEpisodeWatchedNum)
+        const nextProgressStatus = getRecordStatus(record.progressCount, newEndTime, project.episodeTotalNum, newEpisodeWatchedNum)
         const editProgressEvent: ActivityEvent = { type: "EDIT_PROGRESS" }
 
-        // 更新进度
+        // 更新进度（start/endTime/status & anime watched）
         await prisma.recordProgress.update({
             where: {id: progress.id},
             data: {
+                startTime: newStartTime,
+                endTime: newEndTime,
+                status: nextProgressStatus,
                 ...(isAnime ? {
                     episodeWatchedNum: newEpisodeWatchedNum,
-                    episodeWatchedRecords: newEpisodeWatchedRecords,
-                    endTime: finalEndTime,
-                    status: finalStatus
+                    episodeWatchedRecords: newEpisodeWatchedRecords
                 } : {}),
                 updateTime: now
             }
         })
 
-        // 更新record
-        const nextRecordStatus = getRecordStatus(record.progressCount, finalEndTime, episodeTotalNum, newEpisodeWatchedNum)
+        // 更新 record 缓存字段（最新进度=最后一条进度）
+        const nextRecordStatus = getRecordStatus(record.progressCount, newEndTime, project.episodeTotalNum, newEpisodeWatchedNum)
         await prisma.record.update({
             where: {id: record.id},
             data: {
                 status: nextRecordStatus,
-                endTime: isAnime ? finalEndTime : record.endTime,
-                // 只有从 WATCHING 转换到完成/搁置/放弃时取消订阅；其余情况下保持原值
+                endTime: newEndTime,
+                // 当 status 从 WATCHING 转为完成/放弃时取消订阅
                 specialAttention: (nextRecordStatus === RecordStatus.COMPLETED || nextRecordStatus === RecordStatus.DROPPED) && record.status === RecordStatus.WATCHING ? false : record.specialAttention,
                 lastActivityTime: now,
                 lastActivityEvent: editProgressEvent as unknown as Prisma.InputJsonValue,
                 updateTime: now
             }
         })
+
         return ok(undefined)
     })
 }
@@ -491,7 +515,6 @@ export async function deleteProgress(projectId: string, ordinal: number): Promis
         }
 
         // 更新record缓存字段：status/startTime/endTime/progressCount
-        // specialAttention 不做联动更新
         const remainingProgresses = await prisma.recordProgress.findMany({
             where: {recordId: record.id},
             orderBy: {ordinal: 'asc'}

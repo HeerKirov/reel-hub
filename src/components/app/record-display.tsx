@@ -105,7 +105,7 @@ function Header({ id, title, type }: {id: string, title: string, type: ProjectTy
     return (
         <>
             <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild>
-                <NextLink href={`/${type.toLowerCase()}/record/${id}/edit`}>
+                <NextLink href={`/${type.toLowerCase()}/record/${id}/edit`} replace>
                     <RiEdit2Line/>
                     <Text display={{base: "none", sm: "inline"}}>编辑</Text>
                 </NextLink>
@@ -144,7 +144,7 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                         {VALUE_TO_RECORD_STATUS[record.status].label}
                     </Badge>
                     <Box flex="1 1 auto"/>
-                    {record.status === RecordStatus.COMPLETED && <RecordDisplayCreateProgressButton size="sm" projectId={project.id} />}
+                    {(record.status !== RecordStatus.WATCHING) && <RecordDisplayCreateProgressButton size="sm" projectId={project.id} />}
                     <RecordDisplayAttentionButton projectId={project.id} specialAttention={record.specialAttention}/>
                 </Flex>
 

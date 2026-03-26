@@ -16,8 +16,8 @@ export const RECORD_STATUS_ITEMS: SelectItem<RecordStatus>[] = [
 ]
 
 export const FOLLOW_TYPE_ITEMS: SelectItem<FollowType>[] = [
-    {label: "追番", value: FollowType.CATCH_UP, color: "cyan"},
-    {label: "补番", value: FollowType.FOLLOW, color: "green"},
+    {label: "追番", value: FollowType.FOLLOW, color: "green"},
+    {label: "补番", value: FollowType.CATCH_UP, color: "cyan"},
     {label: "重看", value: FollowType.REWATCH, color: "orange"}
 ]
 

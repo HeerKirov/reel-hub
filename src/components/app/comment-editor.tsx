@@ -33,7 +33,7 @@ export function CommentEditor({ type, project, comment }: {type: ProjectType, pr
             { successTitle: "评价已保存" }
         )
         if(!result.ok) return
-        router.push(`/${type.toLowerCase()}/comment/${project.id}`)
+        onCancel()
     }
 
     const onDelete = comment === null ? undefined : async () => {
@@ -42,11 +42,15 @@ export function CommentEditor({ type, project, comment }: {type: ProjectType, pr
             { successTitle: "评价已删除" }
         )
         if(!result.ok) return
-        router.push(`/${type.toLowerCase()}/database/${project.id}`)
+        router.back()
     }
 
     const onCancel = () => {
-        router.back()
+        if(comment !== null) {
+            router.replace(`/${type.toLowerCase()}/comment/${project.id}`)
+        }else{
+            router.back()
+        }
     }
 
     return <EditorWithTabLayout breadcrumb={breadcrumb} tabs={tabs} onSave={onSave} onDelete={onDelete} onCancel={onCancel}/>

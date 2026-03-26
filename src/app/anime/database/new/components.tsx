@@ -15,7 +15,7 @@ export function Wrap() {
         )
         if(!result.ok) return
         const id = result.value
-        router.push(`/anime/database/${id}`)
+        router.replace(`/anime/database/${id}`)
         if(resources !== undefined) {
             const form = new FormData()
             form.append("projectId", id)

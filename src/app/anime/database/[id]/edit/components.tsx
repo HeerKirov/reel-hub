@@ -1,5 +1,4 @@
 "use client"
-import React from "react"
 import { useRouter } from "next/navigation"
 import { updateProjectAnime, deleteProjectAnime } from "@/services/project-anime"
 import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
@@ -22,7 +21,7 @@ export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}
             if(resources["avatar"]) form.append("avatar", resources["avatar"])
             await fetch("/api/resources", {method: "POST", body: form})
         }
-        router.push(`/anime/database/${data.id}`)
+        router.replace(`/anime/database/${data.id}`)
     }
 
     const onDelete = async () => {
@@ -31,8 +30,12 @@ export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}
             { successTitle: "项目已删除" }
         )
         if(!result.ok) return
-        router.push("/anime/database")
+        router.replace("/anime/database")
     }
 
-    return <Editor data={data} onSubmit={onSubmit} onDelete={onDelete}/>
+    const onCancel = () => {
+        router.replace(`/anime/database/${data.id}`)
+    }
+
+    return <Editor data={data} onSubmit={onSubmit} onDelete={onDelete} onCancel={onCancel}/>
 }
