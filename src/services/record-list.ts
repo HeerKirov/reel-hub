@@ -5,9 +5,9 @@ import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import {
     parseRecordActivityListSchema, parseRecordHistoryListSchema, parseRecordSubscriptionAnimeListSchema,
-    recordActivityListFilter, recordHistoryListFilter, recordSubscriptionAnimeListFilter,
+    parseRecordTimelineItemSchema, recordActivityListFilter, recordHistoryListFilter, recordSubscriptionAnimeListFilter, recordTimelineListFilter,
     RecordActivityListFilter, RecordActivityListSchema, RecordHistoryListFilter, RecordHistoryListSchema,
-    RecordSubscriptionAnimeListFilter, RecordSubscriptionAnimeListSchema
+    RecordSubscriptionAnimeListFilter, RecordSubscriptionAnimeListSchema, RecordTimelineItemSchema, RecordTimelineListFilter
 } from "@/schemas/record"
 import type { EpisodePublishRecordModel } from "@/schemas/project"
 import { err, ListResult, ok, Result } from "@/schemas/all"
@@ -138,6 +138,56 @@ export async function listRecordHistory(filter: RecordHistoryListFilter): Promis
     })
 }
 
+export async function listRecordTimeline(filter: RecordTimelineListFilter): Promise<Result<RecordTimelineItemSchema[], ListRecordError>> {
+    return safeExecuteResult(async () => {
+        await requireAccess("record", "read")
+        const userId = await getUserId()
+
+        const validate = recordTimelineListFilter.safeParse(filter)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
+
+        const rows = await prisma.recordProgress.findMany({
+            where: {
+                startTime: { not: null as null | undefined },
+                record: {
+                    ownerId: userId,
+                    project: {
+                        type: validate.data.type,
+                    },
+                },
+            },
+            include: {
+                record: {
+                    select: {
+                        project: {
+                            select: {
+                                id: true,
+                                type: true,
+                                title: true,
+                                resources: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                startTime: "desc",
+            },
+        })
+
+        const list = rows.map((row) => {
+            let endTime = row.endTime
+            if(validate.data.type === "ANIME" && endTime === null) {
+                const watchedTime = extractLastWatchedTime(row.episodeWatchedRecords)
+                endTime = watchedTime ?? row.startTime
+            }
+            return parseRecordTimelineItemSchema(row, endTime)
+        })
+
+        return ok(list)
+    })
+}
+
 export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnimeListFilter): Promise<Result<RecordSubscriptionAnimeListSchema[], ListRecordError>> {
     return safeExecuteResult(async () => {
         await requireAccess("record", "read")
@@ -243,4 +293,19 @@ type RowWithPlan = {
     record: SubscriptionAnimeRecordRow
     nextPublishPlanItem: EpisodePublishRecordModel | null
     nextPublishTime: Date | null
+}
+
+function extractLastWatchedTime(value: unknown): Date | null {
+    if(!(value instanceof Array)) return null
+    for(let i = value.length - 1; i >= 0; i--) {
+        const item = value[i]
+        if(item && typeof item === "object" && "watchedTime" in item) {
+            const watchedTime = (item as { watchedTime?: unknown }).watchedTime
+            if(typeof watchedTime === "string") {
+                const d = new Date(watchedTime)
+                if(!Number.isNaN(d.getTime())) return d
+            }
+        }
+    }
+    return null
 }

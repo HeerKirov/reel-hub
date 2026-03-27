@@ -1,28 +1,32 @@
 import NextLink from "next/link"
-import { RiArrowDownSFill, RiArrowRightLine, RiHistoryLine, RiPulseLine, RiTv2Line } from "react-icons/ri"
+import { notFound } from "next/navigation"
+import { RiArrowDownSFill, RiArrowRightLine, RiHistoryLine, RiPulseLine, RiTimelineView, RiTv2Line } from "react-icons/ri"
 import { Avatar, Badge, Box, Button, Flex, Icon, Menu, Portal, Progress, Table, Text } from "@chakra-ui/react"
 import { ListPageLayout } from "@/components/server/layout"
 import { SearchBox } from "@/components/filters"
+import { RecordTimelineContent, TimelineFilterBar, TimelineFilterPanel, TimelineStateProvider } from "@/components/app/record-list-timeline"
+import { InlineError } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS } from "@/constants/record"
 import { RecordActivityListSchema, RecordHistoryListSchema } from "@/schemas/record"
-import { listRecordActivity, listRecordHistory } from "@/services/record-list"
+import { listRecordActivity, listRecordHistory, listRecordTimeline } from "@/services/record-list"
 import { dates } from "@/helpers/primitive"
 import { staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
-import { InlineError } from "@/components/app/inline-error"
 
 export type RecordListSearchParams = {
     page?: string
     search?: string
-    view?: "activity" | "history"
+    view?: "activity" | "history" | "timeline"
+    timelineScale?: string
+    timelineGroup?: "true" | "false"
 }
 
 export async function RecordList(props: { searchParams: Promise<RecordListSearchParams>, type: ProjectType }) {
     const type = props.type
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
-    const view = searchParams.view === "history" ? "history" : "activity"
+    const view = searchParams.view ?? "activity"
 
     if(view === "history") {
         const result = await listRecordHistory({ type, page, size: 15, search: searchParams.search })
@@ -44,37 +48,58 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
                 currentPage={page}
             />
         )
+    }else if(view === "activity") {
+        const result = await listRecordActivity({ type, page, size: 15, search: searchParams.search })
+        const { data, error } = unwrapQueryResult(result)
+        if(error) {
+            return <InlineError error={error} />
+        }
+        const { list, total } = data
+    
+        return (
+            <ListPageLayout
+                searchParams={searchParams}
+                breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
+                bar={<FilterBar searchParams={searchParams} />}
+                filter={<FilterPanel searchParams={searchParams} />}
+                content={<ContentActivity list={list} type={type} />}
+                totalRecord={total}
+                totalPage={Math.ceil(total / 15)}
+                currentPage={page}
+            />
+        )
+    }else if(view === "timeline") {
+        const result = await listRecordTimeline({ type })
+        const { data, error } = unwrapQueryResult(result)
+        if(error) {
+            return <InlineError error={error} />
+        }
+        const visibleDaysOnScreen = clampTimelineScaleDays(parseInt(searchParams.timelineScale ?? "180", 10))
+        const groupByFollowType = searchParams.timelineGroup !== "false"
+        return (
+            <TimelineStateProvider>
+                <ListPageLayout
+                    searchParams={searchParams}
+                    breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
+                    bar={<TimelineFilterBar searchParams={searchParams} />}
+                    filter={<TimelineFilterPanel searchParams={searchParams} visibleDaysOnScreen={visibleDaysOnScreen} />}
+                    content={<RecordTimelineContent rows={data} visibleDaysOnScreen={visibleDaysOnScreen} groupByFollowType={groupByFollowType} />}
+                />
+            </TimelineStateProvider>
+        )
+    }else{
+        notFound()
     }
-
-    const result = await listRecordActivity({ type, page, size: 15, search: searchParams.search })
-    const { data, error } = unwrapQueryResult(result)
-    if(error) {
-        return <InlineError error={error} />
-    }
-    const { list, total } = data
-
-    return (
-        <ListPageLayout
-            searchParams={searchParams}
-            breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
-            bar={<FilterBar searchParams={searchParams} />}
-            filter={<FilterPanel searchParams={searchParams} />}
-            content={<ContentActivity list={list} type={type} />}
-            totalRecord={total}
-            totalPage={Math.ceil(total / 15)}
-            currentPage={page}
-        />
-    )
 }
 
 function FilterBar({ searchParams }: { searchParams: RecordListSearchParams }) {
-    const view = searchParams.view === "history" ? "history" : "activity"
+    const view = searchParams.view ?? "activity"
     return (
         <Menu.Root>
             <Menu.Trigger asChild>
-                {view === "history"
-                    ? <Button variant="ghost" size="sm" pr="1"><RiHistoryLine /> 历史 <RiArrowDownSFill /></Button>
-                    : <Button variant="ghost" size="sm" pr="1"><RiPulseLine /> 动态 <RiArrowDownSFill /></Button>}
+                {view === "history"? <Button variant="ghost" size="sm" pr="1"><RiHistoryLine /> 历史 <RiArrowDownSFill /></Button>
+                : view === "activity" ? <Button variant="ghost" size="sm" pr="1"><RiPulseLine /> 动态 <RiArrowDownSFill /></Button>
+                : <Button variant="ghost" size="sm" pr="1"><RiTimelineView /> 时间线 <RiArrowDownSFill /></Button>}
             </Menu.Trigger>
             <Portal>
                 <Menu.Positioner>
@@ -87,6 +112,11 @@ function FilterBar({ searchParams }: { searchParams: RecordListSearchParams }) {
                         <Menu.Item value="history" asChild>
                             <NextLink href={staticHref({ searchParams, key: "view", value: "history", removePagination: true })}>
                                 <Icon><RiHistoryLine /></Icon> 历史
+                            </NextLink>
+                        </Menu.Item>
+                        <Menu.Item value="timeline" asChild>
+                            <NextLink href={staticHref({ searchParams, key: "view", value: "timeline", removePagination: true })}>
+                                <Icon><RiTimelineView /></Icon> 时间线
                             </NextLink>
                         </Menu.Item>
                     </Menu.Content>
@@ -190,6 +220,11 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
             ))}
         </Table.Body>
     </Table.Root>
+}
+
+function clampTimelineScaleDays(n: number): number {
+    if(Number.isNaN(n) || n < 7) return 180
+    return Math.min(730, Math.max(7, Math.round(n)))
 }
 
 function getActivityText(activityEvent: Record<string, unknown>): string {

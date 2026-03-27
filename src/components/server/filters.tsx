@@ -54,6 +54,23 @@ export function LinkGroupFilter({ items, searchParams, searchParamName, ...attrs
     )
 }
 
+export type LinkOptionFilterProps = { label: string, color: SystemStyleObject["color"], searchParams?: Record<string, string>, searchParamName?: string, defaultValue?: boolean } & SystemStyleObject
+
+export function LinkOptionFilter({ label, color, searchParams, searchParamName, defaultValue, ...attrs }: LinkOptionFilterProps) {
+    const current = searchParams && searchParamName ? searchParams[searchParamName] : undefined
+    const currentBoolean = current !== undefined ? current.toLowerCase() === "true" : (defaultValue ?? false)
+    const hrefValue = (!currentBoolean) === defaultValue ? null : (!currentBoolean) ? "true" : "false"
+    const href = staticHref({searchParams, key: searchParamName, value: hrefValue, removePagination: true})
+
+    return (
+        <Box display="flex" gap="2" flexWrap="wrap" {...attrs}>
+            <Link variant="underline" color={currentBoolean ? `${color}.fg` : "fg.subtle"} fontWeight="700" asChild>
+                <NextLink href={href}>{label}</NextLink>
+            </Link>
+        </Box>
+    )
+}
+
 export function PublishTimeFilterHeader({ publishTime, mode = "month", searchParams }: {publishTime?: string, mode?: "month" | "season", searchParams?: Record<string, string>}) {
     if(publishTime) {
         const [year, month] = publishTime.split("-")

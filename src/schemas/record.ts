@@ -279,6 +279,15 @@ export function parseRecordHistoryListSchema(
     }
 }
 
+export interface RecordTimelineItemSchema {
+    ordinal: number
+    status: RecordStatus
+    startTime: Date
+    endTime: Date | null
+    followType: FollowType | null
+    project: ProjectSimpleSchema
+}
+
 export function parseRecordSubscriptionAnimeListSchema(
     data: PrismaRecord & {
         project: Pick<Project, "id" | "type" | "title" | "resources"> & {
@@ -300,5 +309,27 @@ export function parseRecordSubscriptionAnimeListSchema(
         publishedEpisode: data.project.episodePublishedNum!,
         watchedEpisode: watched,
         nextPublishPlanItem
+    }
+}
+
+export const recordTimelineListFilter = z.object({
+    type: z.enum(PROJECT_TYPE),
+})
+
+export type RecordTimelineListFilter = z.infer<typeof recordTimelineListFilter>
+
+export function parseRecordTimelineItemSchema(
+    data: RecordProgress & {
+        record: { project: Pick<Project, "id" | "type" | "title" | "resources"> }
+    },
+    endTime: Date | null
+): RecordTimelineItemSchema {
+    return {
+        ordinal: data.ordinal,
+        status: data.status,
+        startTime: data.startTime!,
+        endTime,
+        followType: data.followType,
+        project: parseProjectSimpleSchema(data.record.project),
     }
 }
