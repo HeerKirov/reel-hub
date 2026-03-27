@@ -252,3 +252,10 @@ model Statistic {
 
   @@unique([ownerId, type, key])
 }
+
+model UserPreference {
+  userId         String   @id @db.VarChar(24)
+  timezone       String?  @db.VarChar(64)
+  autoTimezone   Boolean  @default(true)
+  nightTimeTable Boolean  @default(true)
+}

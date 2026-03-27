@@ -120,3 +120,8 @@ export type DeleteProjectAnimeError =
   | NotFound
   | RemoveProjectInTopologyError
   | InternalServerError
+
+// --- user preference ---
+
+export type GetUserPreferenceError = InternalServerError
+export type SetUserPreferenceError = ParamError | InternalServerError

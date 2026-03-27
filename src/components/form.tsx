@@ -2,7 +2,7 @@
 import React, { memo, useRef, useCallback, KeyboardEvent, useMemo, useState, useEffect } from "react"
 import {
     InputProps as ChakraInputProps, NumberInputRootProps as ChakraNumberInputRootProps, 
-    TextareaProps as ChakraTextareaProps, SystemStyleObject,
+    TextareaProps as ChakraTextareaProps, SelectRootProps as ChakraSelectRootProps, SystemStyleObject,
     Input as ChakraInput, NumberInput as ChakraNumberInput, InputGroup, Textarea as ChakraTextarea,
     RatingGroup, Text, Select as ChakraSelect, Portal, Popover, 
     createListCollection, Link, Box, Group, Button, IconButton,
@@ -155,7 +155,7 @@ export interface SelectItem<T extends string> {
     value: T
 }
 
-export interface SelectProps<T extends string> {
+export interface SelectProps<T extends string> extends Omit<ChakraSelectRootProps, "value" | "onValueChange" | "collection"> {
     value?: T | null
     items: SelectItem<T>[]
     onValueChange?: (value: T) => void

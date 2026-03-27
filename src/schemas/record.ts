@@ -158,8 +158,8 @@ export const recordSubscriptionAnimeListFilter = z.object({
     order: z.enum(RECORD_SUBSCRIPTION_ANIME_ORDER).optional().default("weekly_calendar"),
     orderDirection: z.enum(["asc", "desc"]).optional().default("asc"),
     search: z.string().optional(),
-    nightTimeTable: z.boolean().optional().default(true),
-    /** IANA 时区；缺省为运行环境（服务器）时区 */
+    nightTimeTable: z.boolean().optional(),
+    /** IANA 时区；缺省走用户偏好，再兜底运行环境（服务器）时区 */
     timezone: z.string().optional()
 })
 

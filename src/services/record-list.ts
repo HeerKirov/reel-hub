@@ -14,6 +14,7 @@ import { err, ListResult, ok, Result } from "@/schemas/all"
 import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { ListRecordError } from "@/schemas/error"
 import { RecordStatus } from "@/constants/record"
+import { getUserPreference } from "@/services/user-preference"
 import {
     passesSubscriptionMode, resolveServerTimeZone, isValidIanaTimeZone, parseEpisodePublishPlan, getNextPublishPlanItemAfterNow, nextPublishTimeFromItem, sortSubscriptionAnimeRows, 
     type SubscriptionAnimeSortRow
@@ -197,9 +198,12 @@ export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnim
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const now = new Date()
-        const timeZone = validate.data.timezone && isValidIanaTimeZone(validate.data.timezone)
+        const preference = await getUserPreference(userId)
+        const inputTimezone = validate.data.timezone && isValidIanaTimeZone(validate.data.timezone)
             ? validate.data.timezone
-            : resolveServerTimeZone()
+            : null
+        const timeZone = inputTimezone ?? preference.timezone ?? resolveServerTimeZone()
+        const nightTimeTable = validate.data.nightTimeTable ?? preference.nightTimeTable
         const direction = validate.data.orderDirection === "desc" ? -1 : 1
 
         const where = {
@@ -268,7 +272,7 @@ export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnim
         const sorted = sortSubscriptionAnimeRows(sortRows, validate.data.order, direction, {
             now,
             timeZone,
-            nightTimeTable: validate.data.nightTimeTable
+            nightTimeTable
         })
 
         const orderIndex = new Map(sorted.map((r, i) => [r.recordId, i]))

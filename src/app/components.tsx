@@ -1,14 +1,15 @@
 "use client"
-import React, { memo } from "react"
+import React, { memo, useEffect } from "react"
 import NextLink from "next/link"
 import { Lora } from "next/font/google"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { SessionProvider, signIn, signOut } from "next-auth/react"
-import { RiArrowDownSFill, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine } from "react-icons/ri"
+import { RiArrowDownSFill, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine, RiSettings2Fill } from "react-icons/ri"
 import { Avatar, Box, Button, Collapsible, Heading, Menu, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
 import { Toaster } from "@/components/ui/toaster"
 import { NavigationItem, NAVIGATIONS, NavigationSubItem } from "@/constants/ui"
+import { updateUserPreference } from "@/services/user-preference"
 
 const headerFont = Lora({
     weight: "700",
@@ -57,7 +58,9 @@ export function NavigationSideBar(props: {avatar?: {name: string, image?: string
 }
 
 const User = memo(function User({ avatar }: {avatar?: {name: string, image?: string}}) {
+    const router = useRouter()
 
+    const preference = () => router.push("/user/preference")
     const login = () => signIn("auth-service")
     const logout = () => signOut()
 
@@ -74,6 +77,7 @@ const User = memo(function User({ avatar }: {avatar?: {name: string, image?: str
         <Portal>
             <Menu.Positioner>
                 <Menu.Content>
+                    <Menu.Item key="preference" onClick={preference} value="偏好设置"><RiSettings2Fill/> 偏好设置</Menu.Item>
                     <Menu.Item key="logout" onClick={logout} value="登出"><RiLogoutBoxLine/> 登出</Menu.Item>
                 </Menu.Content>
             </Menu.Positioner>
@@ -145,3 +149,33 @@ const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: Nav
         </Collapsible.Root>
     </>)
 })
+
+const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
+const LAST_CHECK_AT_KEY = "user-preference-timezone-last-check-at"
+
+export function TimezoneAutoWriter({ currentTimezone }: { currentTimezone: string | null }) {
+    useEffect(() => {
+        if (typeof window === "undefined") return
+
+        const now = Date.now()
+        const raw = window.localStorage.getItem(LAST_CHECK_AT_KEY)
+        const lastCheckAt = raw ? Number.parseInt(raw, 10) : NaN
+        if (!Number.isNaN(lastCheckAt) && (now - lastCheckAt) < CHECK_INTERVAL_MS) {
+            return
+        }
+        window.localStorage.setItem(LAST_CHECK_AT_KEY, `${now}`)
+
+        let browserTimezone: string | undefined
+        try {
+            browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        } catch {
+            return
+        }
+        if (!browserTimezone || browserTimezone === currentTimezone) return
+
+        void updateUserPreference({ timezone: browserTimezone })
+        console.log("Wrote timezone to server.", browserTimezone)
+    }, [currentTimezone])
+
+    return null
+}
