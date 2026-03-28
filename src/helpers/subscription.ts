@@ -95,7 +95,8 @@ export interface SubscriptionAnimeSortRow {
 }
 
 function getIsoWeekdayLongNameInZone(d: Date, timeZone: string): string {
-    return new Intl.DateTimeFormat("en-US", { timeZone, weekday: "long" }).format(d)
+    // 使用 timeZone: timeZone，避免打包器把参数改名后仍保留 { timeZone } 简写导致运行时报 timeZone is not defined
+    return new Intl.DateTimeFormat("en-US", { timeZone: timeZone, weekday: "long" }).format(d)
 }
 
 const ISO_WEEKDAY: Record<string, number> = {
@@ -114,7 +115,7 @@ function getIsoWeekdayInZone(d: Date, timeZone: string): number {
 }
 
 function getMinuteOfDayInZone(d: Date, timeZone: string): number {
-    const parts = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d)
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d)
     const h = parseInt(parts.find(p => p.type === "hour")!.value, 10)
     const m = parseInt(parts.find(p => p.type === "minute")!.value, 10)
     return h * 60 + m

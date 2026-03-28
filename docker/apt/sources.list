@@ -1,0 +1,4 @@
+# Debian 12 (bookworm)。使用 http 可避免部分构建环境对镜像站 HTTPS 证书校验失败（包仍由 apt 签名校验）
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware
+deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware
