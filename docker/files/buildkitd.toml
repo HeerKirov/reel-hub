@@ -1,0 +1,6 @@
+# BuildKit 拉取 docker.io 基础镜像时使用镜像站（buildx docker-container 驱动不保证继承 Docker Desktop 的 registry-mirrors）
+# 可改为阿里云「镜像加速器」给你的专属域名，或其它可用镜像
+# 修改后需重建 builder：docker buildx rm -f reel-hub-linux-amd64 && ./docker/build-linux-amd64.sh
+# https://docker.1panel.live, https://docker.m.daocloud.io
+[registry."docker.io"]
+  mirrors = ["https://docker.1panel.live"]

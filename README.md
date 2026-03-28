@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# REEL HUB
 
-## Getting Started
+## Development
 
-First, run the development server:
+需要node版本`22.11.0`或以上；使用yarn进行依赖管理。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+使用yarn安装全部依赖。
+```shell
+yarn
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+在运行之前，需要准备开发环境的env。复制一份`.env.example`到`.env`，随后按照文件指引，编辑环境变量配置。
+```shell
+cp .env.example .env
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+项目使用Prisma进行migrate管理。将migration同步到数据库:
+```shell
+yarn migrate:deploy 
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+使用yarn启动开发服务器。随后访问`http://localhost:3000`。
+```shell
+yarn dev
+```
 
-## Learn More
+## Build & Deploy
 
-To learn more about Next.js, take a look at the following resources:
+要执行编译，使用yarn build命令。
+```shell
+yarn build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+要使用Docker编译以及构建镜像，使用docker目录中提供的Dockerfile。
+```shell
+docker build -f docker/Dockerfile -t reel-hub:dev .
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+需要跨平台构建镜像时，可以使用docker目录中提供的构建脚本。
+```shell
+docker/build-linux-amd64.sh reel-hub:dev
+docker save reel-hub:dev | gzip > reel-hub-amd64.tar.gz
+gunzip -c reel-hub-amd64.tar.gz | docker load
+```
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+使用docker运行镜像，以及使用镜像进行migrate。
+```shell
+docker run -d --name reel-hub -p 3000:3000 -e DATABASE_URL="..." reel-hub:dev
+docker run --rm --name reel-hub-migrate -p 3000:3000 -e DATABASE_URL="..." reel-hub:dev reel-hub-migrate migrate deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+使用docker compose部署时，可以参考docker/docker-compose.yml文件提供的部署模板。将其分拆到deploy compose和migrate compose使用。
+```shell
+docker compose -f docker-compose.yml up -d
+docker compose -f docker-compose.migrate.yml run reel-hub-migrate
+```

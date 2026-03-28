@@ -1,27 +1,41 @@
 version: '3.8'
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  reel-hub:
+    container_name: reel-hub
+    image: reel-hub:latest
     ports:
-      - "3000:3000"
+      - "3001:3000"
+    networks:
+      - app-network
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/reel_hub?schema=public
-      - DIRECT_URL=postgresql://postgres:postgres@db:5432/reel_hub?schema=public
-    depends_on:
-      - db
+      - AUTH_SECRET=${REEL_HUB_AUTH_SECRET}
+      - AUTH_URL=${REEL_HUB_AUTH_URL}
+      - AUTH_CLIENT_ID=${REEL_HUB_AUTH_CLIENT_ID}
+      - AUTH_CLIENT_SECRET=${REEL_HUB_AUTH_CLIENT_SECRET}
 
-  db:
-    image: postgres:16-alpine
-    ports:
-      - "5432:5432"
+      - NEXTAUTH_URL=${REEL_HUB_NEXTAUTH_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/reel_hub?schema=public
+      - CRON_SECRET=${REEL_HUB_CRON_SECRET}
+
+      - OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID}
+      - OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET}
+      - OSS_BUCKET=heerkirov-reel-hub
+      - OSS_REGION=${OSS_REGION}
+      - OSS_INTERNAL=true
+      - OSS_SECURE=true
+      - OSS_ENDPOINT=${OSS_ENDPOINT}
+      - OSS_BASE_PATH=""
+    restart: unless-stopped
+  reel-hub-migrate:
+    container_name: reel-hub-migrate
+    image: reel-hub:latest
+    command: ["reel-hub-migrate", "migrate", "deploy"]
+    networks:
+      - app-network
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=reel_hub
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - DATABASE_URL=postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/reel_hub?schema=public
 
-volumes:
-  postgres_data: 
+networks:
+  app-network:
+    external: true
+    name: app-network
