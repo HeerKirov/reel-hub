@@ -78,7 +78,6 @@ export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<
     return safeExecuteResult(async () => {
         await requireAccess("tag", "write")
         const userId = await getUserId()
-        const now = new Date()
 
         const validate = tagUpdateFormSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -86,25 +85,32 @@ export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<
         const source = await prisma.tag.findUnique({ where: { id } })
         if(!source) return err(exceptionNotFound("Tag not found"))
 
-        if(validate.data.name) {
+        const newName = validate.data.name !== undefined && validate.data.name !== source.name ? validate.data.name : undefined
+        const newDescription = validate.data.description !== undefined && validate.data.description !== source.description ? validate.data.description : undefined
+
+        if(newName !== undefined) {
             const exists = await prisma.tag.findFirst({
                 where: {
                     id: { not: id },
                     type: source.type,
-                    name: validate.data.name
+                    name: newName
                 }
             })
-            if (exists) return err(exceptionAlreadyExists("tag", "name", validate.data.name))
+            if (exists) return err(exceptionAlreadyExists("tag", "name", newName))
         }
 
-        await prisma.tag.update({
-            where: { id },
-            data: {
-                ...validate.data,
-                updateTime: now,
-                updator: userId
-            }
-        })
+        if(newName !== undefined || newDescription !== undefined) {
+            const now = new Date()
+            await prisma.tag.update({
+                where: { id },
+                data: {
+                    name: newName,
+                    description: newDescription,
+                    updateTime: now,
+                    updator: userId
+                }
+            })
+        }
 
         return ok(undefined)
     })

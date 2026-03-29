@@ -12,6 +12,7 @@ import { AnimeDetailSchema } from "@/schemas/anime"
 import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import { retrieveProjectAnime } from "@/services/project-anime"
+import { getUserIdOrNull, hasPermission } from "@/helpers/next"
 import emptyCover from "@/assets/empty.jpg"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
@@ -35,22 +36,25 @@ export default async function AnimationDatabaseDetail({ params }: { params: Prom
         notFound()
     }
 
+    const isLogin = (await getUserIdOrNull()) !== null
+    const isAdmin = await hasPermission("admin")
+
     return (
         <DetailPageLayout
             breadcrumb={{url: "/anime/database", detail: data.title || "(未命名)"}}
-            header={<Header id={id} title={data.title || "(未命名)"}/>}
+            header={<Header id={id} title={data.title || "(未命名)"} isAdmin={isAdmin}/>}
             side={<Side data={data}/>}
-            content={<Content data={data}/>}
+            content={<Content data={data} isLogin={isLogin}/>}
         />
     )
 }
 
-function Header({ id, title }: {id: string, title: string}) {
+function Header({ id, title, isAdmin }: {id: string, title: string, isAdmin: boolean}) {
     return (
         <>
-            <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild>
+            {isAdmin && <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild>
                 <NextLink href={`/anime/database/${id}/edit`} replace><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink>
-            </Button>
+            </Button>}
             {title}
         </>
     )
@@ -86,7 +90,7 @@ function Side({ data }: {data: AnimeDetailSchema}) {
     )
 }
 
-function Content({ data }: {data: AnimeDetailSchema}) {
+function Content({ data, isLogin }: {data: AnimeDetailSchema, isLogin: boolean}) {
     const { tags, staffs, relationsTopology } = data
     const ratingS = data.ratingS !== null ? VALUE_TO_RATING_SEX[data.ratingS] : null
     const ratingV = data.ratingV !== null ? VALUE_TO_RATING_VIOLENCE[data.ratingV] : null
@@ -140,10 +144,10 @@ function Content({ data }: {data: AnimeDetailSchema}) {
                     </Table.Row>)}
                 </Table.Body>
             </Table.Root>
-            <Flex mt="4" width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", md: "nowrap"}}>
+            {isLogin && <Flex mt="4" width="full" justifyContent="stretch" gap="2" flexWrap={{base: "wrap", md: "nowrap"}}>
                 <RecordBox type={ProjectType.ANIME} project={data}/>
                 <CommentBox type={ProjectType.ANIME} project={data}/>
-            </Flex>
+            </Flex>}
             <RelationDisplay relations={relationsTopology}/>
         </>
     )

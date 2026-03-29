@@ -1,7 +1,7 @@
+import { ComingSoonScreen } from "@/components/app/inline-error"
 
 export default function Manga() {
-
     return (
-        <div>Manga</div>
+        <ComingSoonScreen/>
     )
 }

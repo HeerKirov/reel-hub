@@ -76,11 +76,10 @@ export async function retrieveStaff(id: number): Promise<StaffSchema | null> {
     return parseStaffSchema(r)
 }
 
-export async function updateStaff(id: number, form: StaffUpdateFormSchema): Promise<Result<StaffSchema, UpdateStaffError>> {
+export async function updateStaff(id: number, form: StaffUpdateFormSchema): Promise<Result<void, UpdateStaffError>> {
     return safeExecuteResult(async () => {
         await requireAccess("staff", "write")
         const userId = await getUserId()
-        const now = new Date()
 
         const validate = staffUpdateFormSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -88,26 +87,36 @@ export async function updateStaff(id: number, form: StaffUpdateFormSchema): Prom
         const self = await prisma.staff.findUnique({ where: { id } })
         if(!self) return err(exceptionNotFound("Staff not found"))
 
-        if(validate.data.name) {
+        const newName = validate.data.name !== undefined && validate.data.name !== self.name ? validate.data.name : undefined
+        const newOtherNames = validate.data.otherNames !== undefined && validate.data.otherNames?.join("|") !== self.otherNames ? validate.data.otherNames?.join("|") : undefined
+        const newDescription = validate.data.description !== undefined && validate.data.description !== self.description ? validate.data.description : undefined
+
+        if(newName !== undefined) {
             const exists = await prisma.staff.findFirst({
                 where: {
                     id: { not: id },
-                    name: validate.data.name
+                    name: newName
                 }
             })
-            if(exists) return err(exceptionAlreadyExists("staff", "name", validate.data.name))
+            if(exists) return err(exceptionAlreadyExists("staff", "name", newName))
         }
-        const updated = await prisma.staff.update({
-            where: { id },
-            data: {
-                ...validate.data,
-                otherNames: validate.data.otherNames?.join("|") ?? "",
-                updateTime: now,
-                updator: userId
-            }
-        })
 
-        return ok(parseStaffSchema(updated))
+        if(newName !== undefined || newOtherNames !== undefined || newDescription !== undefined) {
+            const now = new Date()
+
+            await prisma.staff.update({
+                where: { id },
+                data: {
+                    name: newName,
+                    otherNames: newOtherNames,
+                    description: newDescription,
+                    updateTime: now,
+                    updator: userId
+                }
+            })
+        }
+
+        return ok(undefined)
     })
 }
 

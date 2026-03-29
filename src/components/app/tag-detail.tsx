@@ -11,7 +11,7 @@ import { deleteTag, updateTag } from "@/services/tag"
 import { handleActionResult } from "@/helpers/action"
 import emptyCover from "@/assets/empty.jpg"
 
-export function TagDetail({ data, related }: { data: TagSchema, related: ProjectListSchema[] }) {
+export function TagDetail({ data, related, isAdmin }: { data: TagSchema, related: ProjectListSchema[], isAdmin: boolean }) {
     const router = useRouter()
     const [tag, setTag] = useState(data)
     const [isPending, startTransition] = useTransition()
@@ -44,9 +44,9 @@ export function TagDetail({ data, related }: { data: TagSchema, related: Project
         <Container maxW="container.xl" py="4">
             <Flex direction="column" align="center" textAlign="center" py="8">
                 <Icon fontSize="7xl" color="fg.muted"><RiPriceTag3Line /></Icon>
-                <EditableText mt="3" mb="1" width="sm" justifyContent="center" value={tag.name} placeholder="标签名" onValueChange={updateName} disabled={isPending} previewProps={{ fontSize: "2xl", fontWeight: "700" }}/>
-                <EditableText width="sm" justifyContent="center" value={tag.description} placeholder="描述" onValueChange={updateDescription} disabled={isPending}/>
-                <Popover.Root>
+                <EditableText mt="3" mb="1" width="sm" justifyContent="center" value={tag.name} placeholder="标签名" onValueChange={updateName} disabled={isPending || !isAdmin} previewProps={{ fontSize: "2xl", fontWeight: "700" }}/>
+                <EditableText width="sm" justifyContent="center" value={tag.description} placeholder="描述" onValueChange={updateDescription} disabled={isPending || !isAdmin}/>
+                {isAdmin && <Popover.Root>
                     <Popover.Trigger asChild>
                         <IconButton mt="4" alignSelf="flex-end" colorPalette="red" variant="outline" size="sm"><RiDeleteBinLine /></IconButton>
                     </Popover.Trigger>
@@ -63,7 +63,7 @@ export function TagDetail({ data, related }: { data: TagSchema, related: Project
                             </Popover.Content>
                         </Popover.Positioner>
                     </Portal>
-                </Popover.Root>
+                </Popover.Root>}
             </Flex>
 
             <Box mt="2">

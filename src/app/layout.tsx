@@ -1,9 +1,9 @@
 import React from "react"
 import type { Metadata } from "next"
 import { Box, Container, SystemStyleObject } from "@chakra-ui/react"
-import { getSession } from "@/helpers/next"
-import { NavigationSideBar, Wrapper, TimezoneAutoWriter } from "./components"
+import { getSession, getUserIdOrNull } from "@/helpers/next"
 import { retrieveUserPreference } from "@/services/user-preference"
+import { NavigationSideBar, Wrapper, TimezoneAutoWriter } from "./components"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{children: React.React
 
 async function Root({ children }: Readonly<{children: React.ReactNode}>) {
     const session = await getSession()
-    const isLogin = !!session?.user
+    const isLogin = (await getUserIdOrNull()) !== null
     const preferenceResult = isLogin ? await retrieveUserPreference() : null
     const preference = preferenceResult?.ok ? preferenceResult.value : null
     const autoTimezoneEnabled = isLogin && (preference?.autoTimezone ?? false)
@@ -47,6 +47,6 @@ async function Root({ children }: Readonly<{children: React.ReactNode}>) {
                 {children}
             </Container>
         </Box>
-        <NavigationSideBar avatar={session?.user ? {name: session.user.name, image: session.user.image ?? undefined} : undefined}/>
+        <NavigationSideBar avatar={session?.user ? {name: session.user.name, image: session.user.image ?? undefined} : undefined} isLogin={isLogin}/>
     </>)
 }

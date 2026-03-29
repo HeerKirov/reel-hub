@@ -26,8 +26,8 @@ export function Wrapper({ children }: { children: React.ReactNode }) {
     </SessionProvider>
 }
 
-export function NavigationSideBar(props: {avatar?: {name: string, image?: string}} & SystemStyleObject) {
-    const { avatar, ...attrs } = props
+export function NavigationSideBar(props: {avatar?: {name: string, image?: string}, isLogin: boolean} & SystemStyleObject) {
+    const { avatar, isLogin, ...attrs } = props
 
     const pathname = usePathname()
 
@@ -47,12 +47,12 @@ export function NavigationSideBar(props: {avatar?: {name: string, image?: string
             <Box flex="1 1 50%" display={{base: "none", sm: "block", lg: "none"}}/>
             <HorizontalMenuDropdown selected={selected}/>
             <Box flex="1 1 20%" display={{base: "block", sm: "none"}}/>
-            <HorizontalMenuList selected={selected} selectedSub={selectedSub}/>
+            <HorizontalMenuList selected={selected} selectedSub={selectedSub} isLogin={isLogin}/>
             <Box flex="1 1 50%" display={{lg: "none"}}/>
 
             <User avatar={avatar}/>
 
-            <VerticalMenuList selected={selected} selectedSub={selectedSub}/>
+            <VerticalMenuList selected={selected} selectedSub={selectedSub} isLogin={isLogin}/>
         </Box>
     )
 }
@@ -89,12 +89,12 @@ const User = memo(function User({ avatar }: {avatar?: {name: string, image?: str
     )
 })
 
-const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selectedSub }: {selected?: NavigationItem, selectedSub?: NavigationSubItem}) {
+const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selectedSub, isLogin }: {selected?: NavigationItem, selectedSub?: NavigationSubItem, isLogin: boolean}) {
     const textStyle: SystemStyleObject = {display: {base: "none", md: "initial"}}
     const buttonStyle: SystemStyleObject = {width: {base: "9", md: "auto"}, px: {md: "2"}}
     return (
         <Box display={{base: "flex", lg: "none"}} flex="0 0 auto" justifyContent="center">
-            {selected !== undefined ? selected.children.map(item => (
+            {selected !== undefined ? selected.children.filter(item => !item.loginOnly || isLogin).map(item => (
                 <Button key={item.href} variant={selectedSub === item ? "subtle" : "solid"} {...buttonStyle} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text {...textStyle}>{item.label}</Text></NextLink></Button>
             )) : NAVIGATIONS.map(item => (
                 <Button key={item.href} variant="solid" {...buttonStyle} asChild><NextLink href={item.href}>{item.icon}<Text {...textStyle}>{item.label}</Text></NextLink></Button>
@@ -103,10 +103,10 @@ const HorizontalMenuList = memo(function HorizontalMenuList({ selected, selected
     )
 })
 
-const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub }: {selected?: NavigationItem, selectedSub?: NavigationSubItem}) {
+const VerticalMenuList = memo(function VerticalMenuList({ selected, selectedSub, isLogin }: {selected?: NavigationItem, selectedSub?: NavigationSubItem, isLogin: boolean}) {
     return (
         <Stack display={{base: "none", lg: "flex"}} py="1" px="2" mt="4" width="100%" overflowY="auto" overflowX="hidden">
-            {NAVIGATIONS.map(item => <VerticalMenuButtonGroup key={item.href} {...item} selected={selected === item ? (selectedSub || true) : false}/>)}
+            {NAVIGATIONS.map(item => <VerticalMenuButtonGroup key={item.href} {...item} selected={selected === item ? (selectedSub || true) : false} isLogin={isLogin}/>)}
         </Stack>
     )
 })
@@ -134,14 +134,14 @@ const HorizontalMenuDropdown = memo(function HorizontalMenuDropdown({ selected, 
     )
 })
 
-const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: NavigationItem & {selected: boolean | NavigationSubItem}) {
+const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: NavigationItem & {selected: boolean | NavigationSubItem, isLogin: boolean}) {
     const textStyle: SystemStyleObject = {display: {base: "none", xl: "initial"}}
     return (<>
         <Button variant="solid" opacity={props.selected ? undefined : "80%"} asChild><NextLink href={props.href}>{props.icon}<Text {...textStyle}>{props.label}</Text></NextLink></Button>
         <Collapsible.Root open={!!props.selected}>
             <Collapsible.Content>
                 <Stack gap="1" my="2" py="2" mx="1" borderTopWidth="1px" borderBottomWidth="1px" borderColor="colorPalette.contrast">
-                    {props.children.map(item => (
+                    {props.children.filter(item => !item.loginOnly || props.isLogin).map(item => (
                         <Button key={item.href} variant={props.selected === item ? "subtle" : "solid"} size="sm" asChild><NextLink href={item.href}>{item.icon}<Text {...textStyle}>{item.label}</Text></NextLink></Button>
                     ))}
                 </Stack>

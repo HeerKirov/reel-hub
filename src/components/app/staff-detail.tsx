@@ -11,7 +11,7 @@ import { deleteStaff, updateStaff } from "@/services/staff"
 import { handleActionResult } from "@/helpers/action"
 import emptyCover from "@/assets/empty.jpg"
 
-export function StaffDetail({ data, related }: { data: StaffSchema, related: ProjectListSchema[] }) {
+export function StaffDetail({ data, related, isAdmin }: { data: StaffSchema, related: ProjectListSchema[], isAdmin: boolean }) {
     const router = useRouter()
     
     const [staff, setStaff] = useState(data)
@@ -54,10 +54,10 @@ export function StaffDetail({ data, related }: { data: StaffSchema, related: Pro
         <Container maxW="container.xl" py="4">
             <Flex direction="column" align="center" textAlign="center" py="8">
                 <Icon fontSize="7xl" color="fg.muted"><RiUser2Line /></Icon>
-                <EditableText mt="3" mb="1" width="sm" justifyContent="center" value={staff.name} placeholder="STAFF 名称" onValueChange={updateName} disabled={isPending} previewProps={{ fontSize: "2xl", fontWeight: "700" }}/>
-                <EditableText width="sm" justifyContent="center" value={staff.otherNames.join(", ")} placeholder="别名" onValueChange={updateOtherNames} disabled={isPending} previewProps={{ fontSize: "sm", color: "fg.muted" }}/>
-                <EditableText width="sm" justifyContent="center" value={staff.description} placeholder="描述" onValueChange={updateDescription} disabled={isPending}/>
-                <Popover.Root>
+                <EditableText mt="3" mb="1" width="sm" justifyContent="center" value={staff.name} placeholder="STAFF 名称" onValueChange={updateName} disabled={isPending || !isAdmin} previewProps={{ fontSize: "2xl", fontWeight: "700" }}/>
+                <EditableText width="sm" justifyContent="center" value={staff.otherNames.join(", ")} placeholder="别名" onValueChange={updateOtherNames} disabled={isPending || !isAdmin} previewProps={{ fontSize: "sm", color: "fg.muted" }}/>
+                <EditableText width="sm" justifyContent="center" value={staff.description} placeholder="描述" onValueChange={updateDescription} disabled={isPending || !isAdmin}/>
+                {isAdmin && <Popover.Root>
                     <Popover.Trigger asChild>
                         <IconButton mt="4" alignSelf="flex-end" colorPalette="red" variant="outline" size="sm"><RiDeleteBinLine /></IconButton>
                     </Popover.Trigger>
@@ -74,7 +74,7 @@ export function StaffDetail({ data, related }: { data: StaffSchema, related: Pro
                             </Popover.Content>
                         </Popover.Positioner>
                     </Portal>
-                </Popover.Root>
+                </Popover.Root>}
             </Flex>
 
             <Box mt="2">
