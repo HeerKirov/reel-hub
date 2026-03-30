@@ -5,6 +5,6 @@ export const metadata: Metadata = {
     title: "新建"
 }
 
-export default function AnimationNew() {
+export default function GameDatabaseNew() {
     return <Wrapper/>
 }

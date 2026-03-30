@@ -3,7 +3,7 @@ import { SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter } from "@/components/server/filters"
 import { ProjectList } from "@/components/app/project-list"
 import { listProjectAnime } from "@/services/project-anime"
-import { AnimeListFilter } from "@/schemas/anime"
+import { AnimeListFilter } from "@/schemas/project-anime"
 import { ProjectType } from "@/constants/project"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 

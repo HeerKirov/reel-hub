@@ -6,12 +6,13 @@ import { RiDeleteBinLine, RiUser2Line } from "react-icons/ri"
 import { Box, Button, Container, Flex, Icon, IconButton, Image, Popover, Portal, SimpleGrid, Text } from "@chakra-ui/react"
 import { EditableText } from "@/components/form"
 import { ProjectListSchema } from "@/schemas/project"
+import { ProjectType } from "@/constants/project"
 import { StaffSchema } from "@/schemas/staff"
 import { deleteStaff, updateStaff } from "@/services/staff"
 import { handleActionResult } from "@/helpers/action"
 import emptyCover from "@/assets/empty.jpg"
 
-export function StaffDetail({ data, related, isAdmin }: { data: StaffSchema, related: ProjectListSchema[], isAdmin: boolean }) {
+export function StaffDetail({ data, related, isAdmin, type }: { data: StaffSchema, related: ProjectListSchema[], isAdmin: boolean, type: ProjectType }) {
     const router = useRouter()
     
     const [staff, setStaff] = useState(data)
@@ -79,22 +80,22 @@ export function StaffDetail({ data, related, isAdmin }: { data: StaffSchema, rel
 
             <Box mt="2">
                 <Flex justify="space-between" align="center" mb="3">
-                    <Text fontSize="xl" fontWeight="700">相关动画</Text>
+                    <Text fontSize="xl" fontWeight="700">{type === ProjectType.GAME ? "相关游戏" : "相关动画"}</Text>
                     <Button size="sm" variant="ghost" asChild>
-                        <NextLink href={`/anime/database?staff=${encodeURIComponent(staff.name)}`}>查看更多</NextLink>
+                        <NextLink href={`/${type.toLowerCase()}/database?staff=${encodeURIComponent(staff.name)}`}>查看更多</NextLink>
                     </Button>
                 </Flex>
                 <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} gap="4">
                     {related.map(item => (
                         <Flex key={item.id} gap="3" asChild>
-                            <NextLink href={`/anime/database/${item.id}`}>
+                            <NextLink href={`/${type.toLowerCase()}/database/${item.id}`}>
                                 <Image src={item.resources.avatar ?? item.resources.cover ?? emptyCover.src} alt={item.title || "(未命名)"} width="60px" height="60px" objectFit="cover" rounded="md" />
                                 <Text color="blue.fg">{item.title || "(未命名)"}</Text>
                             </NextLink>
                         </Flex>
                     ))}
                 </SimpleGrid>
-                {related.length === 0 && <Text color="fg.muted">暂无关联动画</Text>}
+                {related.length === 0 && <Text color="fg.muted">{type === ProjectType.GAME ? "暂无关联游戏" : "暂无关联动画"}</Text>}
             </Box>
         </Container>
     )

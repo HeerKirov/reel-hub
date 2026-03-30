@@ -9,7 +9,7 @@ import { createProgress, nextEpisode } from "@/services/record-progress"
 import { DateTimePicker, NumberInput } from "@/components/form"
 import { RecordCreateForm, RecordProgressUpsertForm } from "@/schemas/record"
 import { RecordDetailSchema } from "@/schemas/record"
-import { AnimeDetailSchema } from "@/schemas/anime"
+import { AnimeDetailSchema } from "@/schemas/project-anime"
 import { handleActionResult } from "@/helpers/action"
 
 export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, projectId: string}) {

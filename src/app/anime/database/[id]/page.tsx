@@ -1,6 +1,6 @@
 import { Text, Box } from "@chakra-ui/react"
 import { ProjectDisplay } from "@/components/app/project-display"
-import { AnimeDetailSchema } from "@/schemas/anime"
+import { AnimeDetailSchema } from "@/schemas/project-anime"
 import { ProjectType } from "@/constants/project"
 import { VALUE_TO_BOARDCAST_TYPE, VALUE_TO_ORIGINAL_TYPE } from "@/constants/anime"
 import { retrieveProjectAnime } from "@/services/project-anime"

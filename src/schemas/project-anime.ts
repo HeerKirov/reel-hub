@@ -1,18 +1,7 @@
 import { z } from "zod"
-import {
-    episodePublishRecordFormSchema,
-    parseProjectDetailSchema,
-    parseProjectListSchema,
-    projectCommonForm,
-    projectListFilter,
-    type EpisodePublishRecordModel,
-    type ProjectDetailSchema,
-    type ProjectListSchema,
-    type ProjectModel,
-    type ProjectRelationSchema
-} from "./project"
 import { BOARDCAST_TYPE, ORIGINAL_TYPE } from "@/constants/anime"
 import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
+import { episodePublishRecordFormSchema, parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectListFilter, type EpisodePublishRecordModel, type ProjectDetailSchema, type ProjectListSchema, type ProjectModel, type ProjectRelationSchema } from "./project"
 
 export const animeListFilter = projectListFilter.extend({
     originalType: z.enum(ORIGINAL_TYPE).optional(),

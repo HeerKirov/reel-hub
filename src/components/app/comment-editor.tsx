@@ -33,7 +33,7 @@ export function CommentEditor({ type, project, comment }: {type: ProjectType, pr
             { successTitle: "评价已保存" }
         )
         if(!result.ok) return
-        onCancel()
+        router.replace(`/${type.toLowerCase()}/comment/${project.id}`)
     }
 
     const onDelete = comment === null ? undefined : async () => {

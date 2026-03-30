@@ -29,7 +29,7 @@ export async function TagList(props: { searchParams: Promise<TagListSearchParams
             searchParams={searchParams}
             breadcrumb={{ url: `/${type.toLowerCase()}/database`, detail: "标签", detailIcon: <RiPriceTag3Line /> }}
             filter={<FilterPanel searchParams={searchParams} />}
-            content={<ContentTable list={list} />}
+            content={<ContentTable list={list} type={type} />}
             totalRecord={total}
             totalPage={Math.ceil(total / 15)}
             currentPage={page}
@@ -45,7 +45,7 @@ function FilterPanel({ searchParams }: { searchParams: TagListSearchParams }) {
     )
 }
 
-function ContentTable({ list }: { list: TagSchema[] }) {
+function ContentTable({ list, type }: { list: TagSchema[], type: ProjectType }) {
     return (
         <Table.Root size="sm">
             <Table.Header>
@@ -59,7 +59,7 @@ function ContentTable({ list }: { list: TagSchema[] }) {
                     <Table.Row key={item.id}>
                         <Table.Cell fontWeight="medium">
                             <Tag.Root size="sm" asChild>
-                                <NextLink href={`/anime/database/tags/${item.id}`}>
+                                <NextLink href={`/${type.toLowerCase()}/database/tags/${item.id}`}>
                                     <Tag.Label>{item.name}</Tag.Label>
                                 </NextLink>
                             </Tag.Root>

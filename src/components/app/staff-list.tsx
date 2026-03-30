@@ -28,7 +28,7 @@ export async function StaffList(props: { searchParams: Promise<StaffListSearchPa
             searchParams={searchParams}
             breadcrumb={{ url: `/${props.type.toLowerCase()}/database`, detail: "STAFF", detailIcon: <RiUser2Line /> }}
             filter={<FilterPanel searchParams={searchParams} />}
-            content={<ContentTable list={list} />}
+            content={<ContentTable list={list} type={props.type} />}
             totalRecord={total}
             totalPage={Math.ceil(total / 15)}
             currentPage={page}
@@ -44,7 +44,7 @@ function FilterPanel({ searchParams }: { searchParams: StaffListSearchParams }) 
     )
 }
 
-function ContentTable({ list }: { list: StaffSchema[] }) {
+function ContentTable({ list, type }: { list: StaffSchema[], type: ProjectType }) {
     return (
         <Table.Root size="sm">
             <Table.Header>
@@ -60,7 +60,7 @@ function ContentTable({ list }: { list: StaffSchema[] }) {
                     return (
                         <Table.Row key={item.id}>
                             <Table.Cell fontWeight="medium">
-                                <NextLink href={`/anime/database/staff/${item.id}`}>{item.name}</NextLink>
+                                <NextLink href={`/${type.toLowerCase()}/database/staff/${item.id}`}>{item.name}</NextLink>
                             </Table.Cell>
                             <Table.Cell>
                                 {aliases.length > 0

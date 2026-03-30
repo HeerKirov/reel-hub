@@ -4,7 +4,7 @@ import { RiBookmark3Line, RiPushpin2Fill, RiDatabase2Fill, RiEdit2Line, RiArrowR
 import { ProjectType, RecordStatus } from "@/prisma/generated"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { retrieveRecordPreview } from "@/services/record"
-import { AnimeDetailSchema } from "@/schemas/anime"
+import { AnimeDetailSchema } from "@/schemas/project-anime"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
 import { RecordBoxDialogContent, RecordDisplayActions, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayNextButton } from "./record-display.client"
 import { RecordDetailSchema } from "@/schemas/record"

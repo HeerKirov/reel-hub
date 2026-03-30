@@ -48,7 +48,7 @@ export async function ProjectList<P extends CommonSearchParams, RES extends Proj
                 <Box flex="1 1 100%"/>
                 {isAdmin && <Button variant="ghost" size="sm" asChild><NextLink href={`/${props.type.toLowerCase()}/database/new`}><RiAddLine/> 新建</NextLink></Button>}
             </>}
-            filter={<FilterPanel searchParams={searchParams as P} filterPanel={props.filterPanel} />}
+            filter={<FilterPanel searchParams={searchParams as P} type={props.type} filterPanel={props.filterPanel} />}
             content={<ContentGrid list={list} type={props.type}/>}
             totalRecord={total}
             totalPage={Math.ceil(total / 15)}
@@ -57,7 +57,7 @@ export async function ProjectList<P extends CommonSearchParams, RES extends Proj
     )
 }
 
-function FilterPanel<P extends CommonSearchParams>({ searchParams, filterPanel }: {searchParams: ProjectListSearchParams<P>, filterPanel?: (props: {searchParams: ProjectListSearchParams<P>}) => React.ReactNode}) {
+function FilterPanel<P extends CommonSearchParams>({ searchParams, type, filterPanel }: {searchParams: ProjectListSearchParams<P>, type: ProjectType, filterPanel?: (props: {searchParams: ProjectListSearchParams<P>}) => React.ReactNode}) {
     const ratingSexItems = [
         {label: "全部", value: "", color: "blue"},
         ...RATING_SEX_ITEMS
@@ -80,7 +80,7 @@ function FilterPanel<P extends CommonSearchParams>({ searchParams, filterPanel }
                     <LinkGroupFilter items={ratingViolenceItems} searchParams={searchParams} searchParamName="ratingV"/>
                 </SidePanel.FilterStackItem>
                 <SidePanel.FilterStackCollapseItem 
-                    title="放送时间"
+                    title={type === ProjectType.ANIME ? "放送时间" : "发行时间"}
                     header={<PublishTimeFilterHeader publishTime={searchParams.publishTime} mode="season"/>}
                     clear={{paramName: "publishTime", searchParams}}>
                     <PublishTimePicker value={searchParams.publishTime} searchParamName="publishTime" mode="season"/>

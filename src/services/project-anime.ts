@@ -1,6 +1,6 @@
 "use server"
 import { objects } from "@/helpers/primitive"
-import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/anime"
+import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/project-anime"
 import { ProjectType } from "@/constants/project"
 import { EpisodePublishRecord } from "@/schemas/project"
 import { syncAnimeRecordProgressAfterEpisodeMetaChange } from "@/services/record"

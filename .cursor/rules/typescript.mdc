@@ -14,10 +14,5 @@ alwaysApply: false
 ## 代码风格
 
 - 不添加js行末的分号
-- import语句尽量保持在同一行；如果太长需要换行，则使用如下风格，尽量撑满每一行后再换行：
-    ```typescript
-    import {
-        A, B, C,
-        D, E, F
-    } from '...'
-    ```
+- 通常使用双引号
+- import语句的解构内容不允许换行，写在同一行

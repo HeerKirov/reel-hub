@@ -3,13 +3,12 @@ import { memo, useCallback } from "react"
 import { Field, Flex } from "@chakra-ui/react"
 import { Select, NumberInput } from "@/components/form"
 import { EpisodePublishedRecordEditor, EpisodePublishPlanEditor } from "@/components/editor"
-import { ProjectUpdateEditor, ProjectUpdateEditorProps } from "@/components/app/project-editor"
+import { ProjectUpdateEditor } from "@/components/app/project-editor"
 import { EpisodePublishRecord } from "@/schemas/project"
-import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
+import { AnimeDetailSchema, AnimeForm } from "@/schemas/project-anime"
 import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
 import { BoardcastType, OriginalType } from "@/constants/anime"
 import { ProjectType } from "@/constants/project"
-import { UpdateProjectError } from "@/schemas/error"
 import { deleteProjectAnime, updateProjectAnime } from "@/services/project-anime"
 import { RiTvLine } from "react-icons/ri"
 
@@ -21,23 +20,6 @@ export interface AnimeExtra {
     episodePublishedNum: number
     episodePublishPlan: EpisodePublishRecord[]
     episodePublishedRecords: EpisodePublishRecord[]
-}
-
-export interface AnimeInfoTabProps {
-    originalType: OriginalType | null
-    boardcastType: BoardcastType | null
-    episodeDuration: number | null
-    episodeTotalNum: number
-    episodePublishedNum: number
-    episodePublishPlan: EpisodePublishRecord[]
-    episodePublishedRecords: EpisodePublishRecord[]
-    setOriginalType: (originalType: OriginalType | null) => void
-    setBoardcastType: (boardcastType: BoardcastType | null) => void
-    setEpisodeDuration: (episodeDuration: number | null) => void
-    setEpisodeTotalNum: (episodeTotalNum: number) => void
-    setEpisodePublishedNum: (episodePublishedNum: number) => void
-    setEpisodePublishPlan: (episodePublishPlan: EpisodePublishRecord[]) => void
-    setEpisodePublishedRecords: (episodePublishedRecords: EpisodePublishRecord[]) => void
 }
 
 export const AnimeInfoTab = memo(function AnimeInfoTab({ extra, setExtra }: {extra: AnimeExtra, setExtra: (field: keyof AnimeExtra, value: AnimeExtra[keyof AnimeExtra]) => void}) {
