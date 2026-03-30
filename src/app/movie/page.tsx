@@ -1,7 +1,5 @@
-import { ComingSoonScreen } from "@/components/app/inline-error"
+import { redirect } from "next/navigation"
 
 export default function Movie() {
-    return (
-        <ComingSoonScreen/>
-    )
+    redirect("/movie/database")
 }
