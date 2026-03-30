@@ -1,16 +1,20 @@
 import NextLink from "next/link"
-import { Box, Text, Icon, Flex, Stat, HStack, Badge, Button, Dialog, Portal, Heading, Image, Table, Progress } from "@chakra-ui/react"
+import { Box, Text, Icon, Flex, Stat, HStack, Badge, Button, Dialog, Portal, Heading, Image, Table } from "@chakra-ui/react"
 import { RiBookmark3Line, RiPushpin2Fill, RiDatabase2Fill, RiEdit2Line, RiArrowRightLine } from "react-icons/ri"
-import { ProjectType, RecordStatus } from "@/prisma/generated"
+import { InlineError } from "@/components/app/inline-error"
+import { DetailPageLayout } from "@/components/server/layout"
+import { ProjectType } from "@/constants/project"
+import { RecordStatus } from "@/constants/record"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { retrieveRecordPreview } from "@/services/record"
 import { AnimeDetailSchema } from "@/schemas/project-anime"
-import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
-import { RecordBoxDialogContent, RecordDisplayActions, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayNextButton } from "./record-display.client"
+import { MovieDetailSchema } from "@/schemas/project-movie"
+import { MangaDetailSchema } from "@/schemas/project-manga"
 import { RecordDetailSchema } from "@/schemas/record"
-import { DetailPageLayout } from "@/components/server/layout"
+import { VALUE_TO_RECORD_STATUS } from "@/constants/record"
+import { isEpisodeProjectType } from "@/constants/project"
 import { unwrapQueryResult } from "@/helpers/result"
-import { InlineError } from "@/components/app/inline-error"
+import { RecordBoxDialogContent, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayNextButton } from "./record-display.client"
 import emptyCover from "@/assets/empty.jpg"
 
 export async function RecordBox({ project, type }: {project: ProjectDetailSchema | AnimeDetailSchema, type: ProjectType}) {
@@ -23,10 +27,10 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
         return (
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
-                    <Text color="fg.muted" fontSize="sm">{type === ProjectType.ANIME ? "未订阅此动画" : "未添加任何记录"}</Text>
+                    <Text color="fg.muted" fontSize="sm">{isEpisodeProjectType(type) ? "未订阅此项目" : "未添加任何记录"}</Text>
                     <Dialog.Root motionPreset="slide-in-bottom" size="md">
                         <Dialog.Trigger asChild>
-                            <Button variant="solid" colorPalette="blue" size="sm" mt="2"><RiBookmark3Line/>{type === ProjectType.ANIME ? "加入订阅" : "添加记录"}</Button>
+                            <Button variant="solid" colorPalette="blue" size="sm" mt="2"><RiBookmark3Line/>{isEpisodeProjectType(type) ? "加入订阅" : "添加记录"}</Button>
                         </Dialog.Trigger>
                         <Portal>
                             <Dialog.Backdrop />
@@ -38,8 +42,8 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
                 </Box>
             </Box>
         )
-    }else if(type === ProjectType.ANIME) {
-        const anime = project as AnimeDetailSchema
+    }else if(isEpisodeProjectType(type)) {
+        const episodeProject = project as AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema
         return (
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" asChild>
                 <NextLink href={`/${type.toLowerCase()}/record/${project.id}`}>
@@ -48,8 +52,8 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
                         <Stat.Root>
                             <Stat.Label>进度</Stat.Label>
                             <HStack>
-                                <Stat.ValueText>{data.episodeWatchedNum ?? 0} / {anime.episodeTotalNum}</Stat.ValueText>
-                                <Badge>{Math.floor((data.episodeWatchedNum ?? 0) / anime.episodeTotalNum * 100)}%</Badge>
+                                <Stat.ValueText>{data.episodeWatchedNum ?? 0} / {episodeProject.episodeTotalNum}</Stat.ValueText>
+                                <Badge>{Math.floor((data.episodeWatchedNum ?? 0) / episodeProject.episodeTotalNum * 100)}%</Badge>
                             </HStack>
                         </Stat.Root>
                         <Stat.Root>
@@ -133,7 +137,7 @@ function Side({ project, type }: {project: ProjectDetailSchema, type: ProjectTyp
 }
 
 function Content({ record, type, project }: {record: RecordDetailSchema, type: ProjectType, project: ProjectDetailSchema}) {
-    const anime = type === ProjectType.ANIME ? project as AnimeDetailSchema : null
+    const episodeProject = isEpisodeProjectType(type) ? project as AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema : null
     const latestProgress = record.progresses.length > 0 ? record.progresses[record.progresses.length - 1] : null
     
     return (
@@ -155,28 +159,28 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                                 <Box borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
                                     <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
                                 </Box>
-                                {anime && latestProgress.episodeWatchedNum !== null && (
+                                {episodeProject && latestProgress.episodeWatchedNum !== null && (
                                     <Flex alignItems="center" gap="2" flex="1">
                                         <Text fontSize="sm" color="fg.muted">
-                                            {Math.floor((latestProgress.episodeWatchedNum / anime.episodeTotalNum) * 100)}%
+                                            {Math.floor((latestProgress.episodeWatchedNum / episodeProject.episodeTotalNum) * 100)}%
                                         </Text>
                                         <DualProgressBar
                                             watched={latestProgress.episodeWatchedNum}
-                                            published={anime.episodePublishedNum}
-                                            total={anime.episodeTotalNum}
+                                            published={episodeProject.episodePublishedNum}
+                                            total={episodeProject.episodeTotalNum}
                                         />
                                     </Flex>
                                 )}
                             </Flex>
 
-                            {anime && <Flex alignItems="center" justifyContent="space-between" fontSize="sm" color="fg.muted" px="1">
+                            {episodeProject && <Flex alignItems="center" justifyContent="space-between" fontSize="sm" color="fg.muted" px="1">
                                 <Text>
                                     已看完 <Badge px="2" py="1">{latestProgress.episodeWatchedNum}</Badge> 话
                                 </Text>
                                 <Text>
                                     共&nbsp;
-                                    {anime.episodePublishedNum < anime.episodeTotalNum && <><Badge colorPalette="green" px="2" py="1">{anime.episodePublishedNum}</Badge> / </>}
-                                    <Badge colorPalette="gray" px="2" py="1">{anime.episodeTotalNum}</Badge>&nbsp;话
+                                    {episodeProject.episodePublishedNum < episodeProject.episodeTotalNum && <><Badge colorPalette="green" px="2" py="1">{episodeProject.episodePublishedNum}</Badge> / </>}
+                                    <Badge colorPalette="gray" px="2" py="1">{episodeProject.episodeTotalNum}</Badge>&nbsp;话
                                 </Text>
                             </Flex>}
                             
@@ -193,7 +197,7 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                                         <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
                                     </Flex>
                                 </Flex>
-                                {anime && latestProgress.episodeWatchedNum! < anime.episodePublishedNum && <RecordDisplayNextButton projectId={project.id} watched={latestProgress.episodeWatchedNum!} />}
+                                {episodeProject && latestProgress.episodeWatchedNum! < episodeProject.episodePublishedNum && <RecordDisplayNextButton projectId={project.id} watched={latestProgress.episodeWatchedNum!} />}
                             </Flex>
                         </Flex>
                     </Box>
@@ -210,7 +214,7 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                                         <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="2" py="1" bg="bg.default">
                                             <Text fontSize="sm">{progress.ordinal}周目</Text>
                                         </Box>
-                                        {anime && progress.episodeWatchedNum !== null && isComplete && (
+                                        {episodeProject && progress.episodeWatchedNum !== null && isComplete && (
                                             <Text width="full" fontSize="sm" fontWeight="medium">{progress.episodeWatchedNum}话完成</Text>
                                         )}
                                         <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">

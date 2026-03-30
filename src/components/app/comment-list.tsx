@@ -1,16 +1,16 @@
 import NextLink from "next/link"
 import { RiArrowDownSFill, RiChatQuoteFill, RiPenNibLine, RiStarFill } from "react-icons/ri"
 import { Box, Flex, Text, Icon, Avatar, Menu, Portal, Button, Table } from "@chakra-ui/react"
-import { ListPageLayout } from "@/components/server/layout"
 import { SearchBox } from "@/components/filters"
 import { Starlight } from "@/components/form"
+import { ListPageLayout } from "@/components/server/layout"
+import { InlineError } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { CommentWithProjectSchema } from "@/schemas/comment"
 import { listComments } from "@/services/comment"
 import { dates } from "@/helpers/primitive"
 import { staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
-import { InlineError } from "@/components/app/inline-error"
 
 export type CommentListSearchParams = { page?: string, search?: string, view?: "activity" | "table" }
 

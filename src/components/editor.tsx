@@ -220,12 +220,13 @@ export type StaffEditorProps = {
 type StaffTypeInputProps = {
     value: string
     projectType?: ProjectType
-    onValueChange: (value: string) => void
+    onValueChange?: (value: string) => void
     onEnter?: (value: string) => void
     placeholder?: string
+    clearInEnter?: boolean
 } & SystemStyleObject
 
-const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValueChange, onEnter, placeholder, ...attrs }: StaffTypeInputProps) {
+const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValueChange, onEnter, placeholder, clearInEnter = false, ...attrs }: StaffTypeInputProps) {
     const [draft, setDraft] = useState(value)
     const [searchResults, setSearchResults] = useState<string[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -277,15 +278,16 @@ const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValu
         const finalValue = text.trim()
         if(!finalValue) return
         setDraft(finalValue)
-        onValueChange(finalValue)
+        onValueChange?.(finalValue)
     }, [onValueChange])
 
     const onTypeKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
         if(e.key === "Enter" && !isComposing) {
             commitValue(draft)
             onEnter?.(draft.trim())
+            if(clearInEnter) setDraft("")
         }
-    }, [commitValue, draft, isComposing, onEnter])
+    }, [commitValue, draft, isComposing, onEnter, clearInEnter])
 
     const onBlur = useCallback(() => {
         if(isComposing) return
@@ -295,14 +297,7 @@ const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValu
     return (
         <Combobox.Root allowCustomValue collection={collection} inputValue={draft} onInputValueChange={onInputChange} openOnClick {...attrs}>
             <Combobox.Control>
-                <Combobox.Input
-                    placeholder={placeholder}
-                    onFocus={onFocus}
-                    onKeyDown={onTypeKeyDown}
-                    onBlur={onBlur}
-                    onCompositionStart={() => setIsComposing(true)}
-                    onCompositionEnd={() => setIsComposing(false)}
-                />
+                <Combobox.Input placeholder={placeholder} onFocus={onFocus} onKeyDown={onTypeKeyDown} onBlur={onBlur} onCompositionStart={() => setIsComposing(true)} onCompositionEnd={() => setIsComposing(false)}/>
             </Combobox.Control>
             <Portal>
                 <Combobox.Positioner>
@@ -322,7 +317,6 @@ const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValu
 
 export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange, search, projectType, ...attrs }: StaffEditorProps) {
     const [staffs, setStaffs] = useEffectState<{type: string, members: string[]}[]>(value)
-    const [newType, setNewType] = useState("")
 
     const onMembersChange = useCallback((type: string) => (members: string[]) => {
         const newStaffs = staffs.map(staff => {
@@ -358,7 +352,6 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
             if(staffs.some(s => s.type === newType)) return
             const newStaffs = [...staffs, {type: newType, members: []}]
             setStaffs(newStaffs)
-            setNewType("")
             onValueChange?.(newStaffs)
         }
     }, [staffs, onValueChange])
@@ -367,34 +360,13 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         <Box display="flex" flexDirection="column" gap="2" {...attrs}>
             {staffs.map((staff, index) => (
                 <Box key={index} display="flex" gap="2">
-                    <StaffTypeInput
-                        flex="1 0 140px"
-                        value={staff.type}
-                        projectType={projectType}
-                        onValueChange={onTypeChange(staff.type)}
-                        placeholder="STAFF类型"
-                    />
-                    <TagEditor flex="1 1 100%"
-                            value={staff.members} 
-                            onValueChange={onMembersChange(staff.type)}
-                            placeholder="添加STAFF" 
-                            variant="surface" 
-                            width="full" 
-                            noDuplicate 
-                            search={search}
-                        />
+                    <StaffTypeInput flex="1 0 140px" value={staff.type} projectType={projectType} onValueChange={onTypeChange(staff.type)} placeholder="STAFF类型"/>
+                    <TagEditor flex="1 1 100%" value={staff.members} onValueChange={onMembersChange(staff.type)} placeholder="添加STAFF" variant="surface" width="full" noDuplicate search={search}/>
                     <IconButton flex="0 0 auto" variant="ghost" size="sm" onClick={onDeleteType(staff.type)}><PiTrashBold/></IconButton>
                 </Box>
             ))}
             <Box display="flex" gap="4">
-                <StaffTypeInput
-                    flex="1 0 140px"
-                    value={newType}
-                    projectType={projectType}
-                    onValueChange={setNewType}
-                    onEnter={handleEnter}
-                    placeholder="新STAFF类型"
-                />
+                <StaffTypeInput value="" flex="1 0 140px" projectType={projectType} onEnter={handleEnter} placeholder="新STAFF类型" clearInEnter/>
                 <Box flex="1 1 100%" />
                 <Box flex="0 0 auto" />
             </Box>

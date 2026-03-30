@@ -106,7 +106,7 @@ function ProjectEditor<RES extends ProjectDetailSchema, FORM extends ProjectComm
     const [staffs, setStaffs] = useState<{type: string, members: string[]}[]>(data?.staffs.map(s => ({type: s.type, members: s.members.map(m => m.name)})) ?? [])
     const [ratingS, setRatingS] = useState<RatingSex | null>(data?.ratingS ?? null)
     const [ratingV, setRatingV] = useState<RatingViolence | null>(data?.ratingV ?? null)
-    const [region, setRegion] = useState<Region | null>(data?.region ?? "jp")
+    const [region, setRegion] = useState<Region | null>(data?.region ?? (type === ProjectType.ANIME ? "jp" : type === ProjectType.MOVIE ? "us" : null))
     const [publishTime, setPublishTime] = useState<string | null>(data?.publishTime ?? null)
     const [relations, setRelations] = useState<Partial<ProjectRelationSchema>>(data?.relations ?? {})
     const [resourceCover, setResourceCover] = useState<string | Blob | null>(data?.resources?.["cover"] ?? null)

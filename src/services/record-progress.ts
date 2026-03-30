@@ -8,6 +8,7 @@ import { err, ok, Result } from "@/schemas/all"
 import { ActivityEvent, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { CreateProgressError, DeleteProgressError, NextEpisodeError, UpdateLatestProgressError } from "@/schemas/error"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
+import { isEpisodeProjectType } from "@/constants/project"
 
 export async function createProgress(projectId: string, form: RecordProgressUpsertForm): Promise<Result<void, CreateProgressError>> {
     return safeExecuteResult(async () => {
@@ -34,16 +35,17 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
         const createProgressEvent: ActivityEvent = { type: "CREATE_PROGRESS" }
 
         if(isSupplement) {
+            const isEpisodeType = isEpisodeProjectType(project.type)
             const isAnime = project.type === ProjectType.ANIME
-            const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
-            const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
-            const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
+            const episodeTotalNum = isEpisodeType ? project.episodeTotalNum! : null
+            const episodePublishedNum = isEpisodeType ? project.episodePublishedNum! : null
+            const episodeFullyPublished = isEpisodeType && episodePublishedNum! >= episodeTotalNum!
 
             const startTimeRaw = validate.data.startTime === undefined ? null : validate.data.startTime
             const endTimeRaw = validate.data.endTime === undefined ? null : validate.data.endTime
 
             // If only watchedNum is provided (without start/end time), we don't know which interval it belongs to.
-            if(isAnime && validate.data.startTime === undefined && validate.data.endTime === undefined && validate.data.episodeWatchedNum !== undefined) {
+            if(isEpisodeType && validate.data.startTime === undefined && validate.data.endTime === undefined && validate.data.episodeWatchedNum !== undefined) {
                 return err(exceptionParamRequired("startTime"))
             }
 
@@ -115,11 +117,11 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                 })
             }
 
-            // Compute episodeWatchedNum & endTime (ANIME rules)
+            // Compute episodeWatchedNum & endTime (EPISODE rules)
             let episodeWatchedNum: number | null = null
             let finalEndTime: Date | null = newEndTime
 
-            if(isAnime) {
+            if(isEpisodeType) {
                 // Completed progress => require full release
                 if(newEndTime !== null) {
                     if(!episodeFullyPublished) {
@@ -153,8 +155,8 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                     endTime: finalEndTime,
                     createTime: now,
                     updateTime: now,
-                    episodeWatchedNum: isAnime ? episodeWatchedNum : null,
-                    episodeWatchedRecords: isAnime ? Array(episodeWatchedNum ?? 0).fill(null) : [],
+                    episodeWatchedNum: isEpisodeType ? episodeWatchedNum : null,
+                    episodeWatchedRecords: isEpisodeType ? Array(episodeWatchedNum ?? 0).fill(null) : [],
                     followType: isAnime ? getFollowType(insertOrdinal, project.boardcastType, project.publishTime, newStartTime) : null,
                     platform: []
                 }
@@ -207,7 +209,7 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                     endTime: newEndTime,
                     createTime: now,
                     updateTime: now,
-                    episodeWatchedNum: project.type === ProjectType.ANIME ? 0 : null,
+                    episodeWatchedNum: isEpisodeProjectType(project.type) ? 0 : null,
                     episodeWatchedRecords: [],
                     followType: project.type === ProjectType.ANIME && newStartTime !== null ? getFollowType(newOrdinal, project.boardcastType, project.publishTime, newStartTime) : null,
                     platform: []
@@ -261,6 +263,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         })
         if(!progress) return err(exceptionNotFound("Progress not found"))
 
+        const isEpisodeType = isEpisodeProjectType(project.type)
         const isAnime = project.type === ProjectType.ANIME
 
         const newStartTime = validate.data.startTime !== undefined ? validate.data.startTime : progress.startTime
@@ -287,7 +290,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         let newEpisodeWatchedNum: number | null = null
         let newEpisodeWatchedRecords: ({ watchedTime: string } | null)[] = []
 
-        if(isAnime) {
+        if(isEpisodeType) {
             const episodeTotalNum = project.episodeTotalNum!
             const episodePublishedNum = project.episodePublishedNum!
             const episodeFullyPublished = project.episodePublishedNum !== null && episodeTotalNum > 0 && episodePublishedNum >= episodeTotalNum
@@ -334,7 +337,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
                 startTime: newStartTime,
                 endTime: newEndTime,
                 status: nextProgressStatus,
-                ...(isAnime ? {
+                ...(isEpisodeType ? {
                     episodeWatchedNum: newEpisodeWatchedNum,
                     episodeWatchedRecords: newEpisodeWatchedRecords
                 } : {}),
@@ -373,8 +376,8 @@ export async function nextEpisode(projectId: string): Promise<Result<number, Nex
         const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
         if(!record) return err(exceptionNotFound("Record not found"))
 
-        if(project.type !== ProjectType.ANIME) {
-            return err(exceptionReject("Project is not an anime"))
+        if(!isEpisodeProjectType(project.type)) {
+            return err(exceptionReject("Project is not an episode project"))
         }
 
         if(project.episodePublishedNum === null || project.episodePublishedNum === 0) {
@@ -404,7 +407,7 @@ export async function nextEpisode(projectId: string): Promise<Result<number, Nex
                     updateTime: now,
                     episodeWatchedNum: newEpisodeWatchedNum,
                     episodeWatchedRecords: [{watchedTime: now.toISOString()}],
-                    followType: getFollowType(1, project.boardcastType, project.publishTime, now),
+                    followType: project.type === ProjectType.ANIME ? getFollowType(1, project.boardcastType, project.publishTime, now) : null,
                     platform: []
                 }
             })

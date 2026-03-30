@@ -188,8 +188,11 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {list.map((item, idx) => (
-                <Table.Row key={idx}>
+            {list.map((item, idx) => {
+                const startTime = item.startTime ? dates.toDateText(item.startTime) : null
+                const endTime = item.endTime ? dates.toDateText(item.endTime) : null
+                return (
+                    <Table.Row key={idx}>
                     <Table.Cell>
                         <Avatar.Root size="sm">
                             <Avatar.Fallback name={item.project.title} />
@@ -203,20 +206,15 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
                         </Flex>
                     </Table.Cell>
                     <Table.Cell textAlign="right">
-                        <Box display={{ base: "block", sm: "none" }}>
-                            {item.startTime && <Text>{dates.toDateText(item.startTime)}</Text>}
-                            <Text>{dates.toDateText(item.endTime)}</Text>
-                        </Box>
-                        <Box display={{ base: "none", sm: "block" }}>
-                            {item.startTime && (<>
-                                {dates.toDateText(item.startTime)}
-                                <Icon mx="2"><RiArrowRightLine/></Icon>
-                            </>)}
-                            {dates.toDateText(item.endTime)}
+                        <Box>
+                            {(startTime && startTime !== endTime) ? startTime : null}
+                            {(startTime && startTime !== endTime) && <Icon display={{base: "none", sm: "inline"}} mx="2"><RiArrowRightLine/></Icon>}
+                            <Text display={{base: "block", sm: "inline"}}>{endTime}</Text>
                         </Box>
                     </Table.Cell>
                 </Table.Row>
-            ))}
+                )
+            })}
         </Table.Body>
     </Table.Root>
 }

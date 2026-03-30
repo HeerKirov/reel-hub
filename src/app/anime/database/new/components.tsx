@@ -2,7 +2,7 @@
 import { RiTvLine } from "react-icons/ri"
 import { ProjectCreateEditor } from "@/components/app/project-editor"
 import { AnimeForm } from "@/schemas/project-anime"
-import { ProjectType } from "@/constants/project"
+import { ProjectType, BoardcastType } from "@/constants/project"
 import { createProjectAnime } from "@/services/project-anime"
 import { AnimeExtra, AnimeInfoTab } from "../[id]/edit/components"
 
@@ -14,9 +14,9 @@ export function Wrapper() {
     const defaultExtra = (): AnimeExtra => {
         return {
             originalType: null,
-            boardcastType: null,
+            boardcastType: BoardcastType.TV_AND_WEB,
             episodeDuration: 24,
-            episodeTotalNum: 1,
+            episodeTotalNum: 12,
             episodePublishedNum: 0,
             episodePublishPlan: [],
             episodePublishedRecords: [],

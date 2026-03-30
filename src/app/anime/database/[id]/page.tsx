@@ -29,7 +29,7 @@ function BoxBar({ data }: {data: AnimeDetailSchema}) {
             {data.boardcastType !== null ? VALUE_TO_BOARDCAST_TYPE[data.boardcastType].label : "(未知放送类型)"}
             <Text fontWeight="700">每集{data.episodeDuration ?? "?"}分钟</Text>
         </Box>
-        <Box >
+        <Box color={data.episodePublishedNum < data.episodeTotalNum ? "green.fg" : undefined}>
             {data.episodePublishedNum >= data.episodeTotalNum ? "已完结" : "放送中"}
             <Text fontWeight="700">{data.episodePublishedNum >= data.episodeTotalNum ? `共${data.episodeTotalNum}话` : `${data.episodePublishedNum}/${data.episodeTotalNum}话`}</Text>
         </Box>

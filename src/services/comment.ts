@@ -16,20 +16,21 @@ export async function listComments(filter: CommentListFilter): Promise<Result<Li
         const userId = await getUserId()
         const where = {
             ownerId: userId,
-            project: validate.data.search ? {
-                OR: [
+            project: {
+                type: validate.data.type,
+                OR: validate.data.search ? [
                     { title: { contains: validate.data.search } },
                     { subtitles: { contains: validate.data.search } },
                     { keywords: { contains: validate.data.search } }
-                ]
-            } : undefined
+                ] : undefined
+            }
         }
 
         const [r, total] = await Promise.all([
             prisma.comment.findMany({
                 where,
                 orderBy: {
-                    [filter.orderBy ?? "updateTime"]: "desc"
+                    [validate.data.orderBy ?? "updateTime"]: "desc"
                 },
                 skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
                 take: validate.data.size ?? 15,

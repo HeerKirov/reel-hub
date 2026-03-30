@@ -15,6 +15,7 @@ import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
 import { ListRecordError } from "@/schemas/error"
 import { RecordStatus } from "@/constants/record"
 import { getUserPreference } from "@/services/user-preference"
+import { isEpisodeProjectType } from "@/constants/project"
 import {
     passesSubscriptionMode, resolveServerTimeZone, isValidIanaTimeZone, parseEpisodePublishPlan, getNextPublishPlanItemAfterNow, nextPublishTimeFromItem, sortSubscriptionAnimeRows, 
     type SubscriptionAnimeSortRow
@@ -53,7 +54,7 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
                             episodeTotalNum: true
                         }
                     },
-                    progresses: validate.data.type === "ANIME" ? {
+                    progresses: isEpisodeProjectType(validate.data.type) ? {
                         where: { isLatest: true },
                         select: {
                             episodeWatchedNum: true
@@ -178,7 +179,7 @@ export async function listRecordTimeline(filter: RecordTimelineListFilter): Prom
 
         const list = rows.map((row) => {
             let endTime = row.endTime
-            if(validate.data.type === "ANIME" && endTime === null) {
+            if(isEpisodeProjectType(validate.data.type) && endTime === null) {
                 const watchedTime = extractLastWatchedTime(row.episodeWatchedRecords)
                 endTime = watchedTime ?? row.startTime
             }

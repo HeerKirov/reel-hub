@@ -10,7 +10,7 @@ import { RecordDetailSchema, RecordProgressDetailItem } from "@/schemas/record"
 import { deleteRecord } from "@/services/record"
 import { deleteProgress, updateLatestProgress } from "@/services/record-progress"
 import { handleActionResult } from "@/helpers/action"
-import { ProjectType } from "@/constants/project"
+import { isEpisodeProjectType, ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
 
 export function RecordEditor({ type, project, record }: {type: ProjectType, project: ProjectDetailSchema, record: RecordDetailSchema}) {
@@ -50,7 +50,7 @@ function ProgressTab({ type, record, project }: {type: ProjectType, record: Reco
                         <Table.ColumnHeader>状态</Table.ColumnHeader>
                         <Table.ColumnHeader>开始时间</Table.ColumnHeader>
                         <Table.ColumnHeader>结束时间</Table.ColumnHeader>
-                        {type === ProjectType.ANIME && <Table.ColumnHeader>已观看集数</Table.ColumnHeader>}
+                        {isEpisodeProjectType(type) && <Table.ColumnHeader>已观看集数</Table.ColumnHeader>}
                         {type === ProjectType.ANIME && <Table.ColumnHeader>追番类型</Table.ColumnHeader>}
                         <Table.ColumnHeader width="80px"></Table.ColumnHeader>
                     </Table.Row>
@@ -109,16 +109,12 @@ const ProgressTableRow = memo(function ProgressTableRow({ progress, type, projec
             <Table.Cell>
                 {progress.endTime ? progress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "-"}
             </Table.Cell>
-            {type === ProjectType.ANIME && (
-                <>
-                    <Table.Cell>{progress.episodeWatchedNum !== null ? progress.episodeWatchedNum : "-"}</Table.Cell>
-                    <Table.Cell>
-                        {progress.followType ? (
-                            <Text fontSize="sm">{VALUE_TO_FOLLOW_TYPE[progress.followType].label}</Text>
-                        ) : "-"}
-                    </Table.Cell>
-                </>
-            )}
+            {isEpisodeProjectType(type) && <Table.Cell>{progress.episodeWatchedNum !== null ? progress.episodeWatchedNum : "-"}</Table.Cell>}
+            {type === ProjectType.ANIME && <Table.Cell>
+                {progress.followType ? (
+                    <Text fontSize="sm">{VALUE_TO_FOLLOW_TYPE[progress.followType].label}</Text>
+                ) : "-"}
+            </Table.Cell>}
             <Table.Cell>
                 <Flex gap="1">
                     <Popover.Root lazyMount>
@@ -191,16 +187,12 @@ const ProgressTableRowEdit = memo(function ProgressTableRowEdit({ progress, type
             <Table.Cell>
                 <DateTimePicker value={endTime} onValueChange={(v) => setEndTime(v)} mode="time" placeholder="结束时间"/>
             </Table.Cell>
-            {type === ProjectType.ANIME && (
-                <>
-                    <Table.Cell><NumberInput value={episodeWatchedNum} onValueChange={(v) => setEpisodeWatchedNum(v)} placeholder="集数" min={0}/></Table.Cell>
-                    <Table.Cell>
-                        {progress.followType ? (
-                            <Text fontSize="sm">{VALUE_TO_FOLLOW_TYPE[progress.followType].label}</Text>
-                        ) : "-"}
-                    </Table.Cell>
-                </>
-            )}
+            {isEpisodeProjectType(type) && <Table.Cell><NumberInput value={episodeWatchedNum} onValueChange={(v) => setEpisodeWatchedNum(v)} placeholder="集数" min={0}/></Table.Cell>}
+            {type === ProjectType.ANIME && <Table.Cell>
+                {progress.followType ? (
+                    <Text fontSize="sm">{VALUE_TO_FOLLOW_TYPE[progress.followType].label}</Text>
+                ) : "-"}
+            </Table.Cell>}
             <Table.Cell>
                 <Flex gap="1">
                     <IconButton variant="ghost" size="sm" colorPalette="green" onClick={saveClick} loading={isPending}>

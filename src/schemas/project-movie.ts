@@ -1,17 +1,39 @@
 import { z } from "zod"
 import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
-import { parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectListFilter, type ProjectDetailSchema, type ProjectListSchema, type ProjectRelationSchema } from "./project"
+import { episodePublishRecordFormSchema, parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectListFilter, type EpisodePublishRecordModel, type ProjectDetailSchema, type ProjectListSchema, type ProjectModel, type ProjectRelationSchema } from "./project"
 
 export const movieListFilter = projectListFilter
 
-export const movieForm = projectCommonForm
+export const movieForm = projectCommonForm.extend({
+    episodeDuration: z.number().nullable().optional(),
+    episodeTotalNum: z.number().optional(),
+    episodePublishedNum: z.number().optional(),
+    episodePublishedRecords: z.array(episodePublishRecordFormSchema).optional(),
+    episodePublishPlan: z.array(episodePublishRecordFormSchema).optional()
+})
 
-export type MovieListSchema = ProjectListSchema
+export type MovieListSchema = ProjectListSchema & {
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+}
 
-export type MovieDetailSchema = ProjectDetailSchema
+export type MovieDetailSchema = ProjectDetailSchema & {
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+    episodePublishPlan: EpisodePublishRecordModel[]
+    episodePublishedRecords: EpisodePublishRecordModel[]
+}
 
 export function parseMovieListSchema(data: Project): MovieListSchema {
-    return parseProjectListSchema(data)
+    const i = data as unknown as ProjectModel
+    return {
+        ...parseProjectListSchema(data),
+        episodeDuration: i.episodeDuration,
+        episodeTotalNum: i.episodeTotalNum ?? 1,
+        episodePublishedNum: i.episodePublishedNum ?? 0
+    }
 }
 
 export function parseMovieDetailSchema(
@@ -19,7 +41,15 @@ export function parseMovieDetailSchema(
     relations: ProjectRelationSchema,
     relationsTopology: ProjectRelationSchema
 ): MovieDetailSchema {
-    return parseProjectDetailSchema(data, relations, relationsTopology)
+    const i = data as unknown as ProjectModel
+    return {
+        ...parseProjectDetailSchema(data, relations, relationsTopology),
+        episodeDuration: i.episodeDuration,
+        episodeTotalNum: i.episodeTotalNum ?? 1,
+        episodePublishedNum: i.episodePublishedNum ?? 0,
+        episodePublishPlan: i.episodePublishPlan ?? [],
+        episodePublishedRecords: i.episodePublishedRecords ?? []
+    }
 }
 
 export type MovieListFilter = z.infer<typeof movieListFilter>

@@ -1,8 +1,8 @@
 import { arrays } from "@/helpers/primitive"
-import { ProjectType } from "@/prisma/generated"
+import { ProjectType, BoardcastType } from "@/prisma/generated"
 import { SelectItemWithDesc, SelectItem } from "./general"
 
-export { ProjectType }
+export { ProjectType, BoardcastType }
 
 export type RatingSex = "all" | "r12" | "r15" | "r17" | "r18"
 
@@ -78,4 +78,8 @@ export const RELATION_TYPE_NAMES: Record<RelationType, string> = {
 
 // 获取所有 RelationType 值的数组
 export const RELATION_TYPE_VALUES: RelationType[] = ["PREV", "NEXT", "FANWAI", "MAIN_ARTICLE", "RUMOR", "TRUE_PASS", "SERIES"]
+
+export function isEpisodeProjectType(type: ProjectType): boolean {
+    return type === ProjectType.ANIME || type === ProjectType.MOVIE || type === ProjectType.MANGA
+}
 

@@ -71,7 +71,7 @@ function Side<RES extends ProjectDetailSchema>({ data, type }: {data: RES, type:
                         <Table.Cell>{data.region !== null ? VALUE_TO_REGION[data.region].label : "(无)"}</Table.Cell>
                     </Table.Row>
                     <Table.Row>
-                        <Table.Cell borderBottomWidth="0" textWrap="nowrap" textAlign="right">{type === ProjectType.ANIME ? "放送时间" : "发行时间"}</Table.Cell>
+                        <Table.Cell borderBottomWidth="0" textWrap="nowrap" textAlign="right">{type === ProjectType.ANIME ? "放送时间" : type === ProjectType.MOVIE ? "上映时间" : "发行时间"}</Table.Cell>
                         <Table.Cell borderBottomWidth="0">{data.publishTime ?? "(无)"}</Table.Cell>
                     </Table.Row>
                 </Table.Body>

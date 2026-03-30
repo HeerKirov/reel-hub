@@ -11,7 +11,7 @@ import { err, ListResult, ok, Result } from "@/schemas/all"
 import { ProjectCommonForm, ProjectListFilter, ProjectRelationModel, ProjectRelationSchema } from "@/schemas/project"
 import { CreateProjectError, DeleteProjectError, ListProjectError, UpdateProjectError } from "@/schemas/error"
 import { getRelations, removeProjectInTopology, updateRelations } from "./project-relation"
-import { saveTags, saveStaffs } from "./project"
+import { saveTags, saveStaffs } from "./project-utils"
 
 type ProjectRowWithStaffsAndTags = Prisma.ProjectGetPayload<{ include: { staffs: { include: { staff: true } }; tags: { include: { tag: true } } } }>
 

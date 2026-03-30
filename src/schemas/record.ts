@@ -1,7 +1,7 @@
 import { z } from "zod"
 import type { Project, Record as PrismaRecord, RecordProgress } from "@/prisma/generated"
 import { RECORD_STATUS, FOLLOW_TYPE, RecordStatus, FollowType } from "@/constants/record"
-import { PROJECT_TYPE } from "@/constants/project"
+import { PROJECT_TYPE, isEpisodeProjectType } from "@/constants/project"
 import { parseProjectSimpleSchema, type EpisodePublishRecordModel, type ProjectSimpleSchema } from "./project"
 
 // =============================================================================
@@ -259,7 +259,7 @@ export function parseRecordActivityListSchema(
         activityEvent: (data.lastActivityEvent as Record<string, unknown>) ?? {},
         project: parseProjectSimpleSchema(data.project),
         watchedEpisode: data.progresses?.[0]?.episodeWatchedNum ?? null,
-        totalEpisode: data.project.type === "ANIME" ? data.project.episodeTotalNum : null
+        totalEpisode: isEpisodeProjectType(data.project.type) ? data.project.episodeTotalNum : null
     }
 }
 
@@ -274,8 +274,8 @@ export function parseRecordHistoryListSchema(
         startTime: data.startTime,
         endTime: data.endTime!,
         project: parseProjectSimpleSchema(data.record.project),
-        watchedEpisode: data.record.project.type === "ANIME" ? data.episodeWatchedNum : null,
-        totalEpisode: data.record.project.type === "ANIME" ? data.record.project.episodeTotalNum : null
+        watchedEpisode: isEpisodeProjectType(data.record.project.type) ? data.episodeWatchedNum : null,
+        totalEpisode: isEpisodeProjectType(data.record.project.type) ? data.record.project.episodeTotalNum : null
     }
 }
 

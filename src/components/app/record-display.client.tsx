@@ -10,7 +10,10 @@ import { DateTimePicker, NumberInput } from "@/components/form"
 import { RecordCreateForm, RecordProgressUpsertForm } from "@/schemas/record"
 import { RecordDetailSchema } from "@/schemas/record"
 import { AnimeDetailSchema } from "@/schemas/project-anime"
+import { MovieDetailSchema } from "@/schemas/project-movie"
+import { MangaDetailSchema } from "@/schemas/project-manga"
 import { handleActionResult } from "@/helpers/action"
+import { isEpisodeProjectType } from "@/constants/project"
 
 export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, projectId: string}) {
     const router = useRouter()
@@ -81,7 +84,7 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
                             <Table.Row>
                                 <Table.ColumnHeader>开始时间</Table.ColumnHeader>
                                 <Table.ColumnHeader>结束时间</Table.ColumnHeader>
-                                {type === ProjectType.ANIME && <Table.ColumnHeader>已观看集数</Table.ColumnHeader>}
+                                {isEpisodeProjectType(type) && <Table.ColumnHeader>已观看集数</Table.ColumnHeader>}
                                 <Table.ColumnHeader width="60px"></Table.ColumnHeader>
                             </Table.Row>
                         </Table.Header>
@@ -94,7 +97,7 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
                                     <Table.Cell>
                                         <DateTimePicker mode="time" value={progress.endTime} onValueChange={(v) => updateProgress(index, "endTime", v)} placeholder="选择结束时间"/>
                                     </Table.Cell>
-                                    {type === ProjectType.ANIME && (
+                                    {isEpisodeProjectType(type) && (
                                         <Table.Cell>
                                             <NumberInput value={progress.episodeWatchedNum} onValueChange={(v) => updateProgress(index, "episodeWatchedNum", v)} placeholder="集数" min={0}/>
                                         </Table.Cell>
@@ -124,7 +127,7 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
     return (
         <Dialog.Content>
             <Dialog.Header>
-                <Dialog.Title>{type === ProjectType.ANIME ? "加入订阅" : "添加记录"}</Dialog.Title>
+                <Dialog.Title>{isEpisodeProjectType(type) ? "加入订阅" : "添加记录"}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
                 <Text fontSize="md" textAlign="center">以何种方式添加记录？</Text>
@@ -138,7 +141,7 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
                             [ProjectType.MOVIE]: "第一次观看",
                             [ProjectType.NOVEL]: "从头开始阅读",
                         }[type]}</Text>
-                        <Button variant="solid" colorPalette="blue" size="sm" mt="2" onClick={() => handleCreate("SUBSCRIBE")} loading={loading}>{type === ProjectType.ANIME ? "订阅" : "新进度"}</Button>
+                        <Button variant="solid" colorPalette="blue" size="sm" mt="2" onClick={() => handleCreate("SUBSCRIBE")} loading={loading}>{isEpisodeProjectType(type) ? "订阅" : "新进度"}</Button>
                     </Box>
                     <Box flex="1" borderWidth="1px" rounded="md" p="3">
                         <Icon my="2" fontSize="4xl"><RiPenNibFill/></Icon>
@@ -220,7 +223,7 @@ export function RecordDisplayActions({
 }: {
     record: RecordDetailSchema
     type: ProjectType
-    project: AnimeDetailSchema | null
+    project: AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema | null
     projectId: string
 }) {
     const router = useRouter()
@@ -229,7 +232,7 @@ export function RecordDisplayActions({
     const isLatestComplete = latestProgress?.endTime !== null
 
     const handleNext = async () => {
-        if(type !== ProjectType.ANIME) return
+        if(!isEpisodeProjectType(type)) return
         
         setLoading(true)
         const result = handleActionResult(await nextEpisode(projectId))
@@ -253,7 +256,7 @@ export function RecordDisplayActions({
     return (
         <>
             {/* NEXT按钮和已看完信息 */}
-            {latestProgress && !isLatestComplete && type === ProjectType.ANIME && (
+            {latestProgress && !isLatestComplete && isEpisodeProjectType(type) && (
                 <Flex alignItems="center" gap="4" flexWrap="wrap">
                     <Button variant="outline" size="sm" onClick={handleNext} loading={loading}>
                         <Icon><RiArrowRightLine/></Icon>

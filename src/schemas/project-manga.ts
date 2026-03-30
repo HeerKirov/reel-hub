@@ -1,17 +1,35 @@
 import { z } from "zod"
 import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
-import { parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectListFilter, type ProjectDetailSchema, type ProjectListSchema, type ProjectRelationSchema, type ProjectModel } from "./project"
+import { episodePublishRecordFormSchema, parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectListFilter, type EpisodePublishRecordModel, type ProjectDetailSchema, type ProjectListSchema, type ProjectRelationSchema, type ProjectModel } from "./project"
 
 export const mangaListFilter = projectListFilter
 
-export const mangaForm = projectCommonForm
+export const mangaForm = projectCommonForm.extend({
+    episodeTotalNum: z.number().optional(),
+    episodePublishedNum: z.number().optional(),
+    episodePublishedRecords: z.array(episodePublishRecordFormSchema).optional(),
+    episodePublishPlan: z.array(episodePublishRecordFormSchema).optional()
+})
 
-export type MangaListSchema = ProjectListSchema
+export type MangaListSchema = ProjectListSchema & {
+    episodeTotalNum: number
+    episodePublishedNum: number
+}
 
-export type MangaDetailSchema = ProjectDetailSchema
+export type MangaDetailSchema = ProjectDetailSchema & {
+    episodeTotalNum: number
+    episodePublishedNum: number
+    episodePublishPlan: EpisodePublishRecordModel[]
+    episodePublishedRecords: EpisodePublishRecordModel[]
+}
 
 export function parseMangaListSchema(data: Project): MangaListSchema {
-    return parseProjectListSchema(data)
+    const i = data as unknown as ProjectModel
+    return {
+        ...parseProjectListSchema(data),
+        episodeTotalNum: i.episodeTotalNum ?? 1,
+        episodePublishedNum: i.episodePublishedNum ?? 0
+    }
 }
 
 export function parseMangaDetailSchema(
@@ -19,7 +37,14 @@ export function parseMangaDetailSchema(
     relations: ProjectRelationSchema,
     relationsTopology: ProjectRelationSchema
 ): MangaDetailSchema {
-    return parseProjectDetailSchema(data, relations, relationsTopology)
+    const i = data as unknown as ProjectModel
+    return {
+        ...parseProjectDetailSchema(data, relations, relationsTopology),
+        episodeTotalNum: i.episodeTotalNum ?? 1,
+        episodePublishedNum: i.episodePublishedNum ?? 0,
+        episodePublishPlan: i.episodePublishPlan ?? [],
+        episodePublishedRecords: i.episodePublishedRecords ?? []
+    }
 }
 
 export type MangaListFilter = z.infer<typeof mangaListFilter>

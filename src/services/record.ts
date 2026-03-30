@@ -8,6 +8,7 @@ import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, excepti
 import { CreateRecordError, DeleteRecordError, RecordDetailError, RecordPreviewError, UpdateRecordError } from "@/schemas/error"
 import { Prisma, ProjectType, RecordStatus } from "@/prisma/generated"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
+import { isEpisodeProjectType } from "@/constants/project"
 
 export async function retrieveRecordPreview(projectId: string): Promise<Result<RecordPreviewSchema | null, RecordPreviewError>> {
     return safeExecuteResult(async () => {
@@ -67,6 +68,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
         const createRecordEvent: ActivityEvent = { type: "CREATE_RECORD" }
 
         if(validate.data.createMode === "SUBSCRIBE") {
+            const isEpisodeType = isEpisodeProjectType(project.type)
             const record = await prisma.record.create({
                 data: {
                     ownerId: userId,
@@ -79,8 +81,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                     lastActivityEvent: createRecordEvent as unknown as Prisma.InputJsonValue,
                     createTime: now,
                     updateTime: now,
-                    //anime
-                    specialAttention: project.type === ProjectType.ANIME
+                    specialAttention: isEpisodeType
                 }
             })
             await prisma.recordProgress.create({
@@ -93,8 +94,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                     endTime: null,
                     createTime: now,
                     updateTime: now,
-                    //anime
-                    episodeWatchedNum: project.type === ProjectType.ANIME ? 0 : null,
+                    episodeWatchedNum: isEpisodeType ? 0 : null,
                     episodeWatchedRecords: [],
                     followType: project.type === ProjectType.ANIME ? getFollowType(1, project.boardcastType, project.publishTime, now) : null,
                     //game
@@ -106,11 +106,12 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 return err(exceptionParamRequired("progress"))
             }
 
+            const isEpisodeType = isEpisodeProjectType(project.type)
             const isAnime = project.type === ProjectType.ANIME
-            const episodeTotalNum = isAnime ? project.episodeTotalNum! : null
-            const episodePublishedNum = isAnime ? project.episodePublishedNum! : null
+            const episodeTotalNum = isEpisodeType ? project.episodeTotalNum! : null
+            const episodePublishedNum = isEpisodeType ? project.episodePublishedNum! : null
 
-            const episodeFullyPublished = isAnime && episodePublishedNum! >= episodeTotalNum!
+            const episodeFullyPublished = isEpisodeType && episodePublishedNum! >= episodeTotalNum!
             const inputProgresses = validate.data.progress
             const normalizedProgresses = inputProgresses.map(p => {
                 const startTimeFilled = p.startTime ?? p.endTime ?? null
@@ -140,7 +141,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 } else {
                     if(p.endTime !== null) {
                         // ANIME restriction: incomplete release => cannot have COMPLETED progress
-                        if(isAnime && !episodeFullyPublished) {
+                        if(isEpisodeType && !episodeFullyPublished) {
                             // 不满足插入新的未完成进度条件
                             return err(exceptionRejectCreateProgress("Episode is not fully published"))
                         }
@@ -152,7 +153,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 }
             }
 
-            if(isAnime && !episodeFullyPublished) {
+            if(isEpisodeType && !episodeFullyPublished) {
                 const hasAnyCompleted = normalizedProgresses.some(p => p.endTime !== null)
                 if(hasAnyCompleted) {
                     // 不满足插入新的未完成进度条件
@@ -179,7 +180,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
             const lastIndex = normalizedProgresses.length - 1
             const lastProgress = normalizedProgresses[lastIndex]
 
-            const lastEpisodeWatchedNum = isAnime ? (
+            const lastEpisodeWatchedNum = isEpisodeType ? (
                 lastProgress.endTime !== null ? (
                     // 已完成进度：直接取总集数
                     episodeTotalNum!
@@ -195,7 +196,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 )
             ) : null
 
-            const lastEndTime = isAnime && lastProgress.endTime === null
+            const lastEndTime = isEpisodeType && lastProgress.endTime === null
                 && episodeFullyPublished
                 && lastEpisodeWatchedNum !== null
                 && lastEpisodeWatchedNum >= episodeTotalNum!
@@ -226,7 +227,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 const ordinal = i + 1
                 const isLast = i === lastIndex
 
-                const finalEndTime = isAnime && isLast
+                const finalEndTime = isEpisodeType && isLast
                     && p.endTime === null
                     && episodeFullyPublished
                     && lastEpisodeWatchedNum !== null
@@ -234,7 +235,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                     ? now
                     : p.endTime
 
-                const episodeWatchedNum = isAnime ? (
+                const episodeWatchedNum = isEpisodeType ? (
                     finalEndTime !== null ? episodeTotalNum! : (isLast ? lastEpisodeWatchedNum! : episodeTotalNum!)
                 ) : null
 
@@ -248,9 +249,8 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                         endTime: finalEndTime,
                         createTime: now,
                         updateTime: now,
-                        // anime
-                        episodeWatchedNum: isAnime ? episodeWatchedNum : null,
-                        episodeWatchedRecords: isAnime ? Array(episodeWatchedNum ?? 0).fill(null) : [],
+                        episodeWatchedNum: isEpisodeType ? episodeWatchedNum : null,
+                        episodeWatchedRecords: isEpisodeType ? Array(episodeWatchedNum ?? 0).fill(null) : [],
                         followType: isAnime ? getFollowType(ordinal, project.boardcastType, project.publishTime, p.startTimeFilled) : null,
                         // game
                         platform: []
@@ -324,14 +324,14 @@ function alignEpisodeWatchedRecords(current: ({ watchedTime: string } | null)[],
 }
 
 /**
- * 当 ANIME 的 episodeTotalNum / episodePublishedNum 发生变化时，
+ * 当 EPISODE 类型的 episodeTotalNum / episodePublishedNum 发生变化时，
  * 需要同步所有 RecordProgress 的状态与 watchedNum，并重算 Record 的缓存字段。
  *
  * specialAttention 不参与此同步（只在“普通完成”行为里由业务侧取消）。
  */
-export async function syncAnimeRecordProgressAfterEpisodeMetaChange(projectId: string, now: Date): Promise<void> {
+export async function syncEpisodeRecordProgressAfterEpisodeMetaChange(projectId: string, now: Date): Promise<void> {
     const project = await prisma.project.findUnique({ where: { id: projectId } })
-    if(!project || project.type !== ProjectType.ANIME) return
+    if(!project || !isEpisodeProjectType(project.type)) return
 
     const episodeTotalNum = project.episodeTotalNum ?? 0
     const episodePublishedNum = project.episodePublishedNum ?? 0

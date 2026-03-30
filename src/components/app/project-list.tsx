@@ -80,7 +80,7 @@ function FilterPanel<P extends CommonSearchParams>({ searchParams, type, filterP
                     <LinkGroupFilter items={ratingViolenceItems} searchParams={searchParams} searchParamName="ratingV"/>
                 </SidePanel.FilterStackItem>
                 <SidePanel.FilterStackCollapseItem 
-                    title={type === ProjectType.ANIME ? "放送时间" : "发行时间"}
+                    title={type === ProjectType.ANIME ? "放送时间" : type === ProjectType.MOVIE ? "上映时间" : "发行时间"}
                     header={<PublishTimeFilterHeader publishTime={searchParams.publishTime} mode="season"/>}
                     clear={{paramName: "publishTime", searchParams}}>
                     <PublishTimePicker value={searchParams.publishTime} searchParamName="publishTime" mode="season"/>
