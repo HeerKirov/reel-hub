@@ -4,6 +4,26 @@ import type { AlreadyExists, InternalServerError, NotFound, ParamError, ParamReq
 
 export type ListProjectError = ParamError | InternalServerError
 
+export type CreateProjectError =
+  | ParamError
+  | CreateTagError
+  | CreateStaffError
+  | UpdateRelationsError
+  | InternalServerError
+
+export type UpdateProjectError =
+  | ParamError
+  | NotFound
+  | CreateTagError
+  | CreateStaffError
+  | UpdateRelationsError
+  | InternalServerError
+
+export type DeleteProjectError =
+  | NotFound
+  | RemoveProjectInTopologyError
+  | InternalServerError
+
 export type UpdateRelationsError =
   | ParamError
   | NotFound
@@ -96,30 +116,6 @@ export type DeleteStaffError = NotFound | InternalServerError
 // --- staff type ---
 
 export type ListStaffTypesError = ParamError | InternalServerError
-
-// --- anime ---
-
-export type ListProjectAnimeError = ParamError | InternalServerError
-
-export type CreateProjectAnimeError =
-  | ParamError
-  | CreateTagError
-  | CreateStaffError
-  | UpdateRelationsError
-  | InternalServerError
-
-export type UpdateProjectAnimeError =
-  | ParamError
-  | NotFound
-  | CreateTagError
-  | CreateStaffError
-  | UpdateRelationsError
-  | InternalServerError
-
-export type DeleteProjectAnimeError =
-  | NotFound
-  | RemoveProjectInTopologyError
-  | InternalServerError
 
 // --- user preference ---
 

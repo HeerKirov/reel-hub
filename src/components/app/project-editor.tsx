@@ -1,32 +1,103 @@
 "use client"
 import { memo, useCallback, useState } from "react"
 import dynamic from "next/dynamic"
-import { RiFileAddLine, RiLink, RiTvLine } from "react-icons/ri"
+import { useRouter } from "next/navigation"
+import { RiFileAddLine, RiLink } from "react-icons/ri"
 import { PiGenderIntersexBold, PiInfoBold, PiKnifeFill, PiUserBold } from "react-icons/pi"
 import { Field, Flex, Icon, Textarea } from "@chakra-ui/react"
-import { Select, Input, NumberInput, DateTimePicker } from "@/components/form"
-import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor, EpisodePublishedRecordEditor, EpisodePublishPlanEditor } from "@/components/editor"
+import { Select, Input, DateTimePicker } from "@/components/form"
+import { TagEditor, DynamicInputList, RatingEditor, StaffEditor, RelationEditor } from "@/components/editor"
 import { EditorWithTabLayout } from "@/components/layout"
-import { AnimeForm, AnimeDetailSchema } from "@/schemas/anime"
-import { EpisodePublishRecord, ProjectRelationModel, ProjectRelationSchema } from "@/schemas/project"
-import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
+import { Result } from "@/schemas/all"
+import { ProjectCommonForm, ProjectDetailSchema, ProjectRelationModel, ProjectRelationSchema } from "@/schemas/project"
+import { CreateProjectError, DeleteProjectError, UpdateProjectError } from "@/schemas/error"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, RatingSex, RatingViolence, Region, REGION_ITEMS, ProjectType } from "@/constants/project"
-import { BoardcastType, OriginalType } from "@/constants/anime"
 import { listTags } from "@/services/tag"
 import { listStaffs } from "@/services/staff"
-import { listProject } from "@/services/project"
+import { findProject } from "@/services/project"
 import { unwrapQueryResult } from "@/helpers/result"
+import { handleActionResult } from "@/helpers/action"
 
 const CropperImage = dynamic(() => import("@/components/cropper").then(mod => mod.CropperFileUploader), { ssr: false })
 
-export type EditorProps = {
-    data?: AnimeDetailSchema
-    onSubmit?: (data: AnimeForm, resources?: Record<string, Blob>) => void
-    onDelete?: () => void
-    onCancel?: () => void
+export interface ProjectCreateEditorProps<FORM extends ProjectCommonForm, ECreate extends CreateProjectError, EXTRA = undefined> {
+    type: ProjectType
+    create: (form: FORM) => Promise<Result<string, ECreate>>
+    defaultExtra?: EXTRA extends undefined ? undefined : () => EXTRA
+    extraToForm?: EXTRA extends undefined ? undefined : (extra: EXTRA) => Partial<FORM>
+    tabs?: {label: string, icon: React.ReactNode, content: (props: {extra: EXTRA, setExtra: (field: keyof EXTRA, value: EXTRA[keyof EXTRA]) => void}) => React.ReactNode}[]
 }
 
-export function Editor({ data, onSubmit, onDelete, onCancel }: EditorProps) {
+export interface ProjectUpdateEditorProps<RES extends ProjectDetailSchema, FORM extends ProjectCommonForm, EUpdate extends UpdateProjectError, EXTRA = undefined> {
+    data: RES
+    type: ProjectType
+    update: (id: string, form: FORM) => Promise<Result<void, EUpdate>>
+    delete: (id: string) => Promise<Result<void, DeleteProjectError>>
+    dataToExtra?: EXTRA extends undefined ? undefined : (data: RES) => EXTRA
+    extraToForm?: EXTRA extends undefined ? undefined : (extra: EXTRA) => Partial<FORM>
+    tabs?: {label: string, icon: React.ReactNode, content: (props: {extra: EXTRA, setExtra: (field: keyof EXTRA, value: EXTRA[keyof EXTRA]) => void}) => React.ReactNode}[]
+}
+
+export interface ProjectEditorProps<RES extends ProjectDetailSchema, FORM extends ProjectCommonForm, EXTRA = undefined> {
+    data?: RES
+    type: ProjectType
+    dataToExtra?: EXTRA extends undefined ? undefined : (data: RES | undefined) => EXTRA
+    extraToForm?: EXTRA extends undefined ? undefined : (extra: EXTRA) => Partial<FORM>
+    onSubmit?: (form: FORM, resources?: Record<string, Blob>) => void
+    onDelete?: () => void
+    onCancel?: () => void
+    tabs?: {label: string, icon: React.ReactNode, content: (props: {extra: EXTRA, setExtra: (field: keyof EXTRA, value: EXTRA[keyof EXTRA]) => void}) => React.ReactNode}[]
+}
+
+export function ProjectCreateEditor<FORM extends ProjectCommonForm, ECreate extends CreateProjectError, EXTRA = undefined>({ type, create, defaultExtra, extraToForm, tabs }: ProjectCreateEditorProps<FORM, ECreate, EXTRA>) {
+    const router = useRouter()
+
+    const onSubmit = async (form: FORM, resources?: Record<string, Blob>) => {
+        const result = handleActionResult(await create(form), { successTitle: "项目已创建" })
+        if(!result.ok) return
+        const id = result.value
+        if(resources !== undefined) {
+            const form = new FormData()
+            form.append("projectId", id)
+            if(resources["cover"]) form.append("cover", resources["cover"])
+            if(resources["avatar"]) form.append("avatar", resources["avatar"])
+            await fetch("/api/resources", {method: "POST", body: form})
+        }
+        router.replace(`/${type.toLowerCase()}/database/${id}`)
+    }
+    return <ProjectEditor data={undefined} type={type} dataToExtra={defaultExtra} extraToForm={extraToForm} onSubmit={onSubmit} tabs={tabs}/>
+}
+
+export function ProjectUpdateEditor<RES extends ProjectDetailSchema, FORM extends ProjectCommonForm, EUpdate extends UpdateProjectError, EXTRA = undefined>({ data, type, update, delete: deleteProject, dataToExtra, extraToForm, tabs }: ProjectUpdateEditorProps<RES, FORM, EUpdate, EXTRA>) {
+    const router = useRouter()
+
+    const onSubmit = async (form: FORM, resources?: Record<string, Blob>) => {
+        const result = handleActionResult(await update(data.id, form), { successTitle: "项目已保存" })
+        if(!result.ok) return
+        if(resources !== undefined) {
+            const form = new FormData()
+            form.append("projectId", data.id)
+            if(resources["cover"]) form.append("cover", resources["cover"])
+            if(resources["avatar"]) form.append("avatar", resources["avatar"])
+            await fetch("/api/resources", {method: "POST", body: form})
+        }
+        router.replace(`/${type.toLowerCase()}/database/${data.id}`)
+    }
+
+    const onDelete = async () => {
+        const result = handleActionResult(await deleteProject(data.id), { successTitle: "项目已删除" })
+        if(!result.ok) return
+        router.replace(`/${type.toLowerCase()}/database`)
+    }
+
+    const onCancel = () => {
+        router.replace(`/${type.toLowerCase()}/database/${data.id}`)
+    }
+
+    return <ProjectEditor data={data} type={type} dataToExtra={dataToExtra as any} extraToForm={extraToForm} onSubmit={onSubmit} onDelete={onDelete} onCancel={onCancel} tabs={tabs}/>
+}
+
+function ProjectEditor<RES extends ProjectDetailSchema, FORM extends ProjectCommonForm, EXTRA = undefined>({ data, type, dataToExtra, extraToForm, onSubmit, onDelete, onCancel, tabs: extraTabs }: ProjectEditorProps<RES, FORM, EXTRA>) {
     const [title, setTitle] = useState<string>(data?.title ?? "")
     const [subtitles, setSubtitles] = useState<string[]>(data?.subtitles ?? [])
     const [description, setDescription] = useState<string>(data?.description ?? "")
@@ -37,40 +108,14 @@ export function Editor({ data, onSubmit, onDelete, onCancel }: EditorProps) {
     const [ratingV, setRatingV] = useState<RatingViolence | null>(data?.ratingV ?? null)
     const [region, setRegion] = useState<Region | null>(data?.region ?? "jp")
     const [publishTime, setPublishTime] = useState<string | null>(data?.publishTime ?? null)
-    const [originalType, setOriginalType] = useState<OriginalType | null>(data?.originalType ?? null)
-    const [boardcastType, setBoardcastType] = useState<BoardcastType | null>(data?.boardcastType ?? null)
-    const [episodeDuration, setEpisodeDuration] = useState<number | null>(data?.episodeDuration ?? 24)
-    const [episodeTotalNum, setEpisodeTotalNum] = useState<number>(data?.episodeTotalNum ?? 12)
-    const [episodePublishedNum, setEpisodePublishedNum] = useState<number>(data?.episodePublishedNum ?? 0)
-    const [episodePublishPlan, setEpisodePublishPlan] = useState<EpisodePublishRecord[]>(data?.episodePublishPlan ?? [])
-    const [episodePublishedRecords, setEpisodePublishedRecords] = useState<EpisodePublishRecord[]>(data?.episodePublishedRecords ?? [])
     const [relations, setRelations] = useState<Partial<ProjectRelationSchema>>(data?.relations ?? {})
     const [resourceCover, setResourceCover] = useState<string | Blob | null>(data?.resources?.["cover"] ?? null)
     const [resourceAvatar, setResourceAvatar] = useState<string | Blob | null>(data?.resources?.["avatar"] ?? null)
+    const [extra, setExtra] = useState<EXTRA>(() => dataToExtra?.(data) ?? (undefined as EXTRA))
 
-    const breadcrumb = {
-        url: `/${ProjectType.ANIME.toLowerCase()}/database`,
-        detail: data?.title ?? "新建",
-        detailIcon: <RiFileAddLine/>
-    }
-
-    const tabs = [
-        {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfoTab 
-            title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
-            ratingS={ratingS} ratingV={ratingV} region={region} publishTime={publishTime}
-            resourceCover={resourceCover} resourceAvatar={resourceAvatar} setResourceCover={setResourceCover} setResourceAvatar={setResourceAvatar}
-            setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
-            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setPublishTime={setPublishTime}
-        />},
-        {label: "动画信息", icon: <RiTvLine/>, content: <AnimeInfoTab
-            originalType={originalType} boardcastType={boardcastType} episodePublishPlan={episodePublishPlan} episodePublishedRecords={episodePublishedRecords}
-            episodeDuration={episodeDuration} episodeTotalNum={episodeTotalNum} episodePublishedNum={episodePublishedNum}
-            setOriginalType={setOriginalType} setBoardcastType={setBoardcastType} setEpisodePublishPlan={setEpisodePublishPlan} setEpisodePublishedRecords={setEpisodePublishedRecords}
-            setEpisodeDuration={setEpisodeDuration} setEpisodeTotalNum={setEpisodeTotalNum} setEpisodePublishedNum={setEpisodePublishedNum} 
-        />},
-        {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab projectType={ProjectType.ANIME} staffs={staffs} setStaffs={setStaffs}/>},
-        {label: "关联", icon: <RiLink/>, content: <RelationTab projectType={ProjectType.ANIME} relations={relations} setRelations={setRelations}/>},
-    ]
+    const setExtraField = useCallback((field: keyof EXTRA, value: EXTRA[keyof EXTRA]) => {
+        setExtra(prev => ({...prev, [field]: value}))
+    }, [])
 
     const onSave = () => {
         const finalRelations: Partial<ProjectRelationModel> = Object.fromEntries(Object.entries(relations).map(([key, value]) => [key, value.map(r => r.id)]))
@@ -78,21 +123,38 @@ export function Editor({ data, onSubmit, onDelete, onCancel }: EditorProps) {
         if(resourceAvatar instanceof Blob) resources["avatar"] = resourceAvatar
         if(resourceCover instanceof Blob) resources["cover"] = resourceCover
         onSubmit?.({
-            title, subtitles, description, keywords, 
-            ratingS, ratingV, region, tags, staffs, publishTime,
-            originalType, boardcastType,
-            episodeDuration, episodeTotalNum, episodePublishedNum, 
-            episodePublishPlan, episodePublishedRecords,
-            relations: finalRelations as any
+            title, subtitles, description, keywords, publishTime, 
+            ratingS, ratingV, region, tags, staffs, relations: finalRelations as Record<string, string[]>,
+            ...(extraToForm?.(extra) ?? {}) as any
         }, Object.keys(resources).length > 0 ? resources : undefined)
     }
 
+    const breadcrumb = {
+        url: `/${type.toLowerCase()}/database`,
+        detail: data?.title ?? "新建",
+        detailIcon: <RiFileAddLine/>
+    }
+
+    const tabs = [
+        {label: "基本信息", icon: <PiInfoBold/>, content: <BasicInfoTab 
+            type={type} title={title} subtitles={subtitles} description={description} keywords={keywords} tags={tags} 
+            ratingS={ratingS} ratingV={ratingV} region={region} publishTime={publishTime}
+            resourceCover={resourceCover} resourceAvatar={resourceAvatar} setResourceCover={setResourceCover} setResourceAvatar={setResourceAvatar}
+            setTitle={setTitle} setSubtitles={setSubtitles} setDescription={setDescription} setKeywords={setKeywords} setTags={setTags} 
+            setRatingS={setRatingS} setRatingV={setRatingV} setRegion={setRegion} setPublishTime={setPublishTime}
+        />},
+        ...(extraTabs?.map(tab => ({label: tab.label, icon: tab.icon, content: <tab.content extra={extra} setExtra={setExtraField}/>})) ?? []),
+        {label: "STAFF", icon: <PiUserBold/>, content: <StaffTab type={type} staffs={staffs} setStaffs={setStaffs}/>},
+        {label: "关联", icon: <RiLink/>, content: <RelationTab type={type} relations={relations} setRelations={setRelations}/>},
+    ]    
+
     return (
-        <EditorWithTabLayout breadcrumb={breadcrumb} tabs={tabs} onSave={onSave} onCancel={onCancel} onDelete={onDelete}/>
+        <EditorWithTabLayout breadcrumb={breadcrumb} tabs={tabs} onSave={onSave} onCancel={onCancel} onDelete={onDelete} deleteOptions={{confirmation: "确认要删除当前项目吗？此操作无法恢复。", countdown: 3}}/>
     )    
 }
 
 interface BasicInfoTabProps {
+    type: ProjectType
     title: string
     subtitles: string[]
     description: string
@@ -119,7 +181,7 @@ interface BasicInfoTabProps {
 
 const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
     const search = useCallback(async (text: string): Promise<string[]> => {
-        const tagsResult = await listTags({search: text, type: "ANIME"})
+        const tagsResult = await listTags({search: text, type: props.type})
         const { data, error } = unwrapQueryResult(tagsResult)
         return error ? [] : data.list.map(t => t.name)
     }, [])
@@ -198,7 +260,7 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
 })
 
 interface StaffTabProps {
-    projectType: ProjectType
+    type: ProjectType
     staffs: {type: string, members: string[]}[]
     setStaffs:(staffs: {type: string, members: string[]}[]) => void
 }
@@ -211,94 +273,19 @@ const StaffTab = memo(function StaffTab(props: StaffTabProps) {
     }, [])
 
     return (
-        <StaffEditor value={props.staffs} onValueChange={props.setStaffs} width="full" search={search} projectType={props.projectType}/>
-    )
-})
-
-interface AnimeInfoTabProps {
-    originalType: OriginalType | null
-    boardcastType: BoardcastType | null
-    episodeDuration: number | null
-    episodeTotalNum: number
-    episodePublishedNum: number
-    episodePublishPlan: EpisodePublishRecord[]
-    episodePublishedRecords: EpisodePublishRecord[]
-    setOriginalType: (originalType: OriginalType | null) => void
-    setBoardcastType: (boardcastType: BoardcastType | null) => void
-    setEpisodeDuration: (episodeDuration: number | null) => void
-    setEpisodeTotalNum: (episodeTotalNum: number) => void
-    setEpisodePublishedNum: (episodePublishedNum: number) => void
-    setEpisodePublishPlan: (episodePublishPlan: EpisodePublishRecord[]) => void
-    setEpisodePublishedRecords: (episodePublishedRecords: EpisodePublishRecord[]) => void
-}
-
-const AnimeInfoTab = memo(function AnimeInfoTab(props: AnimeInfoTabProps) {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const setEpisodeTotalNum = useCallback((value: number | null) => props.setEpisodeTotalNum(value ?? 0), [props.setEpisodeTotalNum])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const setEpisodePublishedNum = useCallback((value: number | null) => props.setEpisodePublishedNum(value ?? 0), [props.setEpisodePublishedNum])
-
-    return (
-        <Flex direction="column" gap="1">
-            <Flex gap="4">
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
-                    <Field.Label>
-                        原作类型
-                    </Field.Label>
-                    <Select value={props.originalType} onValueChange={props.setOriginalType} items={ORIGINAL_TYPE_ITEMS} placeholder="原作类型"/>
-                </Field.Root>
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
-                    <Field.Label>
-                        放送类型
-                    </Field.Label>
-                    <Select value={props.boardcastType} onValueChange={props.setBoardcastType} items={BOARDCAST_TYPE_ITEMS} placeholder="放送类型"/>
-                </Field.Root>
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
-                    <Field.Label>
-                        单集时长
-                    </Field.Label>
-                    <NumberInput width="full" value={props.episodeDuration} onValueChange={props.setEpisodeDuration} min={0}/>
-                </Field.Root>
-            </Flex>
-            <Flex gap="4">
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
-                    <Field.Label>
-                        总集数
-                    </Field.Label>
-                    <NumberInput width="full" value={props.episodeTotalNum} onValueChange={setEpisodeTotalNum} min={0}/>
-                </Field.Root>
-                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
-                    <Field.Label>
-                        已发布集数
-                    </Field.Label>
-                    <NumberInput width="full" value={props.episodePublishedNum} onValueChange={setEpisodePublishedNum} min={0}/>
-                </Field.Root>
-            </Flex>
-            <Field.Root>
-                <Field.Label>
-                    已发布集数
-                </Field.Label>
-                <EpisodePublishedRecordEditor value={props.episodePublishedRecords} onValueChange={props.setEpisodePublishedRecords}/>
-            </Field.Root>
-            <Field.Root>
-                <Field.Label>
-                    放送计划
-                </Field.Label>
-                <EpisodePublishPlanEditor episodePublishedNum={props.episodePublishedNum} episodeTotalNum={props.episodeTotalNum} value={props.episodePublishPlan} onValueChange={props.setEpisodePublishPlan}/>
-            </Field.Root>
-        </Flex>
+        <StaffEditor value={props.staffs} onValueChange={props.setStaffs} width="full" search={search} projectType={props.type}/>
     )
 })
 
 interface RelationTabProps {
-    projectType: ProjectType
+    type: ProjectType
     relations: Partial<ProjectRelationSchema>
     setRelations: (relations: Partial<ProjectRelationSchema>) => void
 }
 
 const RelationTab = memo(function RelationTab(props: RelationTabProps) {
     const search = async (text: string) => {
-        const projectsResult = await listProject({search: text, type: props.projectType})
+        const projectsResult = await findProject({search: text, type: props.type})
         if(!projectsResult.ok) return []
         return projectsResult.value
     }

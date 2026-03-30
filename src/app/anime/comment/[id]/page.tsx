@@ -1,8 +1,7 @@
-import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/project-anime"
 import { retrieveComment } from "@/services/comment"
 import { CommentDisplay } from "@/components/app/comment-display"
-import { InlineError } from "@/components/app/inline-error"
+import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { unwrapQueryResult } from "@/helpers/result"
 
@@ -24,7 +23,7 @@ export default async function AnimationCommentDetail({ params }: {params: Promis
 
     const project = await retrieveProjectAnime(id)
     if(!project) {
-        notFound()
+        return <NotFoundScreen/>
     }
 
     const result = await retrieveComment(project.id)
@@ -33,7 +32,7 @@ export default async function AnimationCommentDetail({ params }: {params: Promis
         return <InlineError error={error}/>
     }
     if(!data) {
-        notFound()
+        return <NotFoundScreen message="尚未创建对此项目的评论"/>
     }
 
     return <CommentDisplay type={ProjectType.ANIME} project={project} comment={data}/>

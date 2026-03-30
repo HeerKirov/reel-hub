@@ -1,11 +1,10 @@
 import NextLink from "next/link"
-import { notFound } from "next/navigation"
 import { RiArrowDownSFill, RiArrowRightLine, RiHistoryLine, RiPulseLine, RiTimelineView, RiTv2Line } from "react-icons/ri"
 import { Avatar, Badge, Box, Button, Flex, Icon, Menu, Portal, Progress, Table, Text } from "@chakra-ui/react"
 import { ListPageLayout } from "@/components/server/layout"
 import { SearchBox } from "@/components/filters"
 import { RecordTimelineContent, TimelineFilterBar, TimelineFilterPanel, TimelineStateProvider } from "@/components/app/record-list-timeline"
-import { InlineError } from "@/components/app/inline-error"
+import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS } from "@/constants/record"
 import { RecordActivityListSchema, RecordHistoryListSchema } from "@/schemas/record"
@@ -88,7 +87,7 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
             </TimelineStateProvider>
         )
     }else{
-        notFound()
+        return <NotFoundScreen message="无效的视图类型"/>
     }
 }
 

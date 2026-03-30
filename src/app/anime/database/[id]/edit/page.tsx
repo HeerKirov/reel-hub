@@ -1,7 +1,6 @@
-import React from "react"
-import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/project-anime"
-import { AnimationDatabaseEditContent } from "./components"
+import { NotFoundScreen } from "@/components/app/inline-error"
+import { Wrapper } from "./components"
 
 export async function generateMetadata({ params }: {params: Promise<{id: string}>}) {
     const { id } = await params
@@ -18,11 +17,10 @@ export async function generateMetadata({ params }: {params: Promise<{id: string}
 
 export default async function AnimationDatabaseEdit({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
-
     const data = await retrieveProjectAnime(id)
     if(!data) {
-        notFound()
+        return <NotFoundScreen/>
     }
 
-    return <AnimationDatabaseEditContent data={data}/>
+    return <Wrapper data={data}/>
 }

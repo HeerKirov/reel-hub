@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/project-anime"
 import { retrieveComment } from "@/services/comment"
 import { CommentEditor } from "@/components/app/comment-editor"
-import { InlineError } from "@/components/app/inline-error"
+import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { unwrapQueryResult } from "@/helpers/result"
 
@@ -24,7 +24,7 @@ export default async function AnimationCommentEdit({ params }: {params: Promise<
 
     const project = await retrieveProjectAnime(id)
     if(!project) {
-        notFound()
+        return <NotFoundScreen/>
     }
 
     const result = await retrieveComment(project.id)

@@ -52,6 +52,16 @@ export const VALUE_TO_RATING_VIOLENCE = arrays.associateBy(RATING_VIOLENCE_ITEMS
 
 export const VALUE_TO_REGION = arrays.associateBy(REGION_ITEMS, i => i.value)
 
+//ProjectType 名称
+export const PROJECT_TYPE_NAMES: Record<ProjectType, string> = {
+    [ProjectType.ANIME]: "动画",
+    [ProjectType.GAME]: "游戏",
+    [ProjectType.MOVIE]: "电影",
+    [ProjectType.NOVEL]: "小说",
+    [ProjectType.MANGA]: "漫画"
+}
+
+
 // RelationType 定义
 export type RelationType = "PREV" | "NEXT" | "FANWAI" | "MAIN_ARTICLE" | "RUMOR" | "TRUE_PASS" | "SERIES"
 

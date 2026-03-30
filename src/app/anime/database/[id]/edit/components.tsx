@@ -1,41 +1,134 @@
 "use client"
-import { useRouter } from "next/navigation"
-import { updateProjectAnime, deleteProjectAnime } from "@/services/project-anime"
+import { memo, useCallback } from "react"
+import { Field, Flex } from "@chakra-ui/react"
+import { Select, NumberInput } from "@/components/form"
+import { EpisodePublishedRecordEditor, EpisodePublishPlanEditor } from "@/components/editor"
+import { ProjectUpdateEditor, ProjectUpdateEditorProps } from "@/components/app/project-editor"
+import { EpisodePublishRecord } from "@/schemas/project"
 import { AnimeDetailSchema, AnimeForm } from "@/schemas/anime"
-import { Editor } from "@/components/app/project-editor"
-import { handleActionResult } from "@/helpers/action"
+import { BOARDCAST_TYPE_ITEMS, ORIGINAL_TYPE_ITEMS } from "@/constants/anime"
+import { BoardcastType, OriginalType } from "@/constants/anime"
+import { ProjectType } from "@/constants/project"
+import { UpdateProjectError } from "@/schemas/error"
+import { deleteProjectAnime, updateProjectAnime } from "@/services/project-anime"
+import { RiTvLine } from "react-icons/ri"
 
-export function AnimationDatabaseEditContent({ data }: {data: AnimeDetailSchema}) {
-    const router = useRouter()
+export interface AnimeExtra {
+    originalType: OriginalType | null
+    boardcastType: BoardcastType | null
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+    episodePublishPlan: EpisodePublishRecord[]
+    episodePublishedRecords: EpisodePublishRecord[]
+}
 
-    const onSubmit = async (form: AnimeForm, resources?: Record<string, Blob>) => {
-        const result = handleActionResult(
-            await updateProjectAnime(data.id, form),
-            { successTitle: "项目已更新" }
-        )
-        if(!result.ok) return
-        if(resources !== undefined) {
-            const form = new FormData()
-            form.append("projectId", data.id)
-            if(resources["cover"]) form.append("cover", resources["cover"])
-            if(resources["avatar"]) form.append("avatar", resources["avatar"])
-            await fetch("/api/resources", {method: "POST", body: form})
+export interface AnimeInfoTabProps {
+    originalType: OriginalType | null
+    boardcastType: BoardcastType | null
+    episodeDuration: number | null
+    episodeTotalNum: number
+    episodePublishedNum: number
+    episodePublishPlan: EpisodePublishRecord[]
+    episodePublishedRecords: EpisodePublishRecord[]
+    setOriginalType: (originalType: OriginalType | null) => void
+    setBoardcastType: (boardcastType: BoardcastType | null) => void
+    setEpisodeDuration: (episodeDuration: number | null) => void
+    setEpisodeTotalNum: (episodeTotalNum: number) => void
+    setEpisodePublishedNum: (episodePublishedNum: number) => void
+    setEpisodePublishPlan: (episodePublishPlan: EpisodePublishRecord[]) => void
+    setEpisodePublishedRecords: (episodePublishedRecords: EpisodePublishRecord[]) => void
+}
+
+export const AnimeInfoTab = memo(function AnimeInfoTab({ extra, setExtra }: {extra: AnimeExtra, setExtra: (field: keyof AnimeExtra, value: AnimeExtra[keyof AnimeExtra]) => void}) {
+    const setOriginalType = useCallback((value: OriginalType | null) => setExtra("originalType", value), [setExtra])
+    const setBoardcastType = useCallback((value: BoardcastType | null) => setExtra("boardcastType", value), [setExtra])
+    const setEpisodeDuration = useCallback((value: number | null) => setExtra("episodeDuration", value), [setExtra])
+    const setEpisodeTotalNum = useCallback((value: number | null) => setExtra("episodeTotalNum", value ?? 0), [setExtra])
+    const setEpisodePublishedNum = useCallback((value: number | null) => setExtra("episodePublishedNum", value ?? 0), [setExtra])
+    const setEpisodePublishPlan = useCallback((value: EpisodePublishRecord[]) => setExtra("episodePublishPlan", value), [setExtra])
+    const setEpisodePublishedRecords = useCallback((value: EpisodePublishRecord[]) => setExtra("episodePublishedRecords", value), [setExtra])
+
+    return (
+        <Flex direction="column" gap="1">
+            <Flex gap="4">
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        原作类型
+                    </Field.Label>
+                    <Select value={extra.originalType} onValueChange={setOriginalType} items={ORIGINAL_TYPE_ITEMS} placeholder="原作类型"/>
+                </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        放送类型
+                    </Field.Label>
+                    <Select value={extra.boardcastType} onValueChange={setBoardcastType} items={BOARDCAST_TYPE_ITEMS} placeholder="放送类型"/>
+                </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(33% - 8px)"}}>
+                    <Field.Label>
+                        单集时长
+                    </Field.Label>
+                    <NumberInput width="full" value={extra.episodeDuration} onValueChange={setEpisodeDuration} min={0}/>
+                </Field.Root>
+            </Flex>
+            <Flex gap="4">
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
+                    <Field.Label>
+                        总集数
+                    </Field.Label>
+                    <NumberInput width="full" value={extra.episodeTotalNum} onValueChange={setEpisodeTotalNum} min={0}/>
+                </Field.Root>
+                <Field.Root flex={{base: "1 1 100%", sm: "1 1 calc(50% - 8px)"}}>
+                    <Field.Label>
+                        已发布集数
+                    </Field.Label>
+                    <NumberInput width="full" value={extra.episodePublishedNum} onValueChange={setEpisodePublishedNum} min={0}/>
+                </Field.Root>
+            </Flex>
+            <Field.Root>
+                <Field.Label>
+                    已发布集数
+                </Field.Label>
+                <EpisodePublishedRecordEditor value={extra.episodePublishedRecords} onValueChange={setEpisodePublishedRecords}/>
+            </Field.Root>
+            <Field.Root>
+                <Field.Label>
+                    放送计划
+                </Field.Label>
+                <EpisodePublishPlanEditor episodePublishedNum={extra.episodePublishedNum} episodeTotalNum={extra.episodeTotalNum} value={extra.episodePublishPlan} onValueChange={setEpisodePublishPlan}/>
+            </Field.Root>
+        </Flex>
+    )
+})
+
+export function Wrapper({ data }: {data: AnimeDetailSchema}) {
+    const tabs = [
+        {label: "动画信息", icon: <RiTvLine/>, content: AnimeInfoTab}
+    ]
+
+    const dataToExtra = (data: AnimeDetailSchema): AnimeExtra => {
+        return {
+            originalType: data.originalType,
+            boardcastType: data.boardcastType,
+            episodeDuration: data.episodeDuration,
+            episodeTotalNum: data.episodeTotalNum ?? 1,
+            episodePublishedNum: data.episodePublishedNum ?? 0,
+            episodePublishPlan: data.episodePublishPlan ?? [],
+            episodePublishedRecords: data.episodePublishedRecords ?? [],
         }
-        router.replace(`/anime/database/${data.id}`)
     }
 
-    const onDelete = async () => {
-        const result = handleActionResult(
-            await deleteProjectAnime(data.id),
-            { successTitle: "项目已删除" }
-        )
-        if(!result.ok) return
-        router.replace("/anime/database")
+    const extraToForm = (extra: AnimeExtra): Partial<AnimeForm> => {
+        return {
+            originalType: extra.originalType,
+            boardcastType: extra.boardcastType,
+            episodeDuration: extra.episodeDuration,
+            episodeTotalNum: extra.episodeTotalNum,
+            episodePublishedNum: extra.episodePublishedNum,
+            episodePublishPlan: extra.episodePublishPlan,
+            episodePublishedRecords: extra.episodePublishedRecords,
+        }
     }
 
-    const onCancel = () => {
-        router.replace(`/anime/database/${data.id}`)
-    }
-
-    return <Editor data={data} onSubmit={onSubmit} onDelete={onDelete} onCancel={onCancel}/>
+    return <ProjectUpdateEditor data={data} type={ProjectType.ANIME} update={updateProjectAnime} delete={deleteProjectAnime} dataToExtra={dataToExtra} extraToForm={extraToForm} tabs={tabs}/>
 }

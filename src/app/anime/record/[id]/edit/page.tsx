@@ -1,8 +1,7 @@
-import { notFound } from "next/navigation"
 import { retrieveProjectAnime } from "@/services/project-anime"
 import { retrieveRecord } from "@/services/record"
 import { RecordEditor } from "@/components/app/record-editor"
-import { InlineError } from "@/components/app/inline-error"
+import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { unwrapQueryResult } from "@/helpers/result"
 
@@ -24,7 +23,7 @@ export default async function AnimationRecordEdit({ params }: {params: Promise<{
 
     const project = await retrieveProjectAnime(id)
     if(!project) {
-        notFound()
+        return <NotFoundScreen/>
     }
 
     const result = await retrieveRecord(project.id)
@@ -33,7 +32,7 @@ export default async function AnimationRecordEdit({ params }: {params: Promise<{
         return <InlineError error={error}/>
     }
     if(!data) {
-        notFound()
+        return <NotFoundScreen message="尚未创建此项目的观看记录"/>
     }
 
     return <RecordEditor type={ProjectType.ANIME} project={project} record={data}/>
