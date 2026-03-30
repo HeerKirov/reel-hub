@@ -15,14 +15,7 @@ const gameProjectKind: ProjectCrudKind<GameListFilter, GameForm, GameListSchema,
     toDetail: parseGameDetailSchema,
     buildCreateExtras: v => ({
         platform: v.platform ?? [],
-        onlineType: v.onlineType ?? null,
-        originalType: null,
-        boardcastType: null,
-        episodeDuration: null,
-        episodeTotalNum: null,
-        episodePublishedNum: null,
-        episodePublishPlan: [],
-        episodePublishedRecords: []
+        onlineType: v.onlineType ?? null
     }),
     buildUpdateExtras: v => ({
         platform: v.platform,
