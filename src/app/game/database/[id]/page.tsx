@@ -42,7 +42,7 @@ function BoxBar({ data }: { data: GameDetailSchema }) {
         </Box>
         <Box color={data.onlineType !== null ? `${VALUE_TO_ONLINE_TYPE[data.onlineType].color}.fg` : undefined}>
             <Text>联机类型</Text>
-            <Text fontWeight="700">{data.onlineType !== null ? VALUE_TO_ONLINE_TYPE[data.onlineType].label : "(未填未知写)"}</Text>
+            <Text fontWeight="700">{data.onlineType !== null ? VALUE_TO_ONLINE_TYPE[data.onlineType].label : "(未知)"}</Text>
         </Box>
     </>
 }

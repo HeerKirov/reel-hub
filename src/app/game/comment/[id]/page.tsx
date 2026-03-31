@@ -1,10 +1,10 @@
-import { retrieveProjectGame } from "@/services/project-game"
-import { retrieveComment } from "@/services/comment"
+import type { Metadata } from "next"
 import { CommentDisplay } from "@/components/app/comment-display"
 import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
+import { retrieveProjectGame } from "@/services/project-game"
+import { retrieveComment } from "@/services/comment"
 import { unwrapQueryResult } from "@/helpers/result"
-import type { Metadata } from "next"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const { id } = await params

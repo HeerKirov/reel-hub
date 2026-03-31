@@ -93,6 +93,29 @@ export type UpsertCommentError =
 
 export type DeleteCommentError = InternalServerError
 
+// --- purchase ---
+
+export type ListPurchaseError = ParamError | InternalServerError
+
+export type ListPurchaseSummaryError = ParamError | InternalServerError
+
+export type CreatePurchaseError =
+  | ParamError
+  | NotFound
+  | Reject
+  | InternalServerError
+
+export type UpdatePurchaseError =
+  | ParamError
+  | NotFound
+  | Reject
+  | InternalServerError
+
+export type DeletePurchaseError =
+  | NotFound
+  | Reject
+  | InternalServerError
+
 // --- tag ---
 
 export type ListTagsError = ParamError | InternalServerError

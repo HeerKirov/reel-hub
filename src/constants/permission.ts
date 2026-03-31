@@ -9,12 +9,13 @@ export const ACCESS_LEVEL = {
 
 export type AccessLevel = typeof ACCESS_LEVEL[keyof typeof ACCESS_LEVEL] | string
 export type AccessAction = "read" | "write"
-export type AccessResource = "project" | "tag" | "staff" | "record" | "comment"
+export type AccessResource = "project" | "tag" | "staff" | "record" | "comment" | "purchase"
 
 export const RESOURCE_ACCESS: Record<AccessResource, Record<AccessAction, AccessLevel>> = {
     project: {read: ACCESS_LEVEL.PUBLIC, write: PERMISSIONS.ADMIN},
     tag: {read: ACCESS_LEVEL.PUBLIC, write: PERMISSIONS.ADMIN},
     staff: {read: ACCESS_LEVEL.PUBLIC, write: PERMISSIONS.ADMIN},
     record: {read: ACCESS_LEVEL.AUTH, write: ACCESS_LEVEL.AUTH},
-    comment: {read: ACCESS_LEVEL.AUTH, write: ACCESS_LEVEL.AUTH}
+    comment: {read: ACCESS_LEVEL.AUTH, write: ACCESS_LEVEL.AUTH},
+    purchase: {read: ACCESS_LEVEL.AUTH, write: ACCESS_LEVEL.AUTH}
 }

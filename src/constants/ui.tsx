@@ -1,10 +1,5 @@
 import React from "react"
-import {
-    RiBarChartBoxAiLine,
-    RiBookmark3Line, RiBookOpenFill,
-    RiDatabase2Fill, RiFilmFill, RiGamepadFill, RiImageFill,
-    RiPenNibLine, RiPulseFill, RiTvLine
-} from "react-icons/ri"
+import { RiBarChartBoxAiLine, RiBillFill, RiBookmark3Line, RiBookOpenFill, RiDatabase2Fill, RiFilmFill, RiGamepadFill, RiImageFill, RiPenNibLine, RiPulseFill, RiTvLine } from "react-icons/ri"
 
 type NavigationBaseItem = {label: string, href: string, icon: React.ReactNode}
 
@@ -28,6 +23,7 @@ export const NAVIGATIONS: NavigationItem[] = [
         children: [
             {label: "数据库", href: "/game/database", icon: <RiDatabase2Fill/>},
             {label: "游玩记录", href: "/game/record", icon: <RiPulseFill/>, loginOnly: true},
+            {label: "消费记录", href: "/game/purchase", icon: <RiBillFill/>, loginOnly: true},
             {label: "评价", href: "/game/comment", icon: <RiPenNibLine/>, loginOnly: true},
             {label: "统计", href: "/game/statistics", icon: <RiBarChartBoxAiLine/>, loginOnly: true},
         ]

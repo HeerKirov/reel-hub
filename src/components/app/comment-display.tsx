@@ -79,7 +79,7 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
     }
     if(!data) {
         return (
-            <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3">
+            <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" minH="7rem">
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
                     <Text color="fg.muted" fontSize="sm">未进行任何评价</Text>
                     <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild>

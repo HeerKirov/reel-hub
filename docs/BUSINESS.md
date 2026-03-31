@@ -195,3 +195,20 @@ EPISODE类型的“已完成进度”限制：
 - status设置为最后一条进度的status；
 - specialAttention需要注意，当status从WATCHING状态转换为COMPLETED/DROPPED时，将其设为false。
 
+## Purchase 消费记录
+
+消费记录是用户在某个项目上的花费。它分为两个模型，Purchase用于记录单笔交易信息，PurchaseSummary用于记录用户在某个项目上的消息信息总览。
+
+以下是所有Purchase的字段:
+* `id`: 唯一ID，主键，在数据库层自动自增
+* `ownerId`: 用户ID
+* `projectId`: 项目ID
+* `purchaseType`: 消费类型；根据游戏形式、购买方式等决定的类型 (不可空)
+* `description`: 描述；自定义的对此次消费的补充文本 (form可选，默认空字符串)
+* `cost`: 金额；此次消费的金额 (不可空)
+* `purchaseTime`: 记此次消费的时间点 (不可空)
+* `createTime`, `updateTime`: 记录创建时间与更新时间 (不可空，会在创建以及修改时在service层更新)
+
+PurchaseSummary项会在某个项目第一次产生消费记录时自动创建。目前汇总中的汇总字段包括:
+* `totalCost`: 金额；该用户在此项目中所消费金额的总和
+* `totalCount`: 消费次数；该用户在此项目中所产生的消费记录数量

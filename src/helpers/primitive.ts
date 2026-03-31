@@ -99,6 +99,9 @@ export const numbers = {
             for(let i = 0; i < length - s.length; i++) s = "0" + s
         }
         return s
+    },
+    formatCurrency(n: number): string {
+        return n.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     }
 }
 

@@ -36,7 +36,7 @@ async function Root({ children }: Readonly<{children: React.ReactNode}>) {
     const preference = preferenceResult?.ok ? preferenceResult.value : null
     const autoTimezoneEnabled = isLogin && (preference?.autoTimezone ?? false)
     
-    const contentBase: SystemStyleObject = {mt: "50px"}
+    const contentBase: SystemStyleObject = {mt: "50px", mb: "32px"}
     const contentLg: SystemStyleObject = {ml: "60px", mt: "0"}
     const contentXl: SystemStyleObject = {ml: "200px"}
 

@@ -105,12 +105,13 @@ model Project {
   onlineType  OnlineType?
 
   // Relations
-  staffs         ProjectStaffRelation[]
-  tags           ProjectTagRelation[]
-  boughtRecords  Bought[]
-  records        Record[]
-  comments       Comment[]
-  RecordProgress RecordProgress[]
+  staffs            ProjectStaffRelation[]
+  tags              ProjectTagRelation[]
+  purchaseSummaries PurchaseSummary[]
+  purchases         Purchase[]
+  records           Record[]
+  comments          Comment[]
+  recordProgresses  RecordProgress[]
 
   @@index([type, publishTime])
 }
@@ -165,21 +166,34 @@ model ProjectTagRelation {
   @@id([projectId, tagId])
 }
 
-model Bought {
-  id          Int      @id @default(autoincrement())
-  ownerId     String   @db.VarChar(24)
+model PurchaseSummary {
+  id          Int @id @default(autoincrement())
+  ownerId     String @db.VarChar(24)
   projectId   String
-  buyType     ShoppingType
-  description String   @db.Text
-  cost        Decimal  @db.Decimal(10, 2)
-  currency    String   @db.VarChar(8)
-  buyTime     DateTime
+  totalCost   Decimal @db.Decimal(10, 2)
+  totalCount  Int
   createTime  DateTime
   updateTime  DateTime
 
   project Project @relation(fields: [projectId], references: [id])
 
   @@unique([ownerId, projectId])
+}
+
+model Purchase {
+  id           String   @id @default(nanoid())
+  ownerId      String   @db.VarChar(24)
+  projectId    String
+  purchaseType ShoppingType
+  description  String   @db.Text
+  cost         Decimal  @db.Decimal(10, 2)
+  purchaseTime DateTime
+  createTime   DateTime
+  updateTime   DateTime
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([ownerId, projectId, purchaseTime])
 }
 
 model Record {
@@ -258,4 +272,5 @@ model UserPreference {
   timezone       String?  @db.VarChar(64)
   autoTimezone   Boolean  @default(true)
   nightTimeTable Boolean  @default(true)
+  currency       String   @default("CNY") @db.VarChar(8)
 }

@@ -198,7 +198,7 @@ function runDeleteForKind<TListFilter extends ProjectListFilter, TForm extends P
             await prisma.projectTagRelation.deleteMany({ where: { projectId: id } })
             await prisma.record.deleteMany({ where: { projectId: id } })
             await prisma.recordProgress.deleteMany({ where: { projectId: id } })
-            await prisma.bought.deleteMany({ where: { projectId: id } })
+            await prisma.purchase.deleteMany({ where: { projectId: id } })
             await prisma.comment.deleteMany({ where: { projectId: id } })
             return ok(undefined)
         }) as Promise<Result<void, E>>

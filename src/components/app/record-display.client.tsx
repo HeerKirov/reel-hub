@@ -162,7 +162,7 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
     )
 }
 
-export function RecordDisplayAttentionButton({ projectId, specialAttention }: { projectId: string, specialAttention: boolean }) {
+export function RecordDisplayAttentionButton({ projectId, type, specialAttention }: { projectId: string, type: ProjectType, specialAttention: boolean }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
 
@@ -174,7 +174,7 @@ export function RecordDisplayAttentionButton({ projectId, specialAttention }: { 
     
     return (
         <Button variant="outline" colorPalette={specialAttention ? "yellow" : undefined} size="sm" onClick={toggleClick} opacity={isPending ? 0.6 : 1}>
-            <RiPushpin2Fill/> {specialAttention ? "订阅中" : "未订阅"}
+            <RiPushpin2Fill/> {specialAttention ? (type === ProjectType.ANIME ? "订阅中" : "特别关注") : (type === ProjectType.ANIME ? "未订阅" : "特别关注")}
         </Button>
     )
 }
