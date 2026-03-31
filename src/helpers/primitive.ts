@@ -110,7 +110,7 @@ export const dates = {
         const re = /(?<Y>\d+)-(?<M>\d+)(-(?<D>\d+))?/
         const matcher = str.match(re)
         if(matcher && matcher.groups) {
-            return new Date(parseInt(matcher.groups["Y"]), parseInt(matcher.groups["M"]), matcher.groups["D"] !== undefined ? parseInt(matcher.groups["D"]) : 1)
+            return new Date(parseInt(matcher.groups["Y"]), parseInt(matcher.groups["M"]) - 1, matcher.groups["D"] !== undefined ? parseInt(matcher.groups["D"]) : 1)
         }else{
             const d = new Date(str)
             if(isNaN(d.getTime())) {

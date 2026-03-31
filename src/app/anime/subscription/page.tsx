@@ -166,14 +166,18 @@ function SubscriptionAnimeRow({ item }: { item: RecordSubscriptionAnimeListSchem
 function EpisodeTriple({ watched, published, total }: { watched: number | null, published: number, total: number }) {
     return (
         <Tooltip content={published < total ? "已看完 / 已发布 / 总集数" : "已看完 / 总集数"}>
-            <HStack gap="0" flexShrink={0} fontSize="sm">
-                <Box borderWidth="1px" borderColor="border" px="2" py="0.5" rounded="sm" roundedEnd="none">
+            <HStack gap="0" flexShrink={0}>
+                <Box borderWidth="1px" borderColor="border" px="2" py="0.5" rounded="sm">
                     {watched ?? "—"}
                 </Box>
-                {published < total && <Box borderWidth="1px 1px 1px 0" borderColor="border" px="2" py="0.5" rounded="none" background="teal.subtle">
-                    {published}
-                </Box>}
-                <Box borderWidth="1px 1px 1px 0" borderColor="border" px="2" py="0.5" rounded="sm" roundedStart="none" background="bg.muted">
+                <Text px="1" color="fg.muted" fontWeight="bold">/</Text>
+                {published < total && <>
+                    <Box borderWidth="1px 1px 1px 0" borderColor="border" px="2" py="0.5" rounded="sm" background="teal.subtle">
+                        {published}
+                    </Box>
+                    <Text px="1" color="fg.muted" fontWeight="bold">/</Text>
+                </>}
+                <Box borderWidth="1px 1px 1px 0" borderColor="border" px="2" py="0.5" rounded="sm" background="bg.muted">
                     {total}
                 </Box>
             </HStack>

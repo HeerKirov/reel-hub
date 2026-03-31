@@ -138,13 +138,18 @@ export interface RecordSubscriptionAnimeListSchema {
 export const recordActivityListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
     search: z.string().optional(),
+    specialAttention: z.enum(["true", "false"]).optional(),
+    status: z.enum(RECORD_STATUS).optional(),
     page: z.number().optional(),
     size: z.number().optional()
 })
 
+export const RECORD_HISTORY_PROGRESS_KIND = ["latest", "first", "rewatch"] as const
+
 export const recordHistoryListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
     search: z.string().optional(),
+    progressKind: z.enum(RECORD_HISTORY_PROGRESS_KIND).optional(),
     page: z.number().optional(),
     size: z.number().optional()
 })
@@ -166,6 +171,7 @@ export const recordSubscriptionAnimeListFilter = z.object({
 export type RecordActivityListFilter = z.infer<typeof recordActivityListFilter>
 export type RecordHistoryListFilter = z.infer<typeof recordHistoryListFilter>
 export type RecordSubscriptionAnimeListFilter = z.input<typeof recordSubscriptionAnimeListFilter>
+export type RecordHistoryProgressKind = (typeof RECORD_HISTORY_PROGRESS_KIND)[number]
 
 // =============================================================================
 // Form
@@ -174,7 +180,8 @@ export type RecordSubscriptionAnimeListFilter = z.input<typeof recordSubscriptio
 export const recordProgressSupplementForm = z.object({
     startTime: z.date().nullable(),
     endTime: z.date().nullable(),
-    episodeWatchedNum: z.number().min(0).nullable()
+    episodeWatchedNum: z.number().min(0).nullable(),
+    platform: z.array(z.string()).optional()
 })
 
 export const recordCreateForm = z.object({
@@ -184,7 +191,8 @@ export const recordCreateForm = z.object({
             z.object({
                 startTime: z.date().nullable(),
                 endTime: z.date().nullable(),
-                episodeWatchedNum: z.number().min(0).nullable().optional()
+                episodeWatchedNum: z.number().min(0).nullable().optional(),
+                platform: z.array(z.string()).optional()
             })
         )
         .optional()
@@ -197,7 +205,9 @@ export const recordUpdateForm = z.object({
 export const recordProgressUpsertForm = z.object({
     startTime: z.date().nullable().optional(),
     endTime: z.date().nullable().optional(),
-    episodeWatchedNum: z.number().min(0).nullable().optional()
+    episodeWatchedNum: z.number().min(0).nullable().optional(),
+    platform: z.array(z.string()).optional(),
+    status: z.enum([RecordStatus.WATCHING, RecordStatus.DROPPED]).optional()
 })
 
 export type RecordCreateForm = z.infer<typeof recordCreateForm>

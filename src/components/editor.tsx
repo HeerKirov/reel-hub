@@ -1,11 +1,12 @@
 "use client"
 import React, { memo, useState, useCallback, useEffect, useMemo } from "react"
-import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field, Combobox, createListCollection, Portal } from "@chakra-ui/react"
+import { Box, SystemStyleObject, Tag, Link, Button, Icon, IconButton, Field, Combobox, createListCollection, Portal, Popover, Checkbox, CheckboxGroup, Flex, Text } from "@chakra-ui/react"
 import { useEffectState } from "@/helpers/hooks"
 import { Input, NumberInput, DateTimePicker } from "@/components/form"
 import { PiTrashBold } from "react-icons/pi"
 import { ProjectRelationSchema, EpisodePublishRecord } from "@/schemas/project"
 import { RelationType, RELATION_TYPE_NAMES, RELATION_TYPE_VALUES, ProjectType } from "@/constants/project"
+import { PLATFORM_ITEMS, Platform, VALUE_TO_PLATFORM } from "@/constants/game"
 import { listStaffTypes } from "@/services/staff-type"
 import { unwrapQueryResult } from "@/helpers/result"
 
@@ -209,6 +210,70 @@ export function RatingEditor<T>({ value, options, onValueChange, ...attrs }: Rat
         )}
     </Box>
 }
+
+export type PlatformEditorProps = {
+    value?: string[] | null
+    compact?: boolean
+    withSaveButton?: boolean
+    onValueChange?: (value: string[]) => void
+} & SystemStyleObject
+
+export const PlatformEditor = memo(function PlatformEditor({ value, compact = false, withSaveButton = false, onValueChange, ...attrs }: PlatformEditorProps) {
+    const [draft, setDraft] = useEffectState<string[]>(value ?? [])
+    const [open, setOpen] = useState(false)
+
+    const onDraftChange = useCallback((next: string[]) => {
+        setDraft(next)
+        if(!withSaveButton) {
+            onValueChange?.(next)
+        }
+    }, [withSaveButton, onValueChange])
+
+    const saveClick = useCallback(() => {
+        onValueChange?.(draft)
+        setOpen(false)
+    }, [draft, onValueChange])
+
+    const displayList = withSaveButton ? draft : value ?? []
+
+    return (
+        <Popover.Root lazyMount open={open} onOpenChange={e => setOpen(e.open)}>
+            <Popover.Trigger asChild>
+                <Box maxWidth={compact ? "120px" : undefined} whiteSpace={compact ? "nowrap" : "normal"} overflow={compact ? "hidden" : "visible"} textOverflow={compact ? "ellipsis" : "clip"} 
+                     cursor="pointer" borderWidth={compact ? "1px" : undefined} borderColor="border" rounded="md" px="3" py={compact ? "2.5" : "1"} _hover={{ bg: "bg.muted" }} {...attrs}>
+                    {!compact && <Text as="span" color="fg.muted" textWrap="nowrap" mr="2">平台</Text>}
+                    {displayList.length > 0 ? displayList.map((p, idx) => (
+                        <React.Fragment key={p}>
+                            {idx > 0 && <Box as="span" color="fg.muted"> / </Box>}
+                            <Box as="span" color={`${VALUE_TO_PLATFORM[p as Platform].color}.fg`}>{VALUE_TO_PLATFORM[p as Platform].label}</Box>
+                        </React.Fragment>
+                    )) : <Text as="span" color="fg.muted" textWrap="nowrap">未设置</Text>}
+                </Box>
+            </Popover.Trigger>
+            <Portal>
+                <Popover.Positioner>
+                    <Popover.Content width="300px">
+                        <Popover.Arrow />
+                        <Popover.Body>
+                            <CheckboxGroup value={draft} onValueChange={onDraftChange}>
+                                <Flex flexWrap="wrap" gap="3">
+                                    {PLATFORM_ITEMS.map(item => (
+                                        <Checkbox.Root key={item.value} value={item.value}>
+                                            <Checkbox.HiddenInput />
+                                            <Checkbox.Control />
+                                            <Checkbox.Label>{item.label}</Checkbox.Label>
+                                        </Checkbox.Root>
+                                    ))}
+                                </Flex>
+                            </CheckboxGroup>
+                            {withSaveButton && <Button mt="3" size="sm" colorPalette="blue" onClick={saveClick}>保存</Button>}
+                        </Popover.Body>
+                    </Popover.Content>
+                </Popover.Positioner>
+            </Portal>
+        </Popover.Root>
+    )
+})
 
 export type StaffEditorProps = {
     value?: {type: string, members: string[]}[]

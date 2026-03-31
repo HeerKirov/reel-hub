@@ -26,6 +26,8 @@ export async function listPurchases(filter: PurchaseListFilter): Promise<Result<
             purchaseType: validate.data.purchaseType,
             project: {
                 type: ProjectType.GAME,
+                platform: validate.data.platform !== undefined ? { has: validate.data.platform } : undefined,
+                onlineType: validate.data.onlineType,
                 OR: validate.data.search ? [
                     { title: { contains: validate.data.search } },
                     { subtitles: { contains: validate.data.search } },
@@ -68,6 +70,8 @@ export async function listPurchaseSummary(filter: PurchaseSummaryListFilter): Pr
             projectId: validate.data.projectId,
             project: {
                 type: ProjectType.GAME,
+                platform: validate.data.platform !== undefined ? { has: validate.data.platform } : undefined,
+                onlineType: validate.data.onlineType,
                 OR: validate.data.search ? [
                     { title: { contains: validate.data.search } },
                     { subtitles: { contains: validate.data.search } },

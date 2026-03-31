@@ -1,12 +1,13 @@
 import NextLink from "next/link"
 import { RiArrowDownSFill, RiArrowRightLine, RiHistoryLine, RiPulseLine, RiTimelineView, RiTv2Line } from "react-icons/ri"
 import { Avatar, Badge, Box, Button, Flex, Icon, Menu, Portal, Progress, Table, Text } from "@chakra-ui/react"
-import { ListPageLayout } from "@/components/server/layout"
+import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { SearchBox } from "@/components/filters"
+import { LinkGroupFilter } from "@/components/server/filters"
 import { RecordTimelineContent, TimelineFilterBar, TimelineFilterPanel, TimelineStateProvider } from "@/components/app/record-list-timeline"
 import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
-import { VALUE_TO_RECORD_STATUS } from "@/constants/record"
+import { RECORD_STATUS_ITEMS, RecordStatus, VALUE_TO_RECORD_STATUS } from "@/constants/record"
 import { RecordActivityListSchema, RecordHistoryListSchema } from "@/schemas/record"
 import { listRecordActivity, listRecordHistory, listRecordTimeline } from "@/services/record-list"
 import { dates } from "@/helpers/primitive"
@@ -17,6 +18,9 @@ export type RecordListSearchParams = {
     page?: string
     search?: string
     view?: "activity" | "history" | "timeline"
+    specialAttention?: "true" | "false"
+    status?: RecordStatus
+    progressKind?: "latest" | "first" | "rewatch"
     timelineScale?: string
     timelineGroup?: "true" | "false"
 }
@@ -28,10 +32,10 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
     const view = searchParams.view ?? "activity"
 
     if(view === "history") {
-        const result = await listRecordHistory({ type, page, size: 15, search: searchParams.search })
+        const result = await listRecordHistory({ type, page, size: 15, search: searchParams.search, progressKind: searchParams.progressKind })
         const { data, error } = unwrapQueryResult(result)
         if(error) {
-            return <InlineError error={error} />
+            return <InlineError error={error}/>
         }
         const { list, total } = data
 
@@ -39,16 +43,16 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
             <ListPageLayout
                 searchParams={searchParams}
                 breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
-                bar={<FilterBar searchParams={searchParams} />}
-                filter={<FilterPanel searchParams={searchParams} />}
-                content={<ContentHistory list={list} type={type} />}
+                bar={<FilterBar searchParams={searchParams}/>}
+                filter={<FilterPanel searchParams={searchParams} type={type}/>}
+                content={<ContentHistory list={list} type={type}/>}
                 totalRecord={total}
                 totalPage={Math.ceil(total / 15)}
                 currentPage={page}
             />
         )
     }else if(view === "activity") {
-        const result = await listRecordActivity({ type, page, size: 15, search: searchParams.search })
+        const result = await listRecordActivity({ type, page, size: 15, search: searchParams.search, specialAttention: searchParams.specialAttention, status: searchParams.status })
         const { data, error } = unwrapQueryResult(result)
         if(error) {
             return <InlineError error={error} />
@@ -59,9 +63,9 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
             <ListPageLayout
                 searchParams={searchParams}
                 breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
-                bar={<FilterBar searchParams={searchParams} />}
-                filter={<FilterPanel searchParams={searchParams} />}
-                content={<ContentActivity list={list} type={type} />}
+                bar={<FilterBar searchParams={searchParams}/>}
+                filter={<FilterPanel searchParams={searchParams} type={type}/>}
+                content={<ContentActivity list={list} type={type}/>}
                 totalRecord={total}
                 totalPage={Math.ceil(total / 15)}
                 currentPage={page}
@@ -82,7 +86,7 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
                     breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
                     bar={<TimelineFilterBar searchParams={searchParams} />}
                     filter={<TimelineFilterPanel searchParams={searchParams} visibleDaysOnScreen={visibleDaysOnScreen} />}
-                    content={<RecordTimelineContent rows={data} visibleDaysOnScreen={visibleDaysOnScreen} groupByFollowType={groupByFollowType} />}
+                    content={<RecordTimelineContent rows={data} visibleDaysOnScreen={visibleDaysOnScreen} groupByFollowType={groupByFollowType}/>}
                 />
             </TimelineStateProvider>
         )
@@ -96,8 +100,8 @@ function FilterBar({ searchParams }: { searchParams: RecordListSearchParams }) {
     return (
         <Menu.Root>
             <Menu.Trigger asChild>
-                {view === "history"? <Button variant="ghost" size="sm" pr="1"><RiHistoryLine /> 历史 <RiArrowDownSFill /></Button>
-                : view === "activity" ? <Button variant="ghost" size="sm" pr="1"><RiPulseLine /> 动态 <RiArrowDownSFill /></Button>
+                {view === "history"? <Button variant="ghost" size="sm" pr="1"><RiHistoryLine/> 历史 <RiArrowDownSFill/></Button>
+                : view === "activity" ? <Button variant="ghost" size="sm" pr="1"><RiPulseLine/> 动态 <RiArrowDownSFill/></Button>
                 : <Button variant="ghost" size="sm" pr="1"><RiTimelineView /> 时间线 <RiArrowDownSFill /></Button>}
             </Menu.Trigger>
             <Portal>
@@ -105,17 +109,17 @@ function FilterBar({ searchParams }: { searchParams: RecordListSearchParams }) {
                     <Menu.Content>
                         <Menu.Item value="activity" asChild>
                             <NextLink href={staticHref({ searchParams, key: "view", value: null, removePagination: true })}>
-                                <Icon><RiPulseLine /></Icon> 动态
+                                <Icon><RiPulseLine/></Icon> 动态
                             </NextLink>
                         </Menu.Item>
                         <Menu.Item value="history" asChild>
                             <NextLink href={staticHref({ searchParams, key: "view", value: "history", removePagination: true })}>
-                                <Icon><RiHistoryLine /></Icon> 历史
+                                <Icon><RiHistoryLine/></Icon> 历史
                             </NextLink>
                         </Menu.Item>
                         <Menu.Item value="timeline" asChild>
                             <NextLink href={staticHref({ searchParams, key: "view", value: "timeline", removePagination: true })}>
-                                <Icon><RiTimelineView /></Icon> 时间线
+                                <Icon><RiTimelineView/></Icon> 时间线
                             </NextLink>
                         </Menu.Item>
                     </Menu.Content>
@@ -125,10 +129,42 @@ function FilterBar({ searchParams }: { searchParams: RecordListSearchParams }) {
     )
 }
 
-function FilterPanel({ searchParams }: { searchParams: RecordListSearchParams }) {
+function FilterPanel({ searchParams, type }: { searchParams: RecordListSearchParams, type: ProjectType }) {
+    const view = searchParams.view ?? "activity"
+    const attentionItems = [
+        { label: "全部", value: "", color: "blue" },
+        { label: type === ProjectType.ANIME ? "已订阅" : "特别关注", value: "true", color: "yellow" },
+        { label: type === ProjectType.ANIME ? "未订阅" : "未关注", value: "false", color: "gray" },
+    ]
+    const statusItems = [
+        { label: "全部", value: "", color: "blue" },
+        ...RECORD_STATUS_ITEMS.map(i => ({ label: i.label, value: i.value, color: i.color }))
+    ]
+    const progressKindItems = [
+        { label: "全部", value: "", color: "blue" },
+        { label: "最新进度", value: "latest", color: "cyan" },
+        { label: "首次进度", value: "first", color: "green" },
+        { label: "重看进度", value: "rewatch", color: "pink" },
+    ]
+
     return (
         <>
             <SearchBox value={searchParams.search} searchParamName="search" />
+            <SidePanel.FilterStack>
+                {view === "activity" && <>
+                    <SidePanel.FilterStackItem title={type === ProjectType.ANIME ? "订阅" : "关注"}>
+                        <LinkGroupFilter items={attentionItems} searchParams={searchParams} searchParamName="specialAttention" />
+                    </SidePanel.FilterStackItem>
+                    <SidePanel.FilterStackItem title="状态">
+                        <LinkGroupFilter items={statusItems} searchParams={searchParams} searchParamName="status" />
+                    </SidePanel.FilterStackItem>
+                </>}
+                {view === "history" && <>
+                    <SidePanel.FilterStackItem title="进度类型">
+                        <LinkGroupFilter items={progressKindItems} searchParams={searchParams} searchParamName="progressKind" />
+                    </SidePanel.FilterStackItem>
+                </>}
+            </SidePanel.FilterStack>
         </>
     )
 }
@@ -154,7 +190,7 @@ function ContentActivity({ list, type }: { list: RecordActivityListSchema[], typ
                                     <Text fontSize="md" fontWeight="500">{item.project.title}</Text>
                                     {item.progressCount > 1 && <Badge colorPalette="pink" variant="outline">{item.progressCount}周目</Badge>}
                                     <Badge colorPalette={status.color} variant="subtle">{status.label}</Badge>
-                                    {item.specialAttention && <Badge colorPalette="yellow" variant="outline">订阅中</Badge>}
+                                    {item.specialAttention && <Badge colorPalette="yellow" variant="outline">{type === ProjectType.ANIME ? "订阅中" : "特别关注"}</Badge>}
                                 </Flex>
                                 <Text color="fg.muted" fontSize="sm">{item.activityTime ? dates.toDailyText(item.activityTime) : "暂无动态"}</Text>
                             </Flex>

@@ -119,7 +119,8 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                     startTime: p.startTime,
                     endTime: p.endTime,
                     startTimeFilled,
-                    episodeWatchedNum: p.episodeWatchedNum
+                    episodeWatchedNum: p.episodeWatchedNum,
+                    platform: p.platform ?? []
                 }
             })
 
@@ -252,8 +253,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                         episodeWatchedNum: isEpisodeType ? episodeWatchedNum : null,
                         episodeWatchedRecords: isEpisodeType ? Array(episodeWatchedNum ?? 0).fill(null) : [],
                         followType: isAnime ? getFollowType(ordinal, project.boardcastType, project.publishTime, p.startTimeFilled) : null,
-                        // game
-                        platform: []
+                        platform: project.type === ProjectType.GAME ? p.platform : []
                     }
                 })
             }

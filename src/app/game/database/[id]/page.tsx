@@ -1,5 +1,5 @@
 import { Fragment } from "react/jsx-runtime"
-import { Text, Box, HStack, Tag } from "@chakra-ui/react"
+import { Text, Box, Flex } from "@chakra-ui/react"
 import { ProjectDisplay } from "@/components/app/project-display"
 import { GameDetailSchema } from "@/schemas/project-game"
 import { ProjectType } from "@/constants/project"
@@ -28,7 +28,7 @@ function BoxBar({ data }: { data: GameDetailSchema }) {
     return <>
         <Box>
             <Text fontWeight="700" color="green.fg">平台</Text>
-            <HStack flexWrap="wrap" gap="1" justifyContent="center">
+            <Flex flexWrap="wrap" gap="1" justifyContent="center" maxW="10rem">
                 {data.platform.length > 0
                     ? data.platform.map((p, i) => {
                         const meta = VALUE_TO_PLATFORM[p as Platform]
@@ -38,7 +38,7 @@ function BoxBar({ data }: { data: GameDetailSchema }) {
                         </Fragment>
                     })
                     : <Text color="fg.muted">(未知)</Text>}
-            </HStack>
+            </Flex>
         </Box>
         <Box color={data.onlineType !== null ? `${VALUE_TO_ONLINE_TYPE[data.onlineType].color}.fg` : undefined}>
             <Text>联机类型</Text>

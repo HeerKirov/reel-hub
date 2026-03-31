@@ -2,19 +2,26 @@ import { OnlineType } from "@/prisma/generated"
 import { arrays } from "@/helpers/primitive"
 import { SelectItem } from "./general"
 
-export type Platform = "pc" | "ios" | "android" | "switch" | "xbox" | "ps" | "other"
+export { OnlineType }
 
-export const PLATFORM = ["pc", "ios", "android", "switch", "xbox", "ps", "other"] as const
+export type Platform = "pc" | "mac" | "ios" | "android" | "switch" | "xbox" | "psp" | "psv" | "ps3" | "ps4" | "ps5" | "other"
+
+export const PLATFORM = ["pc", "mac", "ios", "android", "switch", "xbox", "psp", "psv", "ps3", "ps4", "ps5", "other"] as const
 
 export const ONLINE_TYPE = [OnlineType.SINGLE_PLAYER, OnlineType.MULTI_PLAYER, OnlineType.ONLINE_GAME] as const
 
 export const PLATFORM_ITEMS: SelectItem<Platform>[] = [
     {label: "PC", value: "pc", color: "cyan"},
+    {label: "Mac", value: "mac", color: "pink"},
     {label: "iOS", value: "ios", color: "pink"},
     {label: "Android", value: "android", color: "teal"},
     {label: "Switch", value: "switch", color: "red"},
-    {label: "Xbox", value: "xbox", color: "green"},
-    {label: "PlayStation", value: "ps", color: "blue"},
+    {label: "XBox", value: "xbox", color: "green"},
+    {label: "PSP", value: "psp", color: "blue"},
+    {label: "PSV", value: "psv", color: "blue"},
+    {label: "PS3", value: "ps3", color: "blue"},
+    {label: "PS4", value: "ps4", color: "blue"},
+    {label: "PS5", value: "ps5", color: "blue"},
     {label: "其他", value: "other", color: "gray"},
 ]
 

@@ -31,6 +31,8 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
 
         const where = {
             ownerId: userId,
+            specialAttention: validate.data.specialAttention !== undefined ? validate.data.specialAttention === "true" : undefined,
+            status: validate.data.status,
             project: {
                 type: validate.data.type,
                 OR: validate.data.search ? [
@@ -93,6 +95,8 @@ export async function listRecordHistory(filter: RecordHistoryListFilter): Promis
         const where = {
             status: RecordStatus.COMPLETED,
             endTime: { not: null as null | undefined },
+            isLatest: validate.data.progressKind === "latest" ? true : undefined,
+            ordinal: validate.data.progressKind === "first" ? 1 : validate.data.progressKind === "rewatch" ? { gt: 1 } : undefined,
             record: {
                 ownerId: userId,
                 project: {

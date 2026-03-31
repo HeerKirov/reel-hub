@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { Purchase, PurchaseSummary, Project, ShoppingType } from "@/prisma/generated"
+import { ONLINE_TYPE, PLATFORM } from "@/constants/game"
 import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "./project"
 
 // =============================================================================
@@ -67,6 +68,8 @@ export const purchaseListFilter = z.object({
     size: z.number().optional(),
     orderBy: z.enum(["purchaseTime", "updateTime", "cost"]).optional(),
     purchaseType: z.enum(SHOPPING_TYPE).optional(),
+    platform: z.enum(PLATFORM).optional(),
+    onlineType: z.enum(ONLINE_TYPE).optional(),
     projectId: z.string().optional()
 })
 
@@ -75,6 +78,8 @@ export const purchaseSummaryListFilter = z.object({
     page: z.number().optional(),
     size: z.number().optional(),
     orderBy: z.enum(["totalCost", "updateTime"]).optional(),
+    platform: z.enum(PLATFORM).optional(),
+    onlineType: z.enum(ONLINE_TYPE).optional(),
     projectId: z.string().optional()
 })
 

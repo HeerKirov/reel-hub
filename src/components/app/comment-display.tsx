@@ -95,7 +95,7 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
             <NextLink href={`/${type.toLowerCase()}/comment/${project.id}`}>
                 <Starlight value={data.score} disabled/>
                 <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>{data.title}</Text>
-                <Text mt="1" color="fg.muted" fontSize="sm">{data.article}</Text>
+                <Text mt="1" color="fg.muted" fontSize="sm" lineClamp={2}>{data.article}</Text>
             </NextLink>
         </Box>
     )

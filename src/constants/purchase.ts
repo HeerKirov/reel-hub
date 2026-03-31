@@ -1,6 +1,8 @@
 import { ShoppingType } from "@/prisma/generated"
 import { SelectItem } from "./general"
 
+export { ShoppingType }
+
 export const SHOPPING_TYPE_LABEL: Record<ShoppingType, string> = {
     [ShoppingType.MAIN]: "本体",
     [ShoppingType.DLC]: "DLC",

@@ -9,6 +9,7 @@ import { ActivityEvent, RecordProgressUpsertForm, recordProgressUpsertForm } fro
 import { CreateProgressError, DeleteProgressError, NextEpisodeError, UpdateLatestProgressError } from "@/schemas/error"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
 import { isEpisodeProjectType } from "@/constants/project"
+import { objects } from "@/helpers/primitive"
 
 export async function createProgress(projectId: string, form: RecordProgressUpsertForm): Promise<Result<void, CreateProgressError>> {
     return safeExecuteResult(async () => {
@@ -158,7 +159,7 @@ export async function createProgress(projectId: string, form: RecordProgressUpse
                     episodeWatchedNum: isEpisodeType ? episodeWatchedNum : null,
                     episodeWatchedRecords: isEpisodeType ? Array(episodeWatchedNum ?? 0).fill(null) : [],
                     followType: isAnime ? getFollowType(insertOrdinal, project.boardcastType, project.publishTime, newStartTime) : null,
-                    platform: []
+                    platform: project.type === ProjectType.GAME ? (validate.data.platform ?? []) : []
                 }
             })
 
@@ -264,13 +265,13 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
         if(!progress) return err(exceptionNotFound("Progress not found"))
 
         const isEpisodeType = isEpisodeProjectType(project.type)
-        const isAnime = project.type === ProjectType.ANIME
 
         const newStartTime = validate.data.startTime !== undefined ? validate.data.startTime : progress.startTime
-        let newEndTime = validate.data.endTime !== undefined ? validate.data.endTime : progress.endTime
+        let newEndTime: Date | null | undefined = validate.data.endTime ? validate.data.endTime : undefined
+        let newStatus: RecordStatus | undefined = validate.data.status !== undefined && validate.data.status !== progress.status ? validate.data.status : undefined
 
         // start/end 基础范围校验
-        if(newStartTime !== null && newEndTime !== null && newStartTime.getTime() >= newEndTime.getTime()) {
+        if(newStartTime !== null && newEndTime !== undefined && newStartTime.getTime() >= newEndTime.getTime()) {
             return err(exceptionParamError("Start time must be before end time"))
         }
 
@@ -287,47 +288,66 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
             }
         }
 
-        let newEpisodeWatchedNum: number | null = null
-        let newEpisodeWatchedRecords: ({ watchedTime: string } | null)[] = []
+        let newEpisodeWatchedNum: number | undefined = undefined
+        let newEpisodeWatchedRecords: ({ watchedTime: string } | null)[] | undefined = undefined
+        const newPlatform = project.type === ProjectType.GAME && !objects.deepEquals(validate.data.platform, progress.platform) ? validate.data.platform : undefined
 
         if(isEpisodeType) {
             const episodeTotalNum = project.episodeTotalNum!
             const episodePublishedNum = project.episodePublishedNum!
             const episodeFullyPublished = project.episodePublishedNum !== null && episodeTotalNum > 0 && episodePublishedNum >= episodeTotalNum
 
-            const rawWatchedNum = validate.data.episodeWatchedNum !== undefined ? (validate.data.episodeWatchedNum ?? 0) : (progress.episodeWatchedNum ?? 0)
+            if(newStatus === undefined) {
+                const rawWatchedNum = validate.data.episodeWatchedNum !== undefined ? (validate.data.episodeWatchedNum ?? 0) : (progress.episodeWatchedNum ?? 0)
 
-            // 如果用户把 endTime 从 null 设置成非 null => 试图把进度置为完成
-            if(newEndTime !== null) {
-                if(!episodeFullyPublished) return err(exceptionReject("Episode is not fully published"))
-                // 完成时需要同步已看集数到总集数（与 BUSINESS 一致）
-                newEpisodeWatchedNum = episodeTotalNum
-            } else {
-                // endTime 仍为空：按 watchedNum（如果提供）更新，否则保留当前
-                newEpisodeWatchedNum = Math.max(0, Math.min(rawWatchedNum, episodePublishedNum, episodeTotalNum))
+                // 如果用户把 endTime 从 null 设置成非 null => 试图把进度置为完成
+                if(newEndTime !== null) {
+                    if(!episodeFullyPublished) return err(exceptionReject("Episode is not fully published"))
+                    // 完成时需要同步已看集数到总集数（与 BUSINESS 一致）
+                    newEpisodeWatchedNum = episodeTotalNum
+                } else {
+                    // endTime 仍为空：按 watchedNum（如果提供）更新，否则保留当前
+                    newEpisodeWatchedNum = Math.max(0, Math.min(rawWatchedNum, episodePublishedNum, episodeTotalNum))
 
-                // 如果 watchedNum 已达总集数且已完全发布 => 自动设置 endTime=now
-                if(episodeFullyPublished && newEpisodeWatchedNum >= episodeTotalNum) {
-                    newEndTime = now
+                    // 如果 watchedNum 已达总集数且已完全发布 => 自动设置 endTime=now
+                    if(episodeFullyPublished && newEpisodeWatchedNum >= episodeTotalNum) {
+                        newEndTime = now
+                    }
+                }
+            }else{
+                newEpisodeWatchedNum = undefined
+            }
+
+            if(newEpisodeWatchedNum !== undefined) {
+                // 手动编辑只裁剪/补全 episodeWatchedRecords（不写 watchedTime）
+                const current = (progress.episodeWatchedRecords as ({ watchedTime: string } | null)[] | null) ?? []
+                const targetLen = newEpisodeWatchedNum ?? 0
+                if(current.length > targetLen) {
+                    newEpisodeWatchedRecords = current.slice(0, targetLen)
+                } else if(current.length < targetLen) {
+                    newEpisodeWatchedRecords = [...current, ...Array(targetLen - current.length).fill(null)]
+                } else {
+                    newEpisodeWatchedRecords = current
                 }
             }
-
-            // 手动编辑只裁剪/补全 episodeWatchedRecords（不写 watchedTime）
-            const current = (progress.episodeWatchedRecords as ({ watchedTime: string } | null)[] | null) ?? []
-            const targetLen = newEpisodeWatchedNum ?? 0
-            if(current.length > targetLen) {
-                newEpisodeWatchedRecords = current.slice(0, targetLen)
-            } else if(current.length < targetLen) {
-                newEpisodeWatchedRecords = [...current, ...Array(targetLen - current.length).fill(null)]
-            } else {
-                newEpisodeWatchedRecords = current
-            }
-        } else {
-            // 非动画类型：只用 start/endTime 计算 status
-            newEpisodeWatchedNum = null
         }
 
-        const nextProgressStatus = getRecordStatus(record.progressCount, newEndTime, project.episodeTotalNum, newEpisodeWatchedNum)
+        if(newStatus === RecordStatus.DROPPED) {
+            if(progress.status !== RecordStatus.WATCHING) {
+                return err(exceptionReject("Only watching progress can be dropped"))
+            }
+            if(newEndTime === undefined) {
+                newEndTime = now
+            }
+        }else if(newStatus === RecordStatus.WATCHING) {
+            if(progress.status !== RecordStatus.DROPPED) {
+                return err(exceptionReject("Only dropped progress can be set to watching"))
+            }
+            newEndTime = null
+        }else if(newEndTime !== undefined || newEpisodeWatchedNum !== undefined) {
+            newStatus = getRecordStatus(record.progressCount, newEndTime ?? null, project.episodeTotalNum, newEpisodeWatchedNum ?? progress.episodeWatchedNum ?? null)
+        }
+
         const editProgressEvent: ActivityEvent = { type: "EDIT_PROGRESS" }
 
         // 更新进度（start/endTime/status & anime watched）
@@ -336,24 +356,34 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
             data: {
                 startTime: newStartTime,
                 endTime: newEndTime,
-                status: nextProgressStatus,
+                status: newStatus,
                 ...(isEpisodeType ? {
                     episodeWatchedNum: newEpisodeWatchedNum,
                     episodeWatchedRecords: newEpisodeWatchedRecords
                 } : {}),
+                platform: newPlatform,
                 updateTime: now
             }
         })
 
         // 更新 record 缓存字段（最新进度=最后一条进度）
-        const nextRecordStatus = getRecordStatus(record.progressCount, newEndTime, project.episodeTotalNum, newEpisodeWatchedNum)
+        const newRecordStatus = newStatus ?? (
+            isEpisodeType && (newEndTime !== undefined || newEpisodeWatchedNum !== undefined) ?
+            getRecordStatus(record.progressCount, newEndTime ?? null, project.episodeTotalNum, newEpisodeWatchedNum ?? progress.episodeWatchedNum ?? null) 
+            : undefined
+        )
+        console.log("newStatus", newStatus)
+        console.log("newEndTime", newEndTime)
+        console.log("newEpisodeWatchedNum", newEpisodeWatchedNum)
+        console.log("progress.episodeWatchedNum", progress.episodeWatchedNum)
+        console.log("nextRecordStatus", newRecordStatus)
         await prisma.record.update({
             where: {id: record.id},
             data: {
-                status: nextRecordStatus,
+                status: newRecordStatus,
                 endTime: newEndTime,
                 // 当 status 从 WATCHING 转为完成/放弃时取消订阅
-                specialAttention: (nextRecordStatus === RecordStatus.COMPLETED || nextRecordStatus === RecordStatus.DROPPED) && record.status === RecordStatus.WATCHING ? false : record.specialAttention,
+                specialAttention: (newRecordStatus === RecordStatus.COMPLETED || newRecordStatus === RecordStatus.DROPPED) && record.status === RecordStatus.WATCHING ? false : record.specialAttention,
                 lastActivityTime: now,
                 lastActivityEvent: editProgressEvent as unknown as Prisma.InputJsonValue,
                 updateTime: now

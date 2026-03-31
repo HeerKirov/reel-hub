@@ -1,6 +1,7 @@
 import NextLink from "next/link"
 import { Box, Text, Icon, Flex, Stat, HStack, Badge, Button, Dialog, Portal, Heading, Image, Table } from "@chakra-ui/react"
 import { RiBookmark3Line, RiPushpin2Fill, RiDatabase2Fill, RiEdit2Line, RiArrowRightLine, RiBillFill } from "react-icons/ri"
+import { PlatformEditor } from "@/components/editor"
 import { InlineError } from "@/components/app/inline-error"
 import { DetailPageLayout } from "@/components/server/layout"
 import { ProjectType } from "@/constants/project"
@@ -15,7 +16,7 @@ import { isEpisodeProjectType } from "@/constants/project"
 import { retrieveRecordPreview } from "@/services/record"
 import { retrievePurchaseSummary } from "@/services/purchase"
 import { unwrapQueryResult } from "@/helpers/result"
-import { RecordBoxDialogContent, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayNextButton } from "./record-display.client"
+import { RecordBoxDialogContent, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayFinishButton, RecordDisplayNextButton, RecordDisplayPlatformEditor, RecordDisplayResumeButton } from "./record-display.client"
 import emptyCover from "@/assets/empty.jpg"
 
 export async function RecordBox({ project, type }: {project: ProjectDetailSchema | AnimeDetailSchema, type: ProjectType}) {
@@ -190,7 +191,7 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                 <RecordDisplayAttentionButton projectId={project.id} type={type} specialAttention={record.specialAttention}/>
             </Flex>
 
-            {latestProgress && <LatestProgressBar latestProgress={latestProgress} episodeProject={episodeProject} />}
+            {latestProgress && <LatestProgressBar projectId={project.id} type={type} latestProgress={latestProgress} episodeProject={episodeProject} />}
 
             {record.progresses.length > 1 && <>
                 <Heading size="md" py="1.5">历史进度</Heading>
@@ -204,15 +205,15 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
     )
 }
 
-function LatestProgressBar({ latestProgress, episodeProject }: { latestProgress: RecordProgressDetailItem, episodeProject: AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema | null }) {
+function LatestProgressBar({ projectId, type, latestProgress, episodeProject }: { projectId: string, type: ProjectType, latestProgress: RecordProgressDetailItem, episodeProject: AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema | null }) {
     return (
         <Box borderWidth="1px" rounded="md" p="4" bg="bg.subtle">
             <Flex direction="column" gap="4">
-                <Flex alignItems="center" gap="4">
-                    <Box borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
+                <Flex alignItems="center" gap="4" wrap={{base: "wrap", md: "nowrap"}}>
+                    <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
                         <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
                     </Box>
-                    {episodeProject && latestProgress.episodeWatchedNum !== null && (
+                    {(episodeProject && latestProgress.episodeWatchedNum !== null) ? (
                         <Flex alignItems="center" gap="2" flex="1">
                             <Text fontSize="sm" color="fg.muted">
                                 {Math.floor((latestProgress.episodeWatchedNum / episodeProject.episodeTotalNum) * 100)}%
@@ -223,7 +224,24 @@ function LatestProgressBar({ latestProgress, episodeProject }: { latestProgress:
                                 total={episodeProject.episodeTotalNum}
                             />
                         </Flex>
-                    )}
+                    ) : (<>
+                        {latestProgress.startTime && (
+                            <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">
+                                <Icon><RiBookmark3Line/></Icon>
+                                <Text>订阅时间 {latestProgress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                            </Flex>
+                        )}
+                        <Flex flex="1 0 auto" order={{base: 1, md: 0}} alignItems="center" gap="2" fontSize="sm" color="fg.muted">
+                            <Icon><RiBookmark3Line/></Icon>
+                            <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
+                        </Flex>
+                        <Box display={{base: "none", md: "block"}} w="full"/>
+                        {latestProgress.endTime === null ? <Box order={{base: 0, md: 1}}>  
+                            <RecordDisplayFinishButton projectId={projectId} ordinal={latestProgress.ordinal}/>
+                        </Box> : latestProgress.status === RecordStatus.DROPPED ? (<Box order={{base: 0, md: 1}}>  
+                            <RecordDisplayResumeButton projectId={projectId} ordinal={latestProgress.ordinal}/>
+                        </Box>) : undefined}
+                    </>)}
                 </Flex>
 
                 {episodeProject && <Flex alignItems="center" justifyContent="space-between" fontSize="sm" color="fg.muted" px="1">
@@ -236,8 +254,12 @@ function LatestProgressBar({ latestProgress, episodeProject }: { latestProgress:
                         <Badge colorPalette="gray" px="2" py="1">{episodeProject.episodeTotalNum}</Badge>&nbsp;话
                     </Text>
                 </Flex>}
-                
-                <Flex alignItems="flex-end" justifyContent="space-between" pl="1">
+
+                {type === ProjectType.GAME && <Flex alignItems="center" gap="2" fontSize="sm" color="fg.muted">
+                    <RecordDisplayPlatformEditor projectId={projectId} ordinal={latestProgress.ordinal} platform={latestProgress.platform}/>
+                </Flex>}
+
+                {(episodeProject && latestProgress.episodeWatchedNum !== null) && <Flex alignItems="flex-end" justifyContent="space-between" pl="1">
                     <Flex direction="column" gap="2" fontSize="sm" color="fg.muted">
                         {latestProgress.startTime && (
                             <Flex alignItems="center" gap="2">
@@ -250,8 +272,12 @@ function LatestProgressBar({ latestProgress, episodeProject }: { latestProgress:
                             <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
                         </Flex>
                     </Flex>
-                    {episodeProject && latestProgress.episodeWatchedNum! < episodeProject.episodePublishedNum && <RecordDisplayNextButton projectId={episodeProject.id} watched={latestProgress.episodeWatchedNum!} />}
-                </Flex>
+                    {latestProgress.status === RecordStatus.DROPPED ? (
+                        <RecordDisplayResumeButton projectId={episodeProject.id} ordinal={latestProgress.ordinal}/>
+                    ) : latestProgress.episodeWatchedNum! < episodeProject.episodePublishedNum ? (
+                        <RecordDisplayNextButton projectId={episodeProject.id} ordinal={latestProgress.ordinal} watched={latestProgress.episodeWatchedNum!} />
+                    ) : undefined}
+                </Flex>}
             </Flex>
         </Box>
     )
@@ -265,6 +291,7 @@ function HistoryProgressBar({ progress, episodeProject }: { progress: RecordProg
                 <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="2" py="1" bg="bg.default">
                     <Text fontSize="sm">{progress.ordinal}周目</Text>
                 </Box>
+                {progress.status === RecordStatus.DROPPED && <Badge px="2" py="2">已放弃</Badge>}
                 {episodeProject && progress.episodeWatchedNum !== null && isComplete && (
                     <Text width="full" fontSize="sm" fontWeight="medium">{progress.episodeWatchedNum}话完成</Text>
                 )}
