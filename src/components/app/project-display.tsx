@@ -11,7 +11,7 @@ import { NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { getUserIdOrNull, hasPermission } from "@/helpers/next"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 export interface ProjectDisplayProps<RES extends ProjectDetailSchema> {
     id: string

@@ -43,8 +43,8 @@ export interface ProjectEditorProps<RES extends ProjectDetailSchema, FORM extend
     type: ProjectType
     dataToExtra?: EXTRA extends undefined ? undefined : (data: RES | undefined) => EXTRA
     extraToForm?: EXTRA extends undefined ? undefined : (extra: EXTRA) => Partial<FORM>
-    onSubmit?: (form: FORM, resources?: Record<string, Blob>) => void
-    onDelete?: () => void
+    onSubmit?: (form: FORM, resources?: Record<string, Blob>) => Promise<void>
+    onDelete?: () => Promise<void>
     onCancel?: () => void
     tabs?: {label: string, icon: React.ReactNode, content: (props: {extra: EXTRA, setExtra: (field: keyof EXTRA, value: EXTRA[keyof EXTRA]) => void}) => React.ReactNode}[]
 }
@@ -117,12 +117,12 @@ function ProjectEditor<RES extends ProjectDetailSchema, FORM extends ProjectComm
         setExtra(prev => ({...prev, [field]: value}))
     }, [])
 
-    const onSave = () => {
+    const onSave = async () => {
         const finalRelations: Partial<ProjectRelationModel> = Object.fromEntries(Object.entries(relations).map(([key, value]) => [key, value.map(r => r.id)]))
         const resources: Record<string, Blob> = {}
         if(resourceAvatar instanceof Blob) resources["avatar"] = resourceAvatar
         if(resourceCover instanceof Blob) resources["cover"] = resourceCover
-        onSubmit?.({
+        await onSubmit?.({
             title, subtitles, description, keywords, publishTime, 
             ratingS, ratingV, region, tags, staffs, relations: finalRelations as Record<string, string[]>,
             ...(extraToForm?.(extra) ?? {}) as any

@@ -12,7 +12,7 @@ import { ListProjectError } from "@/schemas/error"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, ProjectType } from "@/constants/project"
 import { hasPermission } from "@/helpers/next"
 import { unwrapQueryResult } from "@/helpers/result"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 type CommonSearchParams = Omit<ProjectListFilter, "page" | "size">
 

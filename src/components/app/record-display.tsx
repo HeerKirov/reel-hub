@@ -17,7 +17,7 @@ import { retrieveRecordPreview } from "@/services/record"
 import { retrievePurchaseSummary } from "@/services/purchase"
 import { unwrapQueryResult } from "@/helpers/result"
 import { RecordBoxDialogContent, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayFinishButton, RecordDisplayNextButton, RecordDisplayPlatformEditor, RecordDisplayResumeButton } from "./record-display.client"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 export async function RecordBox({ project, type }: {project: ProjectDetailSchema | AnimeDetailSchema, type: ProjectType}) {
     const result = await retrieveRecordPreview(project.id)

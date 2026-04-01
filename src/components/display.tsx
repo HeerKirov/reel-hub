@@ -3,7 +3,7 @@ import NextLink from "next/link"
 import { ProjectRelationSchema } from "@/schemas/project"
 import { ProjectType, PROJECT_TYPE_NAMES, RELATION_TYPE_NAMES, RelationType } from "@/constants/project"
 import { Flex, SimpleGrid, Image, Link, Badge, Box, Text } from "@chakra-ui/react"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 export const RelationDisplay = memo(function RelationDisplay({ relations, type }: {relations: Partial<ProjectRelationSchema>, type: ProjectType}) {
     if(Object.keys(relations).length <= 0) {

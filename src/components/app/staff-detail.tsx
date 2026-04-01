@@ -10,7 +10,7 @@ import { ProjectType } from "@/constants/project"
 import { StaffSchema } from "@/schemas/staff"
 import { deleteStaff, updateStaff } from "@/services/staff"
 import { handleActionResult } from "@/helpers/action"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 export function StaffDetail({ data, related, isAdmin, type }: { data: StaffSchema, related: ProjectListSchema[], isAdmin: boolean, type: ProjectType }) {
     const router = useRouter()

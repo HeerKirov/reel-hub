@@ -13,14 +13,28 @@ export interface EditorWithTabLayoutProps {
         confirmation?: React.ReactNode
         countdown?: number
     }
-    onSave?: () => void
-    onDelete?: () => void
+    onSave?: () => Promise<void>
+    onDelete?: () => Promise<void>
     onCancel?: () => void
     onComplete?: () => void
 }
 
 export function EditorWithTabLayout(props: EditorWithTabLayoutProps) {
     const [tab, setTab] = useState<string>(props.tabs?.[0]?.label ?? "")
+
+    const [loading, setLoading] = useState(false)
+
+    const handleSave = async () => {
+        setLoading(true)
+        await props.onSave?.()
+        setLoading(false)
+    }
+
+    const handleDelete = async () => {
+        setLoading(true)
+        await props.onDelete?.()
+        setLoading(false)
+    }
 
     return (
         <>
@@ -39,24 +53,24 @@ export function EditorWithTabLayout(props: EditorWithTabLayoutProps) {
                         ))}
                     </Box>
                     <Flex gap="2" mt="2" flexDirection={{base: "row", sm: "column"}} justifyContent={{base: "stretch", sm: "flex-start"}}>
-                        {(props.onSave ?? false) && <Button colorPalette="blue" size="sm" flex="1 0 auto" onClick={props.onSave}><RiSaveLine/> 保存</Button>}
-                        {(props.onComplete ?? false) && <Button variant="outline" colorPalette="green" size="sm" flex="1 0 auto" onClick={props.onComplete}><RiCheckFill/> 完成</Button>}
+                        {(props.onSave ?? false) && <Button colorPalette="blue" size="sm" flex="1 0 auto" onClick={handleSave} loading={loading} disabled={loading}><RiSaveLine/> 保存</Button>}
+                        {(props.onComplete ?? false) && <Button variant="outline" colorPalette="green" size="sm" flex="1 0 auto" onClick={props.onComplete} loading={loading} disabled={loading}><RiCheckFill/> 完成</Button>}
                         {(props.onDelete ?? false) && <Popover.Root lazyMount unmountOnExit={props.deleteOptions?.countdown !== undefined}>
                             <Popover.Trigger asChild>
-                                <Button colorPalette="red" variant={props.onComplete ? "outline" : "solid"} size="sm" flex="1 0 auto"><RiDeleteBinLine/> 删除</Button>
+                                <Button colorPalette="red" variant={props.onComplete ? "outline" : "solid"} size="sm" flex="1 0 auto" loading={loading} disabled={loading}><RiDeleteBinLine/> 删除</Button>
                             </Popover.Trigger>
                             <Portal>
                                 <Popover.Positioner>
                                     <Popover.Content width="225px">
                                         <Popover.Arrow />
                                         <Popover.Body>
-                                            <DeleteConfirmation confirmation={props.deleteOptions?.confirmation ?? "确认要删除吗？"} onDelete={props.onDelete!} countdown={props.deleteOptions?.countdown}/>
+                                            <DeleteConfirmation confirmation={props.deleteOptions?.confirmation ?? "确认要删除吗？"} onDelete={handleDelete} countdown={props.deleteOptions?.countdown}/>
                                         </Popover.Body>
                                     </Popover.Content>
                                 </Popover.Positioner>
                             </Portal>
                         </Popover.Root>}
-                        {(props.onCancel ?? false) && <Button variant="outline" size="sm" flex="1 0 auto" onClick={props.onCancel}><RiCloseLine/> 取消</Button>}
+                        {(props.onCancel ?? false) && <Button variant="outline" size="sm" flex="1 0 auto" onClick={props.onCancel} loading={loading} disabled={loading}><RiCloseLine/> 取消</Button>}
                     </Flex>
                 </Box>
                 <Box flex="1 1 100%">

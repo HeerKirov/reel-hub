@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Prisma gem favicon">
+  <defs>
+    <linearGradient id="g1" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#DBEAFE" />
+      <stop offset="0.55" stop-color="#93C5FD" />
+      <stop offset="1" stop-color="#60A5FA" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#F4F9FF" />
+  <path d="M12 15L32 7L52 15L47 49L32 57L17 49Z" fill="url(#g1)" />
+  <path d="M32 7L32 57" stroke="#EFF6FF" stroke-width="2.8" stroke-linecap="round" opacity="0.62" />
+  <path d="M12 15L32 28L52 15" stroke="#EFF6FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.78" />
+</svg>

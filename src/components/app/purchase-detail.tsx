@@ -9,7 +9,7 @@ import { listPurchases, retrievePurchaseSummary } from "@/services/purchase"
 import { retrieveProjectGame } from "@/services/project-game"
 import { unwrapQueryResult } from "@/helpers/result"
 import { PurchaseDetailTable } from "./purchase-detail.client"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 import { PurchaseWithProjectSchema } from "@/schemas/purchase"
 import { numbers } from "@/helpers/primitive"
 

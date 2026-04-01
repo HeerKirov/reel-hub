@@ -9,7 +9,7 @@ import { ProjectDetailSchema } from "@/schemas/project"
 import { CommentSchema } from "@/schemas/comment"
 import { SCORE_DESCRIPTIONS } from "@/constants/comment"
 import { retrieveComment } from "@/services/comment"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 import { unwrapQueryResult } from "@/helpers/result"
 import { InlineError } from "@/components/app/inline-error"
 

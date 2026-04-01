@@ -2,7 +2,7 @@
 import Cropper from "cropperjs"
 import { useState, useRef, ChangeEvent, useEffect } from "react"
 import { Box, BoxProps, Button, CloseButton, Dialog, Image, Portal } from "@chakra-ui/react"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 import "cropperjs/dist/cropper.css"
 
 export interface CropperProps extends BoxProps {

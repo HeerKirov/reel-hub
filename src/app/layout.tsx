@@ -11,6 +11,9 @@ export const metadata: Metadata = {
         template: "%s | REEL HUB",
         default: "REEL HUB",
     },
+    icons: {
+        icon: "/favicon.svg",
+    },
     description: "Hub for ACGN entertainment.",
     authors: {url: "https://github.com/HeerKirov", name: "Heer Kirov"}
 }

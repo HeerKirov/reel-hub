@@ -5,7 +5,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { Badge, Box, Button, Drawer, Flex, HoverCard, Image, Portal, Text } from "@chakra-ui/react"
 import { dates } from "@/helpers/primitive"
 import type { FollowType } from "@/constants/record"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 export type TimelineItem = {
     id: string

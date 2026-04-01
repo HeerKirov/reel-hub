@@ -10,7 +10,7 @@ import { ProjectType } from "@/constants/project"
 import { TagSchema } from "@/schemas/tag"
 import { deleteTag, updateTag } from "@/services/tag"
 import { handleActionResult } from "@/helpers/action"
-import emptyCover from "@/assets/empty.jpg"
+import emptyCover from "@/assets/empty.svg"
 
 export function TagDetail({ data, related, isAdmin, type }: { data: TagSchema, related: ProjectListSchema[], isAdmin: boolean, type: ProjectType }) {
     const router = useRouter()
