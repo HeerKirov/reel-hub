@@ -2,7 +2,8 @@ import { parseProjectRelationItem, ProjectRelationModel, ProjectRelationSchema }
 import { ProjectFindAllError, RemoveProjectInTopologyError, UpdateAllRelationTopologyError, UpdateRelationsError } from "@/schemas/error"
 import { Result, err, ok } from "@/schemas/all"
 import { RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
-import { exceptionNotFound, exceptionParamError, exceptionResourceNotExist, ParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError, exceptionResourceNotExist, ParamError } from "@/constants/exception"
+import { safeExecute } from "@/helpers/execution"
 import { RelationGraph } from "@/helpers/relation-graph"
 import { requireAccess } from "@/helpers/auth-guard"
 import { arrays, records } from "@/helpers/primitive"
@@ -33,106 +34,106 @@ export async function getRelations(relations: ProjectRelationModel, relationsTop
  * 然后，对全量图进行关系传播推导，导出所有对象的全量拓扑，并更新那些拓扑发生变化的对象。
  */
 export async function updateRelations(projectId: string, relations: Partial<ProjectRelationModel>): Promise<Result<void, UpdateRelationsError>> {
-    return safeExecuteResult(async () => {
-    await requireAccess("project", "write")
-    const relationResult = validateRelation(relations)
-    if(!relationResult.ok) return relationResult
-    const newRelations = relationResult.value
-    
-    // 查到主对象
-    const thisProject = await find(projectId)
-    if (!thisProject) return err(exceptionNotFound("Project not found"))
+    return safeExecute(async () => {
+        await requireAccess("project", "write")
+        const relationResult = validateRelation(relations)
+        if(!relationResult.ok) return relationResult
+        const newRelations = relationResult.value
+        
+        // 查到主对象
+        const thisProject = await find(projectId)
+        if (!thisProject) return err(exceptionNotFound("Project not found"))
 
-    // 比对主对象的旧关联拓扑和新关联拓扑，找出新增的那些节点
-    // 而如果关联拓扑没有变化，那么退出这个方法
-    const changes = compareRelationAdds(thisProject.relations, newRelations)
-    if (changes.length === 0 && compareRelationEquals(thisProject.relations, newRelations)) {
-        return ok(undefined)
-    }
-
-    // 节点列表
-    const elements = new Map<string, ProjectModel>()
-    
-    // 将主对象放入图中
-    elements.set(projectId, thisProject)
-    
-    // 将主对象的旧的全量拓扑的关联节点放入图中
-    const currentTopologyIds = Object.values(thisProject.relationsTopology).flat()
-    if (currentTopologyIds.length > 0) {
-        const currentTopologyResult = await findAll(currentTopologyIds as string[])
-        if(!currentTopologyResult.ok) return currentTopologyResult
-        const currentTopologyProjects = currentTopologyResult.value
-        currentTopologyProjects.forEach(p => elements.set(p.id, p))
-    }
-
-    // 查找上述拓扑比对结果中新增节点，将它们放入图中。在那之前，计算id和exists的差以减少查询
-    const changesMinusExists = changes.filter(id => !elements.has(id))
-    if (changesMinusExists.length > 0) {
-        const appendResult = await findAll(changesMinusExists)
-        if(!appendResult.ok) return appendResult
-        const appendProjects = appendResult.value
-        appendProjects.forEach(p => elements.set(p.id, p))
-    }
-
-    // 查找上述拓扑比对结果中新增节点的全量拓扑，将它们也都放入图中。在那之前，计算id和exists的差以减少查询
-    const appendProjectIds = Array.from(elements.keys()).filter(id => id !== projectId)
-    if (appendProjectIds.length > 0) {
-        const appendResult = await findAll(appendProjectIds)
-        if(!appendResult.ok) return appendResult
-        const appendProjects = appendResult.value
-        const changesTopologyIds = appendProjects.flatMap(p => 
-            Object.values(p.relationsTopology).flat()
-        )
-        const changesTopologyIdsMinusExists = changesTopologyIds.filter((id: any) => !elements.has(id))
-        if (changesTopologyIdsMinusExists.length > 0) {
-            const changesTopologyResult = await findAll(changesTopologyIdsMinusExists as string[])
-            if(!changesTopologyResult.ok) return changesTopologyResult
-            const changesTopologyProjects = changesTopologyResult.value
-            changesTopologyProjects.forEach(p => elements.set(p.id, p))
+        // 比对主对象的旧关联拓扑和新关联拓扑，找出新增的那些节点
+        // 而如果关联拓扑没有变化，那么退出这个方法
+        const changes = compareRelationAdds(thisProject.relations, newRelations)
+        if (changes.length === 0 && compareRelationEquals(thisProject.relations, newRelations)) {
+            return ok(undefined)
         }
-    }
 
-    // 根据所有在场的节点的关联拓扑(主对象的为新关联拓扑)，将关系放入图中，随后构建传播图
-    const graph = buildRelationGraph(Array.from(elements.values()), thisProject, newRelations)
+        // 节点列表
+        const elements = new Map<string, ProjectModel>()
+        
+        // 将主对象放入图中
+        elements.set(projectId, thisProject)
+        
+        // 将主对象的旧的全量拓扑的关联节点放入图中
+        const currentTopologyIds = Object.values(thisProject.relationsTopology).flat()
+        if (currentTopologyIds.length > 0) {
+            const currentTopologyResult = await findAll(currentTopologyIds as string[])
+            if(!currentTopologyResult.ok) return currentTopologyResult
+            const currentTopologyProjects = currentTopologyResult.value
+            currentTopologyProjects.forEach(p => elements.set(p.id, p))
+        }
 
-    // 从传播图导出每一个节点的全量拓扑
-    // 比对每个节点的新旧全量拓扑，发生变化的放入保存列表；主对象要更新关联拓扑，也要放入保存列表
-    // 批量保存
-    const updates: Array<{id: string, relationsTopology: ProjectRelationModel}> = []
-    
-    for (const element of Array.from(elements.values())) {
-        if (element.id !== projectId) {
-            const newTopology = graph.get(element, (e: ProjectModel) => e.id)
-            const topologyAsStrings = convertTopologyToStrings(newTopology)
-            if (!compareRelationEquals(element.relationsTopology, topologyAsStrings)) {
-                updates.push({
-                    id: element.id,
-                    relationsTopology: topologyAsStrings
-                })
+        // 查找上述拓扑比对结果中新增节点，将它们放入图中。在那之前，计算id和exists的差以减少查询
+        const changesMinusExists = changes.filter(id => !elements.has(id))
+        if (changesMinusExists.length > 0) {
+            const appendResult = await findAll(changesMinusExists)
+            if(!appendResult.ok) return appendResult
+            const appendProjects = appendResult.value
+            appendProjects.forEach(p => elements.set(p.id, p))
+        }
+
+        // 查找上述拓扑比对结果中新增节点的全量拓扑，将它们也都放入图中。在那之前，计算id和exists的差以减少查询
+        const appendProjectIds = Array.from(elements.keys()).filter(id => id !== projectId)
+        if (appendProjectIds.length > 0) {
+            const appendResult = await findAll(appendProjectIds)
+            if(!appendResult.ok) return appendResult
+            const appendProjects = appendResult.value
+            const changesTopologyIds = appendProjects.flatMap(p => 
+                Object.values(p.relationsTopology).flat()
+            )
+            const changesTopologyIdsMinusExists = changesTopologyIds.filter((id: any) => !elements.has(id))
+            if (changesTopologyIdsMinusExists.length > 0) {
+                const changesTopologyResult = await findAll(changesTopologyIdsMinusExists as string[])
+                if(!changesTopologyResult.ok) return changesTopologyResult
+                const changesTopologyProjects = changesTopologyResult.value
+                changesTopologyProjects.forEach(p => elements.set(p.id, p))
             }
         }
-    }
 
-    if (updates.length > 0) {
-        await Promise.all(updates.map(update => 
-            prisma.project.update({
-                where: { id: update.id },
-                data: { relationsTopology: update.relationsTopology }
-            })
-        ))
-    }
+        // 根据所有在场的节点的关联拓扑(主对象的为新关联拓扑)，将关系放入图中，随后构建传播图
+        const graph = buildRelationGraph(Array.from(elements.values()), thisProject, newRelations)
 
-    const newThisTopology = graph.get(thisProject, (e: ProjectModel) => e.id)
-    const thisTopologyAsStrings = convertTopologyToStrings(newThisTopology)
-
-    await prisma.project.update({
-        where: { id: projectId },
-        data: {
-            relations: newRelations,
-            relationsTopology: thisTopologyAsStrings
+        // 从传播图导出每一个节点的全量拓扑
+        // 比对每个节点的新旧全量拓扑，发生变化的放入保存列表；主对象要更新关联拓扑，也要放入保存列表
+        // 批量保存
+        const updates: Array<{id: string, relationsTopology: ProjectRelationModel}> = []
+        
+        for (const element of Array.from(elements.values())) {
+            if (element.id !== projectId) {
+                const newTopology = graph.get(element, (e: ProjectModel) => e.id)
+                const topologyAsStrings = convertTopologyToStrings(newTopology)
+                if (!compareRelationEquals(element.relationsTopology, topologyAsStrings)) {
+                    updates.push({
+                        id: element.id,
+                        relationsTopology: topologyAsStrings
+                    })
+                }
+            }
         }
-    })
-    return ok(undefined)
+
+        if (updates.length > 0) {
+            await Promise.all(updates.map(update => 
+                prisma.project.update({
+                    where: { id: update.id },
+                    data: { relationsTopology: update.relationsTopology }
+                })
+            ))
+        }
+
+        const newThisTopology = graph.get(thisProject, (e: ProjectModel) => e.id)
+        const thisTopologyAsStrings = convertTopologyToStrings(newThisTopology)
+
+        await prisma.project.update({
+            where: { id: projectId },
+            data: {
+                relations: newRelations,
+                relationsTopology: thisTopologyAsStrings
+            }
+        })
+        return ok(undefined)
     })
 }
 
@@ -141,54 +142,54 @@ export async function updateRelations(projectId: string, relations: Partial<Proj
  * @return 有多少project得到了更新
  */
 export async function updateAllRelationTopology(): Promise<Result<number, UpdateAllRelationTopologyError>> {
-    return safeExecuteResult(async () => {
-    await requireAccess("project", "write")
-    const elements = await prisma.project.findMany({
-        select: {
-            id: true,
-            relations: true,
-            relationsTopology: true,
-            createTime: true
-        },
-        orderBy: {
-            createTime: 'asc'
+    return safeExecute(async () => {
+        await requireAccess("project", "write")
+        const elements = await prisma.project.findMany({
+            select: {
+                id: true,
+                relations: true,
+                relationsTopology: true,
+                createTime: true
+            },
+            orderBy: {
+                createTime: 'asc'
+            }
+        })
+
+        const projectModels = elements.map(e => ({
+            id: e.id,
+            relations: e.relations as ProjectRelationModel,
+            relationsTopology: e.relationsTopology as ProjectRelationModel,
+            createTime: e.createTime
+        }))
+
+        const graph = buildRelationGraphForAll(projectModels)
+
+        let num = 0
+        const updates: Array<{id: string, relationsTopology: ProjectRelationModel}> = []
+
+        for (const element of projectModels) {
+            const topology = graph.get(element, (e: ProjectModel) => e.id)
+            const topologyAsStrings = convertTopologyToStrings(topology)
+            if (Object.keys(topologyAsStrings).length > 0) {
+                updates.push({
+                    id: element.id,
+                    relationsTopology: topologyAsStrings
+                })
+                num += 1
+            }
         }
-    })
 
-    const projectModels = elements.map(e => ({
-        id: e.id,
-        relations: e.relations as ProjectRelationModel,
-        relationsTopology: e.relationsTopology as ProjectRelationModel,
-        createTime: e.createTime
-    }))
-
-    const graph = buildRelationGraphForAll(projectModels)
-
-    let num = 0
-    const updates: Array<{id: string, relationsTopology: ProjectRelationModel}> = []
-
-    for (const element of projectModels) {
-        const topology = graph.get(element, (e: ProjectModel) => e.id)
-        const topologyAsStrings = convertTopologyToStrings(topology)
-        if (Object.keys(topologyAsStrings).length > 0) {
-            updates.push({
-                id: element.id,
-                relationsTopology: topologyAsStrings
-            })
-            num += 1
+        if (updates.length > 0) {
+            await Promise.all(updates.map(update => 
+                prisma.project.update({
+                    where: { id: update.id },
+                    data: { relationsTopology: update.relationsTopology }
+                })
+            ))
         }
-    }
 
-    if (updates.length > 0) {
-        await Promise.all(updates.map(update => 
-            prisma.project.update({
-                where: { id: update.id },
-                data: { relationsTopology: update.relationsTopology }
-            })
-        ))
-    }
-
-    return ok(num)
+        return ok(num)
     })
 }
 
@@ -199,57 +200,57 @@ export async function updateAllRelationTopology(): Promise<Result<number, Update
  * 随后推导全量图，将新的全量拓扑和变化的关联对象更新到其对应的对象。
  */
 export async function removeProjectInTopology(projectId: string, topology: ProjectRelationModel): Promise<Result<void, RemoveProjectInTopologyError>> {
-    return safeExecuteResult(async () => {
-    await requireAccess("project", "write")
-    // 节点列表
-    const elements = new Map<string, ProjectModel>()
-    
-    // 查找全量拓扑的关联节点，放入图中
-    const topologyIds = Object.values(topology).flat()
-    if (topologyIds.length > 0) {
-        const topologyResult = await findAll(topologyIds as string[])
-        if(!topologyResult.ok) return topologyResult
-        const topologyProjects = topologyResult.value
-        topologyProjects.forEach(p => elements.set(p.id, p))
-    }
-
-    // relation发生变动的节点
-    const relationChanges = new Map<string, ProjectRelationModel>()
-
-    // 构建图
-    const graph = buildRelationGraphForRemoval(Array.from(elements.values()), projectId, relationChanges)
-
-    // 从传播图导出每一个节点的全量拓扑
-    // 比对每个节点的全量拓扑，发生变化的放入保存列表。relation发生变动的，也要放入保存列表
-    // 批量保存
-    const updates: Array<{id: string, relations: ProjectRelationModel, relationsTopology: ProjectRelationModel}> = []
-
-    for (const element of Array.from(elements.values())) {
-        const newRelations = relationChanges.get(element.id)
-        const newTopology = graph.get(element, (e: ProjectModel) => e.id)
-        const topologyAsStrings = convertTopologyToStrings(newTopology)
+    return safeExecute(async () => {
+        await requireAccess("project", "write")
+        // 节点列表
+        const elements = new Map<string, ProjectModel>()
         
-        if (newRelations || !compareRelationEquals(element.relationsTopology, topologyAsStrings)) {
-            updates.push({
-                id: element.id,
-                relations: newRelations || element.relations,
-                relationsTopology: topologyAsStrings
-            })
+        // 查找全量拓扑的关联节点，放入图中
+        const topologyIds = Object.values(topology).flat()
+        if (topologyIds.length > 0) {
+            const topologyResult = await findAll(topologyIds as string[])
+            if(!topologyResult.ok) return topologyResult
+            const topologyProjects = topologyResult.value
+            topologyProjects.forEach(p => elements.set(p.id, p))
         }
-    }
 
-    if (updates.length > 0) {
-        await Promise.all(updates.map(update => 
-            prisma.project.update({
-                where: { id: update.id },
-                data: {
-                    relations: update.relations,
-                    relationsTopology: update.relationsTopology
-                }
-            })
-        ))
-    }
-    return ok(undefined)
+        // relation发生变动的节点
+        const relationChanges = new Map<string, ProjectRelationModel>()
+
+        // 构建图
+        const graph = buildRelationGraphForRemoval(Array.from(elements.values()), projectId, relationChanges)
+
+        // 从传播图导出每一个节点的全量拓扑
+        // 比对每个节点的全量拓扑，发生变化的放入保存列表。relation发生变动的，也要放入保存列表
+        // 批量保存
+        const updates: Array<{id: string, relations: ProjectRelationModel, relationsTopology: ProjectRelationModel}> = []
+
+        for (const element of Array.from(elements.values())) {
+            const newRelations = relationChanges.get(element.id)
+            const newTopology = graph.get(element, (e: ProjectModel) => e.id)
+            const topologyAsStrings = convertTopologyToStrings(newTopology)
+            
+            if (newRelations || !compareRelationEquals(element.relationsTopology, topologyAsStrings)) {
+                updates.push({
+                    id: element.id,
+                    relations: newRelations || element.relations,
+                    relationsTopology: topologyAsStrings
+                })
+            }
+        }
+
+        if (updates.length > 0) {
+            await Promise.all(updates.map(update => 
+                prisma.project.update({
+                    where: { id: update.id },
+                    data: {
+                        relations: update.relations,
+                        relationsTopology: update.relationsTopology
+                    }
+                })
+            ))
+        }
+        return ok(undefined)
     })
 }
 

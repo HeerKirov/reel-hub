@@ -3,12 +3,13 @@ import { CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchem
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
-import { exceptionNotFound, exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError } from "@/constants/exception"
+import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { DeleteCommentError, ListCommentsError, RetrieveCommentError, UpsertCommentError } from "@/schemas/error"
 
 export async function listComments(filter: CommentListFilter): Promise<Result<ListResult<CommentWithProjectSchema>, ListCommentsError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("comment", "read")
         const validate = commentListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
@@ -49,7 +50,7 @@ export async function listComments(filter: CommentListFilter): Promise<Result<Li
 }
 
 export async function retrieveComment(projectId: string): Promise<Result<CommentSchema | null, RetrieveCommentError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("comment", "read")
         const userId = await getUserId()
 
@@ -62,7 +63,7 @@ export async function retrieveComment(projectId: string): Promise<Result<Comment
 }
 
 export async function upsertComment(projectId: string, form: CommentUpsertSchema): Promise<Result<void, UpsertCommentError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("comment", "write")
         const userId = await getUserId()
         const now = new Date()
@@ -70,10 +71,10 @@ export async function upsertComment(projectId: string, form: CommentUpsertSchema
         const validate = commentUpsertSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const project = await prisma.project.findUnique({where: {id: projectId}})
+        const project = await tx.project.findUnique({where: {id: projectId}})
         if(!project) return err(exceptionNotFound("Project not found"))
 
-        await prisma.comment.upsert({
+        await tx.comment.upsert({
             where: {
                 ownerId_projectId: {ownerId: userId, projectId}
             },
@@ -95,10 +96,10 @@ export async function upsertComment(projectId: string, form: CommentUpsertSchema
 }
 
 export async function deleteComment(projectId: string): Promise<Result<void, DeleteCommentError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("comment", "write")
         const userId = await getUserId()
-        await prisma.comment.delete({
+        await tx.comment.delete({
             where: {
                 ownerId_projectId: {ownerId: userId, projectId}
             }

@@ -2,7 +2,8 @@
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import { err, ok, type Result } from "@/schemas/all"
-import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError } from "@/constants/exception"
+import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { type GetUserPreferenceError, type SetUserPreferenceError } from "@/schemas/error"
 import {
     USER_PREFERENCE_DEFAULT, parseUserPreferenceSchema, userPreferenceSetForm, type UserPreferenceSchema, type UserPreferenceSetForm
@@ -11,7 +12,7 @@ import { requireAuth } from "@/helpers/auth-guard"
 import { isValidIanaTimeZone } from "@/helpers/subscription"
 
 export const retrieveUserPreference = cache(async function(): Promise<Result<UserPreferenceSchema, GetUserPreferenceError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         const session = await requireAuth()
         const preference = await getUserPreference(session.user.id)
         return ok(preference)
@@ -19,7 +20,7 @@ export const retrieveUserPreference = cache(async function(): Promise<Result<Use
 })
 
 export async function updateUserPreference(form: UserPreferenceSetForm): Promise<Result<UserPreferenceSchema, SetUserPreferenceError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         const session = await requireAuth()
         const userId = session.user.id
         const validate = userPreferenceSetForm.safeParse(form)
@@ -30,7 +31,7 @@ export async function updateUserPreference(form: UserPreferenceSetForm): Promise
             return err(exceptionParamError("Invalid timezone"))
         }
 
-        const row = await prisma.userPreference.upsert({
+        const row = await tx.userPreference.upsert({
             where: { userId },
             create: {
                 userId,

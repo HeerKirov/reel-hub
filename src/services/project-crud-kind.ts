@@ -5,7 +5,8 @@ import { requireAccess } from "@/helpers/auth-guard"
 import { prisma } from "@/lib/prisma"
 import { Prisma, Project } from "@/prisma/generated"
 import { ProjectType, RATING_SEX_TO_INDEX, RATING_VIOLENCE_TO_INDEX } from "@/constants/project"
-import { exceptionNotFound, exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError } from "@/constants/exception"
+import { safeExecute } from "@/helpers/execution"
 import { getPublishTimeRange } from "@/helpers/data"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { ProjectCommonForm, ProjectListFilter, ProjectRelationModel, ProjectRelationSchema } from "@/schemas/project"
@@ -35,7 +36,7 @@ export type ProjectCrudKind<TListFilter extends ProjectListFilter = ProjectListF
 
 function runListForKind<TListFilter extends ProjectListFilter, TForm extends ProjectCommonForm, TListItem, TDetail, E>(kind: ProjectCrudKind<TListFilter, TForm, TListItem, TDetail>) {
     return async (filter: unknown): Promise<Result<ListResult<TListItem>, E>> => {
-        return safeExecuteResult(async () => {
+        return safeExecute(async () => {
             const validate = kind.listFilterSchema.safeParse(filter)
             if(!validate.success) return err(exceptionParamError(validate.error.message))
 
@@ -76,7 +77,7 @@ function runListForKind<TListFilter extends ProjectListFilter, TForm extends Pro
 
 function runCreateForKind<TListFilter extends ProjectListFilter, TForm extends ProjectCommonForm, TListItem, TDetail, E>(kind: ProjectCrudKind<TListFilter, TForm, TListItem, TDetail>) {
     return async (form: unknown): Promise<Result<string, E>> => {
-        return safeExecuteResult(async () => {
+        return safeExecute(async () => {
             await requireAccess("project", "write")
             const userId = await getUserId()
             const now = new Date()
@@ -129,7 +130,7 @@ function runCreateForKind<TListFilter extends ProjectListFilter, TForm extends P
 
 function runUpdateForKind<TListFilter extends ProjectListFilter, TForm extends ProjectCommonForm, TListItem, TDetail, E>(kind: ProjectCrudKind<TListFilter, TForm, TListItem, TDetail>) {
     return async (id: string, form: unknown): Promise<Result<void, E>> => {
-        return safeExecuteResult(async () => {
+        return safeExecute(async () => {
             await requireAccess("project", "write")
             const userId = await getUserId()
             const now = new Date()
@@ -182,7 +183,7 @@ function runUpdateForKind<TListFilter extends ProjectListFilter, TForm extends P
 
 function runDeleteForKind<TListFilter extends ProjectListFilter, TForm extends ProjectCommonForm, TListItem, TDetail, E>(kind: ProjectCrudKind<TListFilter, TForm, TListItem, TDetail>) {
     return async (id: string): Promise<Result<void, E>> => {
-        return safeExecuteResult(async () => {
+        return safeExecute(async () => {
             await requireAccess("project", "write")
 
             const r = await prisma.project.findUnique({ where: { id } })

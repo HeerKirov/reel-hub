@@ -1,12 +1,13 @@
 "use server"
 import { prisma } from "@/lib/prisma"
-import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError } from "@/constants/exception"
+import { safeExecute } from "@/helpers/execution"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { ListStaffTypesError } from "@/schemas/error"
 import { StaffTypeListFilter, StaffTypeSchema, staffTypeListFilter } from "@/schemas/staff-type"
 
 export async function listStaffTypes(filter: StaffTypeListFilter): Promise<Result<ListResult<StaffTypeSchema>, ListStaffTypesError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         const validate = staffTypeListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 

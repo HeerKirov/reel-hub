@@ -3,11 +3,12 @@ import { ProjectListFilter, projectListFilter } from "@/schemas/project"
 import { ListProjectError } from "@/schemas/error"
 import { Result, err, ok } from "@/schemas/all"
 import { ProjectType } from "@/constants/project"
-import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError } from "@/constants/exception"
+import { safeExecute } from "@/helpers/execution"
 import { prisma } from "@/lib/prisma"
 
 export async function findProject(filter: ProjectListFilter): Promise<Result<{id: string, type: ProjectType, title: string, subtitles: string[]}[], ListProjectError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         const validate = projectListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 

@@ -1,6 +1,4 @@
 
-import { Result } from "@/schemas/all"
-
 export interface BaseException<C extends string, I> {
     code: C
     message: string
@@ -134,16 +132,4 @@ export function exceptionRejectCreateProgress(message: string = "Create progress
 export function isBaseException(error: unknown): error is BaseException<string, unknown> {
     if(typeof error !== "object" || error === null) return false
     return "code" in error && "message" in error && "info" in error
-}
-
-export async function safeExecuteResult<T, E extends BaseException<string, unknown>>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E | InternalServerError>> {
-    try {
-        return await fn()
-    } catch(error) {
-        if(isBaseException(error)) {
-            return { ok: false, err: error as E }
-        }
-        console.error("[safeExecuteResult] unexpected exception", error)
-        return { ok: false, err: exceptionInternalServerError() }
-    }
 }

@@ -1,6 +1,7 @@
 "use server"
 import { err, ListResult, ok, Result } from "@/schemas/all"
-import { exceptionNotFound, exceptionParamError, exceptionReject, safeExecuteResult } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError, exceptionReject } from "@/constants/exception"
+import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import {
     parsePurchaseSummaryWithProjectSchema, parsePurchaseWithProjectSchema, purchaseCreateForm, purchaseUpdateForm, purchaseListFilter, purchaseSummaryListFilter,
     PurchaseListFilter, PurchaseSummaryListFilter, PurchaseCreateForm, PurchaseUpdateForm, PurchaseWithProjectSchema, PurchaseSummaryWithProjectSchema,
@@ -14,7 +15,7 @@ import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 
 export async function listPurchases(filter: PurchaseListFilter): Promise<Result<ListResult<PurchaseWithProjectSchema>, ListPurchaseError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("purchase", "read")
         const userId = await getUserId()
         const validate = purchaseListFilter.safeParse(filter)
@@ -59,7 +60,7 @@ export async function listPurchases(filter: PurchaseListFilter): Promise<Result<
 }
 
 export async function listPurchaseSummary(filter: PurchaseSummaryListFilter): Promise<Result<ListResult<PurchaseSummaryWithProjectSchema>, ListPurchaseSummaryError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("purchase", "read")
         const userId = await getUserId()
         const validate = purchaseSummaryListFilter.safeParse(filter)
@@ -103,7 +104,7 @@ export async function listPurchaseSummary(filter: PurchaseSummaryListFilter): Pr
 }
 
 export async function retrievePurchaseSummary(projectId: string): Promise<Result<PurchaseSummarySchema | null, ListPurchaseSummaryError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("purchase", "read")
         const userId = await getUserId()
 
@@ -119,7 +120,7 @@ export async function retrievePurchaseSummary(projectId: string): Promise<Result
 }
 
 export async function createPurchase(form: PurchaseCreateForm): Promise<Result<void, CreatePurchaseError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("purchase", "write")
         const userId = await getUserId()
         const now = new Date()
@@ -127,33 +128,31 @@ export async function createPurchase(form: PurchaseCreateForm): Promise<Result<v
         const validate = purchaseCreateForm.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const project = await prisma.project.findUnique({ where: { id: validate.data.projectId }, select: { id: true, type: true } })
+        const project = await tx.project.findUnique({ where: { id: validate.data.projectId }, select: { id: true, type: true } })
         if(!project) return err(exceptionNotFound("Project not found"))
         if(project.type !== ProjectType.GAME) return err(exceptionReject("Purchase is only available for GAME project"))
 
-        await prisma.$transaction(async tx => {
-            await tx.purchase.create({
-                data: {
-                    ownerId: userId,
-                    projectId: validate.data.projectId,
-                    purchaseType: validate.data.purchaseType,
-                    description: validate.data.description,
-                    cost: validate.data.cost,
-                    purchaseTime: validate.data.purchaseTime,
-                    createTime: now,
-                    updateTime: now
-                }
-            })
-
-            await refreshPurchaseSummary(tx, userId, validate.data.projectId, now)
+        await tx.purchase.create({
+            data: {
+                ownerId: userId,
+                projectId: validate.data.projectId,
+                purchaseType: validate.data.purchaseType,
+                description: validate.data.description,
+                cost: validate.data.cost,
+                purchaseTime: validate.data.purchaseTime,
+                createTime: now,
+                updateTime: now
+            }
         })
+
+        await refreshPurchaseSummary(tx, userId, validate.data.projectId, now)
 
         return ok(undefined)
     })
 }
 
 export async function updatePurchase(id: string, form: PurchaseUpdateForm): Promise<Result<void, UpdatePurchaseError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("purchase", "write")
         const userId = await getUserId()
         const now = new Date()
@@ -161,7 +160,7 @@ export async function updatePurchase(id: string, form: PurchaseUpdateForm): Prom
         const validate = purchaseUpdateForm.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const purchase = await prisma.purchase.findFirst({
+        const purchase = await tx.purchase.findFirst({
             where: { id, ownerId: userId },
             include: { project: { select: { type: true } } }
         })
@@ -170,51 +169,47 @@ export async function updatePurchase(id: string, form: PurchaseUpdateForm): Prom
 
         const nextProjectId = validate.data.projectId ?? purchase.projectId
         if(validate.data.projectId) {
-            const project = await prisma.project.findUnique({ where: { id: validate.data.projectId }, select: { id: true, type: true } })
+            const project = await tx.project.findUnique({ where: { id: validate.data.projectId }, select: { id: true, type: true } })
             if(!project) return err(exceptionNotFound("Project not found"))
             if(project.type !== ProjectType.GAME) return err(exceptionReject("Purchase is only available for GAME project"))
         }
 
-        await prisma.$transaction(async tx => {
-            await tx.purchase.update({
-                where: { id },
-                data: {
-                    projectId: validate.data.projectId,
-                    purchaseType: validate.data.purchaseType,
-                    description: validate.data.description,
-                    cost: validate.data.cost,
-                    purchaseTime: validate.data.purchaseTime,
-                    updateTime: now
-                }
-            })
-
-            await refreshPurchaseSummary(tx, userId, purchase.projectId, now)
-            if(nextProjectId !== purchase.projectId) {
-                await refreshPurchaseSummary(tx, userId, nextProjectId, now)
+        await tx.purchase.update({
+            where: { id },
+            data: {
+                projectId: validate.data.projectId,
+                purchaseType: validate.data.purchaseType,
+                description: validate.data.description,
+                cost: validate.data.cost,
+                purchaseTime: validate.data.purchaseTime,
+                updateTime: now
             }
         })
+
+        await refreshPurchaseSummary(tx, userId, purchase.projectId, now)
+        if(nextProjectId !== purchase.projectId) {
+            await refreshPurchaseSummary(tx, userId, nextProjectId, now)
+        }
 
         return ok(undefined)
     })
 }
 
 export async function deletePurchase(id: string): Promise<Result<void, DeletePurchaseError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("purchase", "write")
         const userId = await getUserId()
         const now = new Date()
 
-        const purchase = await prisma.purchase.findFirst({
+        const purchase = await tx.purchase.findFirst({
             where: { id, ownerId: userId },
             include: { project: { select: { type: true } } }
         })
         if(!purchase) return err(exceptionNotFound("Purchase not found"))
         if(purchase.project.type !== ProjectType.GAME) return err(exceptionReject("Purchase is only available for GAME project"))
 
-        await prisma.$transaction(async tx => {
-            await tx.purchase.delete({ where: { id } })
-            await refreshPurchaseSummary(tx, userId, purchase.projectId, now)
-        })
+        await tx.purchase.delete({ where: { id } })
+        await refreshPurchaseSummary(tx, userId, purchase.projectId, now)
 
         return ok(undefined)
     })

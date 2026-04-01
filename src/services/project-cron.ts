@@ -1,15 +1,14 @@
 import { InputJsonValue } from "@prisma/client/runtime/library"
 import { exceptionUnauthorized, exceptionInternalServerError, InternalServerError, Unauthorized } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
-import { safeExecuteResult } from "@/constants/exception"
+import { safeExecuteTransaction } from "@/helpers/execution"
 import { ProjectType } from "@/constants/project"
-import { prisma } from "@/lib/prisma"
 import { parseEpisodePublishRecord } from "@/helpers/subscription"
 import { processEpisodePlanAutoUpdate } from "./project-utils"
 import config from "@/config/config"
 
 export async function cronTick(token: string): Promise<Result<void, Unauthorized | InternalServerError>> {
-    return safeExecuteResult<void, Unauthorized | InternalServerError>(async () => {
+    return safeExecuteTransaction<void, Unauthorized | InternalServerError>(async tx => {
         const secret = config.AUTH.CRON_SECRET
         if (!secret) {
             return err(exceptionInternalServerError("CRON_SECRET is not set"))
@@ -18,11 +17,11 @@ export async function cronTick(token: string): Promise<Result<void, Unauthorized
             return err(exceptionUnauthorized())
         }
 
-        const projects = await prisma.project.findMany({
+        const projects = await tx.project.findMany({
             where: {
                 type: {in: [ProjectType.ANIME, ProjectType.MANGA, ProjectType.MOVIE]},
                 episodePublishPlan: {not: []},
-                episodePublishedNum: {lt: prisma.project.fields.episodeTotalNum}
+                episodePublishedNum: {lt: tx.project.fields.episodeTotalNum}
             }
         })
 
@@ -36,7 +35,7 @@ export async function cronTick(token: string): Promise<Result<void, Unauthorized
                 now
             )
             if(newData) {
-                await prisma.project.update({
+                await tx.project.update({
                     where: {id: project.id},
                     data: {
                         episodePublishedNum: newData.publishedNum,

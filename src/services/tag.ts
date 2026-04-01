@@ -2,13 +2,14 @@
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { prisma } from "@/lib/prisma"
-import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError } from "@/constants/exception"
+import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { CreateTagError, DeleteTagError, ListTagsError, UpdateTagError } from "@/schemas/error"
 import { TagCreateFormSchema, TagListFilter, tagCreateFormSchema, TagSchema, tagListFilter, tagUpdateFormSchema, TagUpdateFormSchema, parseTagSchema } from "@/schemas/tag"
 
 export async function listTags(filter: TagListFilter): Promise<Result<ListResult<TagSchema>, ListTagsError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         const validate = tagListFilter.safeParse(filter)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
@@ -36,7 +37,7 @@ export async function listTags(filter: TagListFilter): Promise<Result<ListResult
 }
 
 export async function createTag(form: TagCreateFormSchema): Promise<Result<TagSchema, CreateTagError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("tag", "write")
         const userId = await getUserId()
         const now = new Date()
@@ -44,7 +45,7 @@ export async function createTag(form: TagCreateFormSchema): Promise<Result<TagSc
         const validate = tagCreateFormSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const exists = await prisma.tag.findFirst({
+        const exists = await tx.tag.findFirst({
             where: {
                 type: validate.data.type,
                 name: validate.data.name
@@ -52,7 +53,7 @@ export async function createTag(form: TagCreateFormSchema): Promise<Result<TagSc
         })
         if(exists) return err(exceptionAlreadyExists("tag", "name", validate.data.name))
         
-        const created = await prisma.tag.create({
+        const created = await tx.tag.create({
             data: {
                 ...validate.data,
                 createTime: now,
@@ -75,21 +76,21 @@ export async function retrieveTag(id: number): Promise<TagSchema | null> {
 }
 
 export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<Result<void, UpdateTagError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("tag", "write")
         const userId = await getUserId()
 
         const validate = tagUpdateFormSchema.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
-        const source = await prisma.tag.findUnique({ where: { id } })
+        const source = await tx.tag.findUnique({ where: { id } })
         if(!source) return err(exceptionNotFound("Tag not found"))
 
         const newName = validate.data.name !== undefined && validate.data.name !== source.name ? validate.data.name : undefined
         const newDescription = validate.data.description !== undefined && validate.data.description !== source.description ? validate.data.description : undefined
 
         if(newName !== undefined) {
-            const exists = await prisma.tag.findFirst({
+            const exists = await tx.tag.findFirst({
                 where: {
                     id: { not: id },
                     type: source.type,
@@ -101,7 +102,7 @@ export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<
 
         if(newName !== undefined || newDescription !== undefined) {
             const now = new Date()
-            await prisma.tag.update({
+            await tx.tag.update({
                 where: { id },
                 data: {
                     name: newName,
@@ -117,14 +118,14 @@ export async function updateTag(id: number, form: TagUpdateFormSchema): Promise<
 }
 
 export async function deleteTag(id: number): Promise<Result<void, DeleteTagError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("tag", "write")
 
-        const self = await prisma.tag.findUnique({ where: { id } })
+        const self = await tx.tag.findUnique({ where: { id } })
         if(!self) return err(exceptionNotFound("Tag not found"))
 
-        await prisma.projectTagRelation.deleteMany({where: {tagId: id}})
-        await prisma.tag.delete({where: { id }})
+        await tx.projectTagRelation.deleteMany({where: {tagId: id}})
+        await tx.tag.delete({where: { id }})
         return ok(undefined)
     })
 }

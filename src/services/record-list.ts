@@ -11,7 +11,8 @@ import {
 } from "@/schemas/record"
 import type { EpisodePublishRecordModel } from "@/schemas/project"
 import { err, ListResult, ok, Result } from "@/schemas/all"
-import { exceptionParamError, safeExecuteResult } from "@/constants/exception"
+import { exceptionParamError } from "@/constants/exception"
+import { safeExecute } from "@/helpers/execution"
 import { ListRecordError } from "@/schemas/error"
 import { RecordStatus } from "@/constants/record"
 import { getUserPreference } from "@/services/user-preference"
@@ -22,7 +23,7 @@ import {
 } from "@/helpers/subscription"
 
 export async function listRecordActivity(filter: RecordActivityListFilter): Promise<Result<ListResult<RecordActivityListSchema>, ListRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
 
@@ -81,7 +82,7 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
 }
 
 export async function listRecordHistory(filter: RecordHistoryListFilter): Promise<Result<ListResult<RecordHistoryListSchema>, ListRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
 
@@ -145,7 +146,7 @@ export async function listRecordHistory(filter: RecordHistoryListFilter): Promis
 }
 
 export async function listRecordTimeline(filter: RecordTimelineListFilter): Promise<Result<RecordTimelineItemSchema[], ListRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
 
@@ -195,7 +196,7 @@ export async function listRecordTimeline(filter: RecordTimelineListFilter): Prom
 }
 
 export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnimeListFilter): Promise<Result<RecordSubscriptionAnimeListSchema[], ListRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
 

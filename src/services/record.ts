@@ -4,14 +4,15 @@ import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
 import { ActivityEvent, parsePreviewSchema, recordCreateForm, RecordCreateForm, RecordPreviewSchema, RecordDetailSchema, parseDetailSchema, RecordUpdateForm, recordUpdateForm, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { err, ok, Result } from "@/schemas/all"
-import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, exceptionParamRequired, exceptionRejectCreateProgress, safeExecuteResult } from "@/constants/exception"
+import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, exceptionParamRequired, exceptionRejectCreateProgress } from "@/constants/exception"
+import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { CreateRecordError, DeleteRecordError, RecordDetailError, RecordPreviewError, UpdateRecordError } from "@/schemas/error"
 import { Prisma, ProjectType, RecordStatus } from "@/prisma/generated"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
 import { isEpisodeProjectType } from "@/constants/project"
 
 export async function retrieveRecordPreview(projectId: string): Promise<Result<RecordPreviewSchema | null, RecordPreviewError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
 
@@ -28,7 +29,7 @@ export async function retrieveRecordPreview(projectId: string): Promise<Result<R
 }
 
 export async function retrieveRecord(projectId: string): Promise<Result<RecordDetailSchema | null, RecordDetailError>> {
-    return safeExecuteResult(async () => {
+    return safeExecute(async () => {
         await requireAccess("record", "read")
         const userId = await getUserId()
 
@@ -50,7 +51,7 @@ export async function retrieveRecord(projectId: string): Promise<Result<RecordDe
 }
 
 export async function createRecord(projectId: string, form: RecordCreateForm): Promise<Result<void, CreateRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("record", "write")
         const userId = await getUserId()
         const now = new Date()
@@ -58,10 +59,10 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
         const validate = recordCreateForm.safeParse(form)
         if(!validate.success) return err(exceptionParamError(validate.error.message))
         
-        const project = await prisma.project.findUnique({where: {id: projectId}})
+        const project = await tx.project.findUnique({where: {id: projectId}})
         if(!project) return err(exceptionNotFound("Project not found"))
         
-        if(await prisma.record.findFirst({where: {ownerId: userId, projectId}})) {
+        if(await tx.record.findFirst({where: {ownerId: userId, projectId}})) {
             return err(exceptionAlreadyExists("record", "projectId", projectId))
         }
         
@@ -69,7 +70,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
 
         if(validate.data.createMode === "SUBSCRIBE") {
             const isEpisodeType = isEpisodeProjectType(project.type)
-            const record = await prisma.record.create({
+            const record = await tx.record.create({
                 data: {
                     ownerId: userId,
                     projectId,
@@ -84,7 +85,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                     specialAttention: isEpisodeType
                 }
             })
-            await prisma.recordProgress.create({
+            await tx.recordProgress.create({
                 data: {
                     projectId, recordId: record.id,
                     ordinal: 1,
@@ -206,7 +207,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
 
             const recordStatus = getRecordStatus(normalizedProgresses.length, lastEndTime, episodeTotalNum, lastEpisodeWatchedNum)
 
-            const record = await prisma.record.create({
+            const record = await tx.record.create({
                 data: {
                     ownerId: userId,
                     projectId,
@@ -240,7 +241,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                     finalEndTime !== null ? episodeTotalNum! : (isLast ? lastEpisodeWatchedNum! : episodeTotalNum!)
                 ) : null
 
-                await prisma.recordProgress.create({
+                await tx.recordProgress.create({
                     data: {
                         projectId, recordId: record.id,
                         ordinal,
@@ -258,7 +259,7 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
                 })
             }
         }else{
-            await prisma.record.create({
+            await tx.record.create({
                 data: {
                     ownerId: userId,
                     projectId,
@@ -279,11 +280,11 @@ export async function createRecord(projectId: string, form: RecordCreateForm): P
 }
 
 export async function updateRecord(projectId: string, form: RecordUpdateForm): Promise<Result<void, UpdateRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("record", "write")
         const userId = await getUserId()
 
-        const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
+        const record = await tx.record.findFirst({where: {ownerId: userId, projectId}})
         if(!record) return err(exceptionNotFound("Record not found"))
         
         const validate = recordUpdateForm.safeParse(form)
@@ -291,7 +292,7 @@ export async function updateRecord(projectId: string, form: RecordUpdateForm): P
 
         const now = new Date()
 
-        await prisma.record.update({
+        await tx.record.update({
             where: {id: record.id},
             data: {
                 specialAttention: validate.data.specialAttention,
@@ -303,15 +304,15 @@ export async function updateRecord(projectId: string, form: RecordUpdateForm): P
 }
 
 export async function deleteRecord(projectId: string): Promise<Result<void, DeleteRecordError>> {
-    return safeExecuteResult(async () => {
+    return safeExecuteTransaction(async tx => {
         await requireAccess("record", "write")
         const userId = await getUserId()
 
-        const record = await prisma.record.findFirst({where: {ownerId: userId, projectId}})
+        const record = await tx.record.findFirst({where: {ownerId: userId, projectId}})
         if(!record) return err(exceptionNotFound("Record not found"))
 
-        await prisma.recordProgress.deleteMany({where: {recordId: record.id}})
-        await prisma.record.delete({where: {id: record.id}})
+        await tx.recordProgress.deleteMany({where: {recordId: record.id}})
+        await tx.record.delete({where: {id: record.id}})
         return ok(undefined)
     })
 }
