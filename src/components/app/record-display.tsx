@@ -1,23 +1,22 @@
 import NextLink from "next/link"
 import { Box, Text, Icon, Flex, Stat, HStack, Badge, Button, Dialog, Portal, Heading, Image, Table } from "@chakra-ui/react"
 import { RiBookmark3Line, RiPushpin2Fill, RiDatabase2Fill, RiEdit2Line, RiArrowRightLine, RiBillFill } from "react-icons/ri"
-import { PlatformEditor } from "@/components/editor"
 import { InlineError } from "@/components/app/inline-error"
 import { DetailPageLayout } from "@/components/server/layout"
 import { ProjectType } from "@/constants/project"
 import { RecordStatus } from "@/constants/record"
+import { VALUE_TO_RECORD_STATUS } from "@/constants/record"
+import { isEpisodeProjectType } from "@/constants/project"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { AnimeDetailSchema } from "@/schemas/project-anime"
 import { MovieDetailSchema } from "@/schemas/project-movie"
 import { MangaDetailSchema } from "@/schemas/project-manga"
 import { RecordDetailSchema, RecordProgressDetailItem } from "@/schemas/record"
-import { VALUE_TO_RECORD_STATUS } from "@/constants/record"
-import { isEpisodeProjectType } from "@/constants/project"
 import { retrieveRecordPreview } from "@/services/record"
 import { retrievePurchaseSummary } from "@/services/purchase"
 import { unwrapQueryResult } from "@/helpers/result"
+import { resCover } from "@/helpers/ui"
 import { RecordBoxDialogContent, RecordDisplayAttentionButton, RecordDisplayCreateProgressButton, RecordDisplayFinishButton, RecordDisplayNextButton, RecordDisplayPlatformEditor, RecordDisplayResumeButton } from "./record-display.client"
-import emptyCover from "@/assets/empty.svg"
 
 export async function RecordBox({ project, type }: {project: ProjectDetailSchema | AnimeDetailSchema, type: ProjectType}) {
     const result = await retrieveRecordPreview(project.id)
@@ -162,7 +161,7 @@ function Header({ id, title, type }: {id: string, title: string, type: ProjectTy
 function Side({ project, type }: {project: ProjectDetailSchema, type: ProjectType}) {
     return (
         <>
-            <Image aspectRatio={5 / 7} width="100%" src={project.resources.cover ?? emptyCover.src} alt={project.title || "(未命名)"}/>
+            <Image aspectRatio={5 / 7} width="100%" src={resCover(project.resources)} alt={project.title || "(未命名)"}/>
             <Table.Root size="sm">
                 <Table.Body>
                     <Table.Row>

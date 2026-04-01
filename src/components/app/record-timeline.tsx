@@ -3,15 +3,14 @@
 import NextLink from "next/link"
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Badge, Box, Button, Drawer, Flex, HoverCard, Image, Portal, Text } from "@chakra-ui/react"
-import { dates } from "@/helpers/primitive"
 import type { FollowType } from "@/constants/record"
-import emptyCover from "@/assets/empty.svg"
+import { dates } from "@/helpers/primitive"
 
 export type TimelineItem = {
     id: string
     title: string
     summary: string
-    avatar: string | null
+    avatar: string
     startAt: Date
     endAt: Date | null
     ongoing: boolean
@@ -257,7 +256,7 @@ export function TimelineCanvas(props: {
                                         flexShrink={0}
                                         borderWidth="1px"
                                     >
-                                        <Image src={mobilePreviewItem.data.avatar ?? emptyCover.src} alt={mobilePreviewItem.data.title} w="full" h="full" objectFit="cover" />
+                                        <Image src={mobilePreviewItem.data.avatar} alt={mobilePreviewItem.data.title} w="full" h="full" objectFit="cover" />
                                     </Box>
                                     <Flex direction="column" gap="2" minW={0}>
                                         <Text fontWeight="600" lineClamp={2}>{mobilePreviewItem.data.title}</Text>
@@ -396,7 +395,7 @@ const TimelineProgressBarItem = memo(function TimelineProgressBarItem(props: {
                             flexShrink={0}
                             borderWidth="1px"
                         >
-                            <Image src={item.data.avatar ?? emptyCover.src} alt={item.data.title} w="full" h="full" objectFit="cover" />
+                            <Image src={item.data.avatar} alt={item.data.title} w="full" h="full" objectFit="cover" />
                         </Box>
                         <Box minW={0}>
                             <Text fontWeight="600" lineClamp={2}>{item.data.title}</Text>

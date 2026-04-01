@@ -11,8 +11,11 @@ import { RECORD_STATUS_ITEMS, RecordStatus, VALUE_TO_RECORD_STATUS } from "@/con
 import { RecordActivityListSchema, RecordHistoryListSchema } from "@/schemas/record"
 import { listRecordActivity, listRecordHistory, listRecordTimeline } from "@/services/record-list"
 import { dates } from "@/helpers/primitive"
-import { staticHref } from "@/helpers/ui"
+import { resAvatar, staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
+
+const HISTORY_PAGE_SIZE = 20
+const ACTIVITY_PAGE_SIZE = 15
 
 export type RecordListSearchParams = {
     page?: string
@@ -32,7 +35,7 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
     const view = searchParams.view ?? "activity"
 
     if(view === "history") {
-        const result = await listRecordHistory({ type, page, size: 15, search: searchParams.search, progressKind: searchParams.progressKind })
+        const result = await listRecordHistory({ type, page, size: HISTORY_PAGE_SIZE, search: searchParams.search, progressKind: searchParams.progressKind })
         const { data, error } = unwrapQueryResult(result)
         if(error) {
             return <InlineError error={error}/>
@@ -47,12 +50,12 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
                 filter={<FilterPanel searchParams={searchParams} type={type}/>}
                 content={<ContentHistory list={list} type={type}/>}
                 totalRecord={total}
-                totalPage={Math.ceil(total / 15)}
+                totalPage={Math.ceil(total / HISTORY_PAGE_SIZE)}
                 currentPage={page}
             />
         )
     }else if(view === "activity") {
-        const result = await listRecordActivity({ type, page, size: 15, search: searchParams.search, specialAttention: searchParams.specialAttention, status: searchParams.status })
+        const result = await listRecordActivity({ type, page, size: ACTIVITY_PAGE_SIZE, search: searchParams.search, specialAttention: searchParams.specialAttention, status: searchParams.status })
         const { data, error } = unwrapQueryResult(result)
         if(error) {
             return <InlineError error={error} />
@@ -67,7 +70,7 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
                 filter={<FilterPanel searchParams={searchParams} type={type}/>}
                 content={<ContentActivity list={list} type={type}/>}
                 totalRecord={total}
-                totalPage={Math.ceil(total / 15)}
+                totalPage={Math.ceil(total / ACTIVITY_PAGE_SIZE)}
                 currentPage={page}
             />
         )
@@ -182,7 +185,7 @@ function ContentActivity({ list, type }: { list: RecordActivityListSchema[], typ
                     <NextLink href={`/${type.toLowerCase()}/record/${item.project.id}`}>
                         <Avatar.Root mr="2">
                             <Avatar.Fallback name={item.project.title} />
-                            <Avatar.Image src={item.project.resources["avatar"]} />
+                            <Avatar.Image src={resAvatar(item.project.resources)} />
                         </Avatar.Root>
                         <Box width="full">
                             <Flex lineHeight="38px" justify="space-between" align="center" gap="2">
@@ -205,7 +208,7 @@ function ContentActivity({ list, type }: { list: RecordActivityListSchema[], typ
                                     </Text>
                                 </Box>
                             </Flex>
-                            {progressPercent !== null && <Progress.Root mt="2" value={progressPercent} size="sm"><Progress.Track><Progress.Range /></Progress.Track></Progress.Root>}
+                            {progressPercent !== null && <Progress.Root mt="2" colorPalette="blue" value={progressPercent} size="xs"><Progress.Track><Progress.Range /></Progress.Track></Progress.Root>}
                         </Box>
                     </NextLink>
                 </Flex>
@@ -230,9 +233,9 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
                 return (
                     <Table.Row key={idx}>
                     <Table.Cell>
-                        <Avatar.Root size="sm">
+                        <Avatar.Root size="sm" shape="rounded">
                             <Avatar.Fallback name={item.project.title} />
-                            <Avatar.Image src={item.project.resources["avatar"]} />
+                            <Avatar.Image src={resAvatar(item.project.resources)} />
                         </Avatar.Root>
                     </Table.Cell>
                     <Table.Cell>

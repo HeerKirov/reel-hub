@@ -1,17 +1,17 @@
 import NextLink from "next/link"
-import { Box, Button, Flex, Image, Stat, Table, Text } from "@chakra-ui/react"
+import { Box, Button, Flex, Image, Stat, Table } from "@chakra-ui/react"
 import { RiDatabase2Fill } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { CompactPagination } from "@/components/server/filters"
 import { InlineError, NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectDetailSchema } from "@/schemas/project"
+import { PurchaseWithProjectSchema } from "@/schemas/purchase"
 import { listPurchases, retrievePurchaseSummary } from "@/services/purchase"
 import { retrieveProjectGame } from "@/services/project-game"
 import { unwrapQueryResult } from "@/helpers/result"
-import { PurchaseDetailTable } from "./purchase-detail.client"
-import emptyCover from "@/assets/empty.svg"
-import { PurchaseWithProjectSchema } from "@/schemas/purchase"
+import { resCover } from "@/helpers/ui"
 import { numbers } from "@/helpers/primitive"
+import { PurchaseDetailTable } from "./purchase-detail.client"
 
 export default async function PurchaseDetail(props: {id: string, searchParams: Promise<{ page?: string }>}) {
     const searchParams = await props.searchParams
@@ -44,7 +44,7 @@ const PAGE_SIZE = 15
 function Side({ project }: {project: ProjectDetailSchema}) {
     return (
         <>
-            <Image aspectRatio={5 / 7} width="100%" src={project.resources.cover ?? emptyCover.src} alt={project.title || "(未命名)"}/>
+            <Image aspectRatio={5 / 7} width="100%" src={resCover(project.resources)} alt={project.title || "(未命名)"}/>
             <Table.Root size="sm">
                 <Table.Body>
                     <Table.Row>

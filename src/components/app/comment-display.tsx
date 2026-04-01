@@ -3,15 +3,15 @@ import { Box, Button, Flex, Heading, Icon, Image, Table, Text } from "@chakra-ui
 import { RiBookmark3Line, RiChatQuoteFill, RiDatabase2Fill, RiEdit2Line, RiPenNibLine } from "react-icons/ri"
 import { DetailPageLayout } from "@/components/server/layout"
 import { WrappedText } from "@/components/server/universal"
+import { InlineError } from "@/components/app/inline-error"
 import { Starlight } from "@/components/form"
-import { ProjectType } from "@/constants/project"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { CommentSchema } from "@/schemas/comment"
+import { ProjectType } from "@/constants/project"
 import { SCORE_DESCRIPTIONS } from "@/constants/comment"
 import { retrieveComment } from "@/services/comment"
-import emptyCover from "@/assets/empty.svg"
+import { resCover } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
-import { InlineError } from "@/components/app/inline-error"
 
 export function CommentDisplay({ type, project, comment }: {type: ProjectType, project: ProjectDetailSchema, comment: CommentSchema}) {
     const breadcrumb = {
@@ -40,7 +40,7 @@ function Header({ id, title, type }: {id: string, title: string, type: ProjectTy
 function Side({ project, type }: {project: ProjectDetailSchema, type: ProjectType}) {
     return (
         <>
-            <Image aspectRatio={5 / 7} width="100%" src={project.resources.cover ?? emptyCover.src} alt={project.title || "(未命名)"}/>
+            <Image aspectRatio={5 / 7} width="100%" src={resCover(project.resources)} alt={project.title || "(未命名)"}/>
             <Table.Root size="sm">
                 <Table.Body>
                     <Table.Row>

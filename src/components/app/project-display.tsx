@@ -11,7 +11,7 @@ import { NotFoundScreen } from "@/components/app/inline-error"
 import { ProjectDetailSchema } from "@/schemas/project"
 import { ProjectType, VALUE_TO_RATING_SEX, VALUE_TO_RATING_VIOLENCE, VALUE_TO_REGION } from "@/constants/project"
 import { getUserIdOrNull, hasPermission } from "@/helpers/next"
-import emptyCover from "@/assets/empty.svg"
+import { resCover } from "@/helpers/ui"
 
 export interface ProjectDisplayProps<RES extends ProjectDetailSchema> {
     id: string
@@ -53,7 +53,7 @@ function Header<RES extends ProjectDetailSchema>({ id, title, isAdmin, type }: {
 function Side<RES extends ProjectDetailSchema>({ data, type }: {data: RES, type: ProjectType}) {
     return (
         <>
-            <Image aspectRatio={5 / 7} width="100%" src={data.resources.cover ?? emptyCover.src} alt={data.title || "(未命名)"}/>
+            <Image aspectRatio={5 / 7} width="100%" src={resCover(data.resources)} alt={data.title || "(未命名)"}/>
             <Table.Root size="sm">
                 <Table.Body>
                     <Table.Row>

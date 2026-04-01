@@ -12,7 +12,7 @@ import type { RecordListSearchParams } from "@/components/app/record-list"
 import { RecordStatus, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
 import type { RecordTimelineItemSchema } from "@/schemas/record"
 import { dates } from "@/helpers/primitive"
-import { staticHref } from "@/helpers/ui"
+import { resAvatar, staticHref } from "@/helpers/ui"
 
 type TimelineContextValue = {
     visibleRange: { newerAt: Date, olderAt: Date } | null
@@ -175,7 +175,7 @@ function buildTimelineItemsFromRecordTimelineRows(rows: RecordTimelineItemSchema
             id: `${item.project.id}-${item.ordinal}`,
             title: item.project.title,
             summary,
-            avatar: item.project.resources["avatar"] ?? null,
+            avatar: resAvatar(item.project.resources),
             startAt: item.startTime,
             endAt: item.endTime,
             ongoing: item.status === RecordStatus.WATCHING,

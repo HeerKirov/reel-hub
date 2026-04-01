@@ -1,6 +1,6 @@
 import NextLink from "next/link"
 import { RiArrowDownSFill, RiBillLine, RiFundsBoxLine } from "react-icons/ri"
-import { Avatar, Box, Button, Icon, Menu, Portal, Table, Text } from "@chakra-ui/react"
+import { Avatar, Button, Icon, Menu, Portal, Table, Text } from "@chakra-ui/react"
 import { SearchBox } from "@/components/filters"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter } from "@/components/server/filters"
@@ -11,7 +11,7 @@ import { PurchaseSummaryWithProjectSchema, PurchaseWithProjectSchema } from "@/s
 import { listPurchaseSummary, listPurchases } from "@/services/purchase"
 import { dates, numbers } from "@/helpers/primitive"
 import { unwrapQueryResult } from "@/helpers/result"
-import { staticHref } from "@/helpers/ui"
+import { resAvatar, staticHref } from "@/helpers/ui"
 
 export interface PurchaseListSearchParams {
     page?: string
@@ -23,7 +23,7 @@ export interface PurchaseListSearchParams {
     orderBy?: "totalCost" | "updateTime"
 }
 
-const PAGE_SIZE = 15
+const PAGE_SIZE = 20
 
 export async function PurchaseList(props: { searchParams: Promise<PurchaseListSearchParams> }) {
     const searchParams = await props.searchParams
@@ -160,9 +160,9 @@ function ContentRecords({ list }: { list: PurchaseWithProjectSchema[] }) {
                 ) : list.map((item) => (
                     <Table.Row key={item.id}>
                         <Table.Cell>
-                            <Avatar.Root size="sm">
+                            <Avatar.Root size="sm" shape="rounded">
                                 <Avatar.Fallback name={item.project.title} />
-                                <Avatar.Image src={item.project.resources["avatar"]} />
+                                <Avatar.Image src={resAvatar(item.project.resources)} />
                             </Avatar.Root>
                         </Table.Cell>
                         <Table.Cell>
@@ -200,9 +200,9 @@ function ContentSummary({ list }: { list: PurchaseSummaryWithProjectSchema[] }) 
                 ) : list.map((item) => (
                     <Table.Row key={item.projectId}>
                         <Table.Cell>
-                            <Avatar.Root size="sm">
+                            <Avatar.Root size="sm" shape="rounded">
                                 <Avatar.Fallback name={item.project.title} />
-                                <Avatar.Image src={item.project.resources["avatar"]} />
+                                <Avatar.Image src={resAvatar(item.project.resources)} />
                             </Avatar.Root>
                         </Table.Cell>
                         <Table.Cell>

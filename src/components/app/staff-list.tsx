@@ -9,13 +9,15 @@ import { listStaffs } from "@/services/staff"
 import { unwrapQueryResult } from "@/helpers/result"
 import { InlineError } from "@/components/app/inline-error"
 
+const PAGE_SIZE = 20
+
 export type StaffListSearchParams = { page?: string, search?: string }
 
 export async function StaffList(props: { searchParams: Promise<StaffListSearchParams>, type: ProjectType }) {
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
-    const listResult = await listStaffs({ type: props.type, page, size: 15, search: searchParams.search })
+    const listResult = await listStaffs({ type: props.type, page, size: PAGE_SIZE, search: searchParams.search })
     const { data, error } = unwrapQueryResult(listResult)
 
     if(error) {
@@ -30,7 +32,7 @@ export async function StaffList(props: { searchParams: Promise<StaffListSearchPa
             filter={<FilterPanel searchParams={searchParams} />}
             content={<ContentTable list={list} type={props.type} />}
             totalRecord={total}
-            totalPage={Math.ceil(total / 15)}
+            totalPage={Math.ceil(total / PAGE_SIZE)}
             currentPage={page}
         />
     )

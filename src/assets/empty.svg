@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Empty cover placeholder">
   <rect width="512" height="512" fill="#f3f3f3" />
-  <g transform="translate(105 105) scale(4.5)">
+  <g transform="translate(112 112) scale(4.5)">
     <path d="M12 15L32 7L52 15L47 49L32 57L17 49Z" fill="#ffffff" />
     <path d="M32 7L32 57" stroke="#f2f2f2" stroke-width="2.8" stroke-linecap="round" opacity="0.9" />
     <path d="M12 15L32 28L52 15" stroke="#f2f2f2" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff"/>

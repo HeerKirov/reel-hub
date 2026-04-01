@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation"
 import { RiDeleteBinLine, RiUser2Line } from "react-icons/ri"
 import { Box, Button, Container, Flex, Icon, IconButton, Image, Popover, Portal, SimpleGrid, Text } from "@chakra-ui/react"
 import { EditableText } from "@/components/form"
-import { ProjectListSchema } from "@/schemas/project"
 import { ProjectType } from "@/constants/project"
+import { ProjectListSchema } from "@/schemas/project"
 import { StaffSchema } from "@/schemas/staff"
 import { deleteStaff, updateStaff } from "@/services/staff"
 import { handleActionResult } from "@/helpers/action"
-import emptyCover from "@/assets/empty.svg"
+import { resAvatar } from "@/helpers/ui"
 
 export function StaffDetail({ data, related, isAdmin, type }: { data: StaffSchema, related: ProjectListSchema[], isAdmin: boolean, type: ProjectType }) {
     const router = useRouter()
@@ -89,7 +89,7 @@ export function StaffDetail({ data, related, isAdmin, type }: { data: StaffSchem
                     {related.map(item => (
                         <Flex key={item.id} gap="3" asChild>
                             <NextLink href={`/${type.toLowerCase()}/database/${item.id}`}>
-                                <Image src={item.resources.avatar ?? item.resources.cover ?? emptyCover.src} alt={item.title || "(未命名)"} width="60px" height="60px" objectFit="cover" rounded="md" />
+                                <Image src={resAvatar(item.resources)} alt={item.title || "(未命名)"} width="60px" height="60px" objectFit="cover" rounded="md" />
                                 <Text color="blue.fg">{item.title || "(未命名)"}</Text>
                             </NextLink>
                         </Flex>

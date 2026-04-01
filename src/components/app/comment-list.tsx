@@ -9,17 +9,19 @@ import { ProjectType } from "@/constants/project"
 import { CommentWithProjectSchema } from "@/schemas/comment"
 import { listComments } from "@/services/comment"
 import { dates } from "@/helpers/primitive"
-import { staticHref } from "@/helpers/ui"
+import { resAvatar, staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
 
 export type CommentListSearchParams = { page?: string, search?: string, view?: "activity" | "table" }
+
+const PAGE_SIZE = 20
 
 export async function CommentList(props: {searchParams: Promise<CommentListSearchParams>, type: ProjectType}) {
     const type = props.type
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
-    const listResult = await listComments({type, page, size: 15, search: searchParams.search, orderBy: searchParams.view === "table" ? "score" : "updateTime"})
+    const listResult = await listComments({type, page, size: PAGE_SIZE, search: searchParams.search, orderBy: searchParams.view === "table" ? "score" : "updateTime"})
     const { data, error } = unwrapQueryResult(listResult)
 
     if(error) {
@@ -35,7 +37,7 @@ export async function CommentList(props: {searchParams: Promise<CommentListSearc
             filter={<FilterPanel searchParams={searchParams} />}
             content={searchParams.view === "table" ? <ContentTable list={list} type={type}/> : <ContentActivity list={list} type={type}/>}
             totalRecord={total}
-            totalPage={Math.ceil(total / 15)}
+            totalPage={Math.ceil(total / PAGE_SIZE)}
             currentPage={page}
         />
     )
@@ -84,7 +86,7 @@ function ContentActivity({ list, type }: {list: CommentWithProjectSchema[], type
                 <NextLink href={`/${type.toLowerCase()}/comment/${item.project.id}`}>
                     <Avatar.Root mr="2">
                         <Avatar.Fallback name={item.project.title}/>
-                        <Avatar.Image src={item.project.resources["avatar"]}/>
+                        <Avatar.Image src={resAvatar(item.project.resources)}/>
                     </Avatar.Root>
                     <Box width="full">
                         <Flex lineHeight="38px" justify="space-between" align="center">
@@ -97,7 +99,7 @@ function ContentActivity({ list, type }: {list: CommentWithProjectSchema[], type
                             <Text color="fg.muted" fontSize="sm">{dates.toDailyText(item.updateTime)}</Text>
                         </Flex>
                         {item.title && <Text fontWeight="600" fontSize="lg"><Icon mr="2"><RiChatQuoteFill/></Icon>{item.title}</Text>}
-                        {item.article && <Text color="fg.muted" lineClamp={3}>{item.article}</Text>}
+                        {item.article && <Text color="fg.muted" lineClamp={2}>{item.article}</Text>}
                     </Box>
                 </NextLink>
             </Flex>
@@ -118,9 +120,9 @@ function ContentTable({ list, type }: {list: CommentWithProjectSchema[], type: P
             {list.map((item, idx) => (
                 <Table.Row key={idx}>
                     <Table.Cell>
-                        <Avatar.Root size="sm">
+                        <Avatar.Root size="sm" shape="rounded">
                             <Avatar.Fallback name={item.project.title}/>
-                            <Avatar.Image src={item.project.resources["avatar"]}/>
+                            <Avatar.Image src={resAvatar(item.project.resources)}/>
                         </Avatar.Root>
                     </Table.Cell>
                     <Table.Cell>

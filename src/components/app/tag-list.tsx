@@ -11,12 +11,14 @@ import { InlineError } from "@/components/app/inline-error"
 
 export type TagListSearchParams = { page?: string, search?: string }
 
+const PAGE_SIZE = 20
+
 export async function TagList(props: { searchParams: Promise<TagListSearchParams>, type: ProjectType }) {
     const type = props.type
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
 
-    const listResult = await listTags({ type, page, size: 15, search: searchParams.search })
+    const listResult = await listTags({ type, page, size: PAGE_SIZE, search: searchParams.search })
     const { data, error } = unwrapQueryResult(listResult)
 
     if(error) {
@@ -31,7 +33,7 @@ export async function TagList(props: { searchParams: Promise<TagListSearchParams
             filter={<FilterPanel searchParams={searchParams} />}
             content={<ContentTable list={list} type={type} />}
             totalRecord={total}
-            totalPage={Math.ceil(total / 15)}
+            totalPage={Math.ceil(total / PAGE_SIZE)}
             currentPage={page}
         />
     )

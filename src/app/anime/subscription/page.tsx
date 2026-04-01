@@ -2,15 +2,14 @@ import type { Metadata } from "next"
 import { Avatar, Badge, Box, Flex, HStack, Text } from "@chakra-ui/react"
 import NextLink from "next/link"
 import { Tooltip } from "@/components/ui/tooltip"
+import { SearchBox } from "@/components/filters"
 import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter } from "@/components/server/filters"
-import { SearchBox } from "@/components/filters"
-import {
-    RECORD_SUBSCRIPTION_ANIME_MODE, RECORD_SUBSCRIPTION_ANIME_ORDER, RecordSubscriptionAnimeListSchema
-} from "@/schemas/record"
+import { InlineError } from "@/components/app/inline-error"
+import { RECORD_SUBSCRIPTION_ANIME_MODE, RECORD_SUBSCRIPTION_ANIME_ORDER, RecordSubscriptionAnimeListSchema } from "@/schemas/record"
 import { listRecordSubscriptionAnime } from "@/services/record-list"
 import { unwrapQueryResult } from "@/helpers/result"
-import { InlineError } from "@/components/app/inline-error"
+import { resAvatar } from "@/helpers/ui"
 import { SubscriptionAnimeRowNextButton } from "./components"
 import { formatNextPublishLine } from "./helpers"
 
@@ -142,7 +141,7 @@ function SubscriptionAnimeRow({ item }: { item: RecordSubscriptionAnimeListSchem
             <NextLink href={`/anime/record/${item.project.id}`}>
                 <Avatar.Root flexShrink={0} size="2xl" shape="rounded">
                     <Avatar.Fallback name={item.project.title} />
-                    <Avatar.Image src={item.project.resources["avatar"]} />
+                    <Avatar.Image src={resAvatar(item.project.resources)} />
                 </Avatar.Root>
             </NextLink>
             <Flex gap="2" align="flex-start" width="full" justify="space-between" direction="column">

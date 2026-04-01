@@ -56,6 +56,11 @@ docker compose -f docker-compose.yml up -d
 docker compose -f docker-compose.migrate.yml run reel-hub-migrate
 ```
 
+## Cron Task
+
+项目的定时任务调度依赖于外部系统调用，在部署时，通常使用 cURL + crontab 或其他调度系统完成定时调用。  
+相关文件可参考docker/crontab目录下的相关脚本。
+
 ## Legacy Migration
 
 已提供旧项目数据迁移API。
@@ -77,5 +82,5 @@ docker compose -f docker-compose.migrate.yml run reel-hub-migrate
 
 通过cURL调用:
 ```shell
-curl -fsS -X POST -H 'Authorization: Bearer <SYSCALL_SECRET>' -d '{"userMapping": {"1": "user_abc123", "2": "user_def456"}, "dryRun": true}' http://localhost:3000/api/admin/migrate-legacy
+curl -fsS -X POST -H 'Authorization: Bearer <SYSCALL_SECRET>' -d '{"oldDatabaseUrl": "postgres://user:password@host:5432/legacy_db", "userMapping": {"1": "user_abc123"}, "dryRun": true}' http://localhost:3000/api/admin/migrate-legacy
 ```

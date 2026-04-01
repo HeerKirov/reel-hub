@@ -1,3 +1,14 @@
+import emptyCover from "@/assets/empty.svg"
+
+/** 海报、侧栏等封面图：cover → avatar → 占位 */
+export function resCover(resources: Record<string, string>): string {
+    return resources["cover"] ?? resources["avatar"] ?? emptyCover.src
+}
+
+/** 头像、列表缩略图：avatar → cover → 占位 */
+export function resAvatar(resources: Record<string, string>): string {
+    return resources["avatar"] ?? resources["cover"] ?? emptyCover.src
+}
 
 /**
  * 根据当前query参数，以及给出的新参数，生成一个href，用于在当前path下切换query参数。

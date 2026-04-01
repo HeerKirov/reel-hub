@@ -12,7 +12,7 @@ import { ListProjectError } from "@/schemas/error"
 import { RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, ProjectType } from "@/constants/project"
 import { hasPermission } from "@/helpers/next"
 import { unwrapQueryResult } from "@/helpers/result"
-import emptyCover from "@/assets/empty.svg"
+import { resCover } from "@/helpers/ui"
 
 type CommonSearchParams = Omit<ProjectListFilter, "page" | "size">
 
@@ -108,7 +108,7 @@ function ContentGrid({ list, type, ...attrs }: {list: ProjectListSchema[], type:
             {list.map(item => <Box key={item.id}>
                 <NextLink href={`/${type.toLowerCase()}/database/${item.id}`}>
                     <Box  rounded="md" borderWidth="1px" overflow="hidden">
-                        <Image aspectRatio={5 / 7} width="100%" src={item.resources.cover ?? emptyCover.src} alt={item.title || "(未命名)"}/>
+                        <Image aspectRatio={5 / 7} width="100%" src={resCover(item.resources)} alt={item.title || "(未命名)"}/>
                     </Box>
                     <Text pb="2">{item.title || "(未命名)"}</Text>
                 </NextLink>
