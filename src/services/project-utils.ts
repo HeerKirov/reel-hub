@@ -1,5 +1,5 @@
 import { Staff, Tag } from "@/prisma/generated"
-import { EpisodePublishRecord } from "@/schemas/project"
+import { EpisodePublishRecord, EpisodePublishRecordModel } from "@/schemas/project"
 import { CreateStaffError, CreateTagError } from "@/schemas/error"
 import { Result, err, ok } from "@/schemas/all"
 import { ProjectType } from "@/constants/project"
@@ -194,4 +194,42 @@ export function processEpisodePlan(totalNum: number, newPublishedNum: number, ne
         episodeTitle: p.episodeTitle
     }))
     return { publishedNum, publishPlan, publishedRecords }
+}
+
+export function processEpisodePlanAutoUpdate(totalNum: number, publishedNum: number, publishPlan: EpisodePublishRecord[], publishedRecords: EpisodePublishRecord[], now: Date) {
+    const planWithDate = publishPlan.filter(p => p.publishTime).map(p => ({ ...p, date: new Date(p.publishTime!) }))
+
+    const beforeNowPlan = planWithDate.filter(p => p.date.getTime() <= now.getTime())
+    if(beforeNowPlan.length <= 0) {
+        return null
+    }
+    const afterNowPlan = planWithDate.filter(p => p.date.getTime() > now.getTime())
+
+    const newPublishedNum = Math.min(totalNum, publishedNum + beforeNowPlan.length)
+    const oldPublishedRecords = Array(publishedNum).fill(null).map((_, index) => {
+        const record = publishedRecords.find(p => p.index === index + 1)
+        return record ?? {
+            index: index + 1,
+            publishTime: null,
+            actualEpisodeNum: null,
+            episodeTitle: null
+        }
+    })
+    const newPublishedRecords: EpisodePublishRecordModel[] = [
+        ...oldPublishedRecords,
+        ...beforeNowPlan.map((p, idx) => ({
+            index: publishedNum + idx + 1,
+            publishTime: p.publishTime,
+            actualEpisodeNum: p.actualEpisodeNum,
+            episodeTitle: p.episodeTitle
+        }))
+    ]
+    const newPublishPlan: EpisodePublishRecordModel[] = afterNowPlan.map((p, idx) => ({
+        index: newPublishedNum + idx + 1,
+        publishTime: p.publishTime,
+        actualEpisodeNum: p.actualEpisodeNum,
+        episodeTitle: p.episodeTitle
+    }))
+
+    return { publishedNum: newPublishedNum, publishPlan: newPublishPlan, publishedRecords: newPublishedRecords }
 }

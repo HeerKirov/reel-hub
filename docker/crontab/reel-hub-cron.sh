@@ -30,4 +30,4 @@ fi
 # 去掉 BASE_URL 末尾 /，再拼路径
 BASE_URL_TRIMMED=${BASE_URL%/}
 
-exec curl -fsS -H "Authorization: Bearer ${SECRET}" "${BASE_URL_TRIMMED}/api/cron/tick"
+exec curl -fsS -X POST -H "Authorization: Bearer ${SECRET}" "${BASE_URL_TRIMMED}/api/cron/tick"

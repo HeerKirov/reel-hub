@@ -4,6 +4,7 @@ export default {
         URL: process.env.AUTH_URL,
         CLIENT_ID: process.env.AUTH_CLIENT_ID,
         CLIENT_SECRET: process.env.AUTH_CLIENT_SECRET,
+        CRON_SECRET: process.env.CRON_SECRET,
     },
     OSS: {
         ACCESS_KEY_ID: process.env.OSS_ACCESS_KEY_ID,

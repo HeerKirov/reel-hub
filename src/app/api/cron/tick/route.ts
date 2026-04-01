@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import { cronTick } from "@/services/project-cron"
 
 /** 供宿主机 reel-hub-cron.sh / 任意受信客户端调用的定时任务入口；生产环境请设置 CRON_SECRET */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   const secret = process.env.CRON_SECRET
   if (!secret) {
     return NextResponse.json({ ok: false, error: "CRON_SECRET is not set" }, { status: 503 })
@@ -11,5 +12,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (token !== secret) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
+
+  const result = await cronTick(token)
+  if(!result.ok) {
+    return NextResponse.json({ ok: false, error: result.err.message }, { status: 500 })
+  }
+
   return NextResponse.json({ ok: true, at: new Date().toISOString() })
 }

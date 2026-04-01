@@ -17,7 +17,7 @@ import { RecordStatus } from "@/constants/record"
 import { getUserPreference } from "@/services/user-preference"
 import { isEpisodeProjectType } from "@/constants/project"
 import {
-    passesSubscriptionMode, resolveServerTimeZone, isValidIanaTimeZone, parseEpisodePublishPlan, getNextPublishPlanItemAfterNow, nextPublishTimeFromItem, sortSubscriptionAnimeRows, 
+    passesSubscriptionMode, resolveServerTimeZone, isValidIanaTimeZone, parseEpisodePublishRecord, getNextPublishPlanItemAfterNow, nextPublishTimeFromItem, sortSubscriptionAnimeRows, 
     type SubscriptionAnimeSortRow
 } from "@/helpers/subscription"
 
@@ -249,7 +249,7 @@ export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnim
         const mode = validate.data.mode
         const withPlan: RowWithPlan[] = []
         for (const record of records) {
-            const plan = parseEpisodePublishPlan(record.project.episodePublishPlan)
+            const plan = parseEpisodePublishRecord(record.project.episodePublishPlan)
             const hasPublishPlan = plan.length > 0
             const nextPublishPlanItem = getNextPublishPlanItemAfterNow(plan, now)
             const nextPublishTime = nextPublishTimeFromItem(nextPublishPlanItem)

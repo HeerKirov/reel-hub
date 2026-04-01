@@ -19,7 +19,7 @@ export function isValidIanaTimeZone(tz: string): boolean {
     }
 }
 
-export function parseEpisodePublishPlan(json: unknown): EpisodePublishRecordModel[] {
+export function parseEpisodePublishRecord(json: unknown): EpisodePublishRecordModel[] {
     if (!Array.isArray(json)) return []
     return json as EpisodePublishRecordModel[]
 }
