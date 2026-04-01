@@ -1,22 +1,13 @@
 import type { Prisma } from "@/prisma/generated/client"
-import { exceptionUnauthorized, exceptionInternalServerError, InternalServerError, Unauthorized } from "@/constants/exception"
-import { err, ok, Result } from "@/schemas/all"
+import { InternalServerError } from "@/constants/exception"
+import { ok, Result } from "@/schemas/all"
 import { safeExecuteTransaction } from "@/helpers/execution"
 import { ProjectType } from "@/constants/project"
 import { parseEpisodePublishRecord } from "@/helpers/subscription"
 import { processEpisodePlanAutoUpdate } from "./project-utils"
-import config from "@/config/config"
 
-export async function cronTick(token: string): Promise<Result<void, Unauthorized | InternalServerError>> {
-    return safeExecuteTransaction<void, Unauthorized | InternalServerError>(async tx => {
-        const secret = config.AUTH.CRON_SECRET
-        if (!secret) {
-            return err(exceptionInternalServerError("CRON_SECRET is not set"))
-        }
-        if (token !== secret) {
-            return err(exceptionUnauthorized())
-        }
-
+export async function cronTick(): Promise<Result<undefined, InternalServerError>> {
+    return safeExecuteTransaction(async tx => {
         const projects = await tx.project.findMany({
             where: {
                 type: {in: [ProjectType.ANIME, ProjectType.MANGA, ProjectType.MOVIE]},

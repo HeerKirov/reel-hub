@@ -55,3 +55,27 @@ docker run --rm --name reel-hub-migrate -p 3000:3000 -e DATABASE_URL="..." reel-
 docker compose -f docker-compose.yml up -d
 docker compose -f docker-compose.migrate.yml run reel-hub-migrate
 ```
+
+## Legacy Migration
+
+已提供旧项目数据迁移API。
+
+调用示例:
+- URL：`POST /api/admin/migrate-legacy`
+- Header：`Authorization: Bearer <SYSCALL_SECRET>`
+- Body
+```json
+{
+  "oldDatabaseUrl": "postgres://user:password@host:5432/legacy_db",
+  "userMapping": {
+    "1": "user_abc123",
+    "2": "user_def456"
+  },
+  "dryRun": true
+}
+```
+
+通过cURL调用:
+```shell
+curl -fsS -X POST -H 'Authorization: Bearer <SYSCALL_SECRET>' -d '{"userMapping": {"1": "user_abc123", "2": "user_def456"}, "dryRun": true}' http://localhost:3000/api/admin/migrate-legacy
+```
