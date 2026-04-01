@@ -14,7 +14,7 @@ export const SubscriptionAnimeRowNextButton = memo(function SubscriptionAnimeRow
     const nextClick = useCallback(async () => {
         const result = handleActionResult(await nextEpisode(projectId))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId])
+    }, [router, projectId])
 
     return (
         <Link fontSize="sm" color="fg.muted" fontWeight="bold" onClick={nextClick} aria-disabled={isPending} opacity={isPending ? 0.6 : 1}>

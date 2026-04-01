@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { PROJECT_TYPE } from "@/constants/project"
-import { Staff } from "@/prisma/generated"
+import type { Staff } from "@/prisma/generated"
 
 // =============================================================================
 // Model

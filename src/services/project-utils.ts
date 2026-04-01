@@ -1,4 +1,4 @@
-import { Staff, Tag } from "@/prisma/generated"
+import type { Staff, Tag } from "@/prisma/generated"
 import { EpisodePublishRecord, EpisodePublishRecordModel } from "@/schemas/project"
 import { CreateStaffError, CreateTagError } from "@/schemas/error"
 import { Result, err, ok } from "@/schemas/all"

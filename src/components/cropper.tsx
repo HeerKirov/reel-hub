@@ -79,7 +79,7 @@ function DialogContent(props: { file: File, aspectRatio: number, onClose: () => 
 
             cropperInstance.current.replace(e.target!.result as string)
         }
-    }, [props.file])
+    }, [props.file, props.aspectRatio])
 
     return <Dialog.Content maxWidth="800px" maxHeight="80vh">
         <Dialog.Header>
@@ -91,6 +91,8 @@ function DialogContent(props: { file: File, aspectRatio: number, onClose: () => 
         
         <Dialog.Body>
             <Box position="relative" maxHeight="60vh">
+                {/* Cropper.js requires a native img element as the source target. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img ref={imageRef} src={emptyCover.src} alt="裁剪预览"/>
             </Box>
         </Dialog.Body>

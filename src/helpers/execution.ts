@@ -1,4 +1,4 @@
-import type { Prisma } from "@/prisma/generated"
+import type { Prisma } from "@/prisma/generated/client"
 import { prisma } from "@/lib/prisma"
 import { exceptionInternalServerError, isBaseException, type BaseException, type InternalServerError } from "@/constants/exception"
 import type { Result } from "@/schemas/all"

@@ -4,6 +4,7 @@ export function useIsClient() {
     const [isClient, setIsClient] = useState(false)
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsClient(true)
     }, [])
 
@@ -22,6 +23,7 @@ export function useEffectState<T>(origin: T) {
 }
 
 export function useEffectComputed<T, V>(origin: T, computed: (value: T) => V, computedDeps?: React.DependencyList) {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const computedFn = useCallback((value: T) => computed(value), computedDeps ?? [])
 
     const [value, setValue] = useState<V>(computedFn(origin))

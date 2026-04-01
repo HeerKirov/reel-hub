@@ -12,7 +12,10 @@ export const PageRouterPopover = memo(function PageRouterPopover(props: {page: n
     const searchParams = useSearchParams()
     const [page, setPage] = useState<number | null>(props.page)
 
-    useEffect(() => setPage(props.page), [props.page])
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPage(props.page)
+    }, [props.page])
 
     const onClick = () => {
         const p = new URLSearchParams(searchParams.toString())

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { Comment, Project } from "@/prisma/generated"
+import type { Comment, Project } from "@/prisma/generated"
 import { PROJECT_TYPE } from "@/constants/project"
 import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "./project"
 

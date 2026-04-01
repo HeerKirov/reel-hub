@@ -1,6 +1,8 @@
 import { z } from "zod"
-import { BoardcastType, OnlineType, OriginalType, Project, ProjectStaffRelation, ProjectTagRelation, ProjectType, Staff, Tag } from "@/prisma/generated"
-import { RATING_SEX, RATING_VIOLENCE, REGION, PROJECT_TYPE, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, Region, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
+import type { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
+import { BoardcastType, OriginalType } from "@/constants/anime"
+import { OnlineType } from "@/constants/game"
+import { ProjectType, RATING_SEX, RATING_VIOLENCE, REGION, PROJECT_TYPE, RATING_SEX_ITEMS, RATING_VIOLENCE_ITEMS, Region, RelationType, RELATION_TYPE_VALUES } from "@/constants/project"
 import { arrays } from "@/helpers/primitive"
 import { parseStaffSchema } from "./staff"
 

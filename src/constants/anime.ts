@@ -1,4 +1,4 @@
-import { BoardcastType, OriginalType } from "@/prisma/generated"
+import { BoardcastType, OriginalType } from "@/prisma/generated/enums"
 import { arrays } from "@/helpers/primitive"
 import { SelectItem } from "./general"
 

@@ -1,14 +1,13 @@
 "use client"
 import { memo, useCallback } from "react"
-import { Field, Flex, Checkbox, CheckboxGroup, Text, CheckboxCard, Fieldset } from "@chakra-ui/react"
+import { RiGamepadLine } from "react-icons/ri"
+import { Field, Flex, Checkbox, CheckboxGroup, Fieldset } from "@chakra-ui/react"
 import { Select } from "@/components/form"
 import { ProjectUpdateEditor } from "@/components/app/project-editor"
 import { GameDetailSchema, GameForm } from "@/schemas/project-game"
-import { ONLINE_TYPE_ITEMS, PLATFORM_ITEMS, Platform } from "@/constants/game"
-import { OnlineType } from "@/prisma/generated"
+import { OnlineType, ONLINE_TYPE_ITEMS, PLATFORM_ITEMS } from "@/constants/game"
 import { ProjectType } from "@/constants/project"
 import { deleteProjectGame, updateProjectGame } from "@/services/project-game"
-import { RiGamepadLine } from "react-icons/ri"
 
 export interface GameExtra {
     platform: string[]

@@ -1,4 +1,4 @@
-import { OnlineType } from "@/prisma/generated"
+import { OnlineType } from "@/prisma/generated/enums"
 import { arrays } from "@/helpers/primitive"
 import { SelectItem } from "./general"
 

@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation"
 import { Box, Button, CloseButton, Dialog, Flex, IconButton, Portal, Table, Text } from "@chakra-ui/react"
 import { RiAddLine, RiDeleteBinLine } from "react-icons/ri"
 import { DateTimePicker, NumberInput, Select, Textarea } from "@/components/form"
-import { SHOPPING_TYPE_SELECT_ITEMS, SHOPPING_TYPE_LABEL } from "@/constants/purchase"
-import { ShoppingType } from "@/prisma/generated"
+import { ShoppingType, SHOPPING_TYPE_SELECT_ITEMS, SHOPPING_TYPE_LABEL } from "@/constants/purchase"
 import { PurchaseWithProjectSchema } from "@/schemas/purchase"
-import { handleActionResult } from "@/helpers/action"
 import { createPurchase, deletePurchase, updatePurchase } from "@/services/purchase"
+import { handleActionResult } from "@/helpers/action"
 import { dates } from "@/helpers/primitive"
 import { useEffectComputed } from "@/helpers/hooks"
 
@@ -89,23 +88,23 @@ const PurchaseDetailDialog = memo(function PurchaseDetailDialog(props: PurchaseD
 
     const setPurchaseType = useCallback((value: ShoppingType) => {
         setForm(s => ({ ...s, purchaseType: value }))
-    }, [])
+    }, [setForm])
 
     const setDescription = useCallback((value: string) => {
         setForm(s => ({ ...s, description: value }))
-    }, [])
+    }, [setForm])
     
     const setCost = useCallback((value: number | null) => {
         setForm(s => ({ ...s, cost: value }))
-    }, [])
+    }, [setForm])
 
     const setPurchaseTimeIso = useCallback((value: string | null) => {
         setForm(s => ({ ...s, purchaseTimeIso: value }))
-    }, [])
+    }, [setForm])
 
     const refresh = useCallback(() => {
         startTransition(() => router.refresh())
-    }, [])
+    }, [router])
 
     const handleOpenChange = useCallback((details: {open: boolean}) => {
         if(!details.open) onClose()

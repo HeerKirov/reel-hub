@@ -1,4 +1,4 @@
-import { InputJsonValue } from "@prisma/client/runtime/library"
+import type { Prisma } from "@/prisma/generated/client"
 import { exceptionUnauthorized, exceptionInternalServerError, InternalServerError, Unauthorized } from "@/constants/exception"
 import { err, ok, Result } from "@/schemas/all"
 import { safeExecuteTransaction } from "@/helpers/execution"
@@ -39,8 +39,8 @@ export async function cronTick(token: string): Promise<Result<void, Unauthorized
                     where: {id: project.id},
                     data: {
                         episodePublishedNum: newData.publishedNum,
-                        episodePublishPlan: newData.publishPlan as unknown as InputJsonValue,
-                        episodePublishedRecords: newData.publishedRecords as unknown as InputJsonValue
+                        episodePublishPlan: newData.publishPlan as unknown as Prisma.InputJsonValue,
+                        episodePublishedRecords: newData.publishedRecords as unknown as Prisma.InputJsonValue
                     }
                 })
                 console.log(`Project "${project.title}" updated published episode num to ${newData.publishedNum}.`)

@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { Purchase, PurchaseSummary, Project, ShoppingType } from "@/prisma/generated"
+import type { Purchase, PurchaseSummary, Project } from "@/prisma/generated"
+import { ShoppingType } from "@/constants/purchase"
 import { ONLINE_TYPE, PLATFORM } from "@/constants/game"
 import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "./project"
 

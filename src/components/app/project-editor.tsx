@@ -184,7 +184,7 @@ const BasicInfoTab = memo(function BasicInfoTab(props: BasicInfoTabProps) {
         const tagsResult = await listTags({search: text, type: props.type})
         const { data, error } = unwrapQueryResult(tagsResult)
         return error ? [] : data.list.map(t => t.name)
-    }, [])
+    }, [props.type])
 
     return (
         <Flex direction="column" gap="1">

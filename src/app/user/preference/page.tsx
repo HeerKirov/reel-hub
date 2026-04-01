@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import NextLink from "next/link"
 import { RiSettings2Fill } from "react-icons/ri"
-import { Box, Breadcrumb, Container, Heading, Text } from "@chakra-ui/react"
+import { Breadcrumb, Container } from "@chakra-ui/react"
 import { retrieveUserPreference } from "@/services/user-preference"
 import { unwrapQueryResult } from "@/helpers/result"
 import { InlineError } from "@/components/app/inline-error"

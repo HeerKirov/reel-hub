@@ -1,5 +1,5 @@
 
-export default {
+const config = {
     AUTH: {
         URL: process.env.AUTH_URL,
         CLIENT_ID: process.env.AUTH_CLIENT_ID,
@@ -17,3 +17,5 @@ export default {
         BASE_PATH: process.env.OSS_BASE_PATH || "",
     }
 }
+
+export default config

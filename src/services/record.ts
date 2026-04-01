@@ -7,9 +7,10 @@ import { err, ok, Result } from "@/schemas/all"
 import { exceptionAlreadyExists, exceptionNotFound, exceptionParamError, exceptionParamRequired, exceptionRejectCreateProgress } from "@/constants/exception"
 import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { CreateRecordError, DeleteRecordError, RecordDetailError, RecordPreviewError, UpdateRecordError } from "@/schemas/error"
-import { Prisma, ProjectType, RecordStatus } from "@/prisma/generated"
+import { ProjectType, isEpisodeProjectType } from "@/constants/project"
+import { RecordStatus } from "@/constants/record"
+import type { Prisma } from "@/prisma/generated/client"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
-import { isEpisodeProjectType } from "@/constants/project"
 
 export async function retrieveRecordPreview(projectId: string): Promise<Result<RecordPreviewSchema | null, RecordPreviewError>> {
     return safeExecute(async () => {

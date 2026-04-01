@@ -35,10 +35,11 @@ COPY package.json /tmp/repo-package.json
 RUN PRISMA_VER=$(node -e "const p=require('/tmp/repo-package.json');const v=p.dependencies?.prisma||p.devDependencies?.prisma;if(!v)throw new Error('package.json 中未找到 prisma 依赖');process.stdout.write(String(v).trim())") && \
     npm config set registry https://registry.npmmirror.com && \
     npm init -y >/dev/null 2>&1 && \
-    npm install "prisma@${PRISMA_VER}" --omit=dev --no-package-lock && \
+    npm install "prisma@${PRISMA_VER}" dotenv --omit=dev --no-package-lock && \
     npm cache clean --force && \
     rm -f /tmp/repo-package.json package.json package-lock.json
 COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
 
 # 生产阶段
 FROM base AS runner

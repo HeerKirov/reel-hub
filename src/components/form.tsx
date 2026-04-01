@@ -116,7 +116,7 @@ export const EditableText = memo(function EditableText({ value, onValueChange, p
 
     const change = useCallback((details: ChakraEditable.ValueChangeDetails) => {
         setCurrentValue(details.value)
-    }, [])
+    }, [setCurrentValue])
 
     const commit = () => {
         onValueChange?.(currentValue)
@@ -382,6 +382,7 @@ const DateTimePickerPopover = memo(function DateTimePickerPopover(props: DateTim
 
     // 当date变化时更新临时时间
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTempTime({
             hour: date.hour,
             minute: date.minute

@@ -81,15 +81,15 @@ const ProgressTableRow = memo(function ProgressTableRow({ progress, type, projec
             if(!result.ok) return
             router.refresh()
         })
-    }, [isPending, projectId, progress.ordinal])
+    }, [isPending, projectId, progress.ordinal, router])
 
     const editClick = useCallback(() => {
         setEditMode(true)
-    }, [])
+    }, [setEditMode])
 
     const backClick = useCallback(() => {
         setEditMode(false)
-    }, [])
+    }, [setEditMode])
 
     if(editMode) {
         return <ProgressTableRowEdit progress={progress} type={type} projectId={projectId} onBack={backClick}/>
@@ -171,7 +171,7 @@ const ProgressTableRowEdit = memo(function ProgressTableRowEdit({ progress, type
                 router.refresh()
             }
         })
-    }, [isPending, projectId, progress.ordinal, startTime, endTime, episodeWatchedNum])
+    }, [isPending, projectId, progress.ordinal, startTime, endTime, episodeWatchedNum, onBack, router])
 
     return (
         <Table.Row>

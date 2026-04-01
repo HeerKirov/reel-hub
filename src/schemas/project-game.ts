@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { ONLINE_TYPE } from "@/constants/game"
-import { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
+import type { Project, ProjectStaffRelation, ProjectTagRelation, Staff, Tag } from "@/prisma/generated"
 import { parseProjectDetailSchema, parseProjectListSchema, projectCommonForm, projectListFilter, type ProjectDetailSchema, type ProjectListSchema, type ProjectModel, type ProjectRelationSchema } from "./project"
 
 export const gameListFilter = projectListFilter.extend({

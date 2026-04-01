@@ -1,5 +1,5 @@
 import { arrays } from "@/helpers/primitive"
-import { ProjectType, BoardcastType } from "@/prisma/generated"
+import { ProjectType, BoardcastType } from "@/prisma/generated/enums"
 import { SelectItemWithDesc, SelectItem } from "./general"
 
 export { ProjectType, BoardcastType }

@@ -1,4 +1,4 @@
-import { ShoppingType } from "@/prisma/generated"
+import { ShoppingType } from "@/prisma/generated/enums"
 import { SelectItem } from "./general"
 
 export { ShoppingType }

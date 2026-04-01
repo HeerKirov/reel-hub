@@ -1,6 +1,7 @@
 import { z } from "zod"
+import type { Tag } from "@/prisma/generated"
 import { PROJECT_TYPE } from "@/constants/project"
-import { ProjectType, Tag } from "@/prisma/generated"
+import type { ProjectType } from "@/constants/project"
 
 // =============================================================================
 // Model

@@ -27,7 +27,10 @@
         "./src/*"
       ],
       "@/prisma/generated": [
-        "./prisma/generated"
+        "./prisma/generated/client"
+      ],
+      "@/prisma/generated/*": [
+        "./prisma/generated/*"
       ]
     }
   },
@@ -39,7 +42,6 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "prisma/generated"
+    "node_modules"
   ]
 }

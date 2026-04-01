@@ -176,7 +176,7 @@ export function RecordDisplayAttentionButton({ projectId, type, specialAttention
         if(isPending) return
         const result = handleActionResult(await updateRecord(projectId, { specialAttention: !specialAttention }))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, specialAttention, isPending])
+    }, [router, projectId, specialAttention, isPending])
     
     return (
         <Button variant="outline" colorPalette={specialAttention ? "yellow" : undefined} size="sm" onClick={toggleClick} opacity={isPending ? 0.6 : 1}>
@@ -193,13 +193,13 @@ export function RecordDisplayNextButton({ projectId, ordinal, watched }: { proje
         if(isPending) return
         const result = handleActionResult(await nextEpisode(projectId))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, isPending])
+    }, [projectId, isPending, router])
 
     const dropClick = useCallback(async () => {
         if(isPending) return
         const result = handleActionResult(await updateLatestProgress(projectId, ordinal, { status: RecordStatus.DROPPED }))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, ordinal, isPending])
+    }, [projectId, ordinal, isPending, router])
 
     return (
         <Menu.Root positioning={{ placement: "bottom-end" }}>
@@ -236,13 +236,13 @@ export function RecordDisplayFinishButton({ projectId, ordinal, ...attrs }: { pr
         if(isPending) return
         const result = handleActionResult(await updateLatestProgress(projectId, ordinal, { endTime: new Date() }))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, ordinal, isPending])
+    }, [projectId, ordinal, isPending, router])
 
     const dropClick = useCallback(async () => {
         if(isPending) return
         const result = handleActionResult(await updateLatestProgress(projectId, ordinal, { status: RecordStatus.DROPPED }))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, ordinal, isPending])
+    }, [projectId, ordinal, isPending, router])
 
     return (
         <Menu.Root positioning={{ placement: "bottom-end" }}>
@@ -277,7 +277,7 @@ export function RecordDisplayResumeButton({ projectId, ordinal }: { projectId: s
         if(isPending) return
         const result = handleActionResult(await updateLatestProgress(projectId, ordinal, { status: RecordStatus.WATCHING }))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, ordinal, isPending])
+    }, [projectId, ordinal, isPending, router])
 
     return (
         <Menu.Root positioning={{ placement: "bottom-end" }}>
@@ -309,7 +309,7 @@ export function RecordDisplayCreateProgressButton({ projectId, ...attrs }: { pro
         if(isPending) return
         const result = handleActionResult(await createProgress(projectId, {}))
         if(result.ok) startTransition(() => router.refresh())
-    }, [projectId, isPending])
+    }, [projectId, isPending, router])
 
     return (
         <Button variant="outline" size="sm" onClick={createProgressClick} opacity={isPending ? 0.6 : 1} {...attrs}>
@@ -325,7 +325,7 @@ export function RecordDisplayPlatformEditor({ projectId, ordinal, platform }: { 
     const updatePlatform = useCallback(async (platform: string[]) => {
         const result = handleActionResult(await updateLatestProgress(projectId, ordinal, { platform }))
         if(result.ok) router.refresh()
-    }, [projectId, ordinal])
+    }, [projectId, ordinal, router])
 
     return (
         <PlatformEditor value={platform} withSaveButton onValueChange={updatePlatform}/>

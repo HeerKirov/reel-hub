@@ -46,7 +46,7 @@ export const DynamicInputList = memo(function DynamicInputList({ value, onValueC
             setNewText("")
             onValueChange?.([...list, value])
         }
-    }, [list, onValueChange])
+    }, [list, onValueChange, setList])
 
     return (
         <>
@@ -111,7 +111,7 @@ export const TagEditor = memo(function TagEditor({ value, onValueChange, placeho
         setNewText("")
         setSearchResults([])
         onValueChange?.(newList)
-    }, [list, noDuplicate, onValueChange])
+    }, [list, noDuplicate, onValueChange, setList])
 
     const handleSearchItemClick = (item: string) => {
         if (noDuplicate && list.includes(item)) return
@@ -227,7 +227,7 @@ export const PlatformEditor = memo(function PlatformEditor({ value, compact = fa
         if(!withSaveButton) {
             onValueChange?.(next)
         }
-    }, [withSaveButton, onValueChange])
+    }, [withSaveButton, onValueChange, setDraft])
 
     const saveClick = useCallback(() => {
         onValueChange?.(draft)
@@ -367,7 +367,7 @@ const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValu
             <Portal>
                 <Combobox.Positioner>
                     <Combobox.Content>
-                        {!isSearching && searchResults.length === 0 && <Combobox.Empty>回车以使用新类型"{draft}"</Combobox.Empty>}
+                        {!isSearching && searchResults.length === 0 && <Combobox.Empty>回车以使用新类型 &quot;{draft}&quot;</Combobox.Empty>}
                         {items.map(item => (
                             <Combobox.Item item={item} key={item.value} onClick={() => commitValue(item.value)}>
                                 <Combobox.ItemText>{item.label}</Combobox.ItemText>
@@ -392,7 +392,7 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         })
         setStaffs(newStaffs)
         onValueChange?.(newStaffs)
-    }, [staffs, onValueChange])
+    }, [staffs, onValueChange, setStaffs])
 
     const onTypeChange = useCallback((oldType: string) => (newType: string) => {
         const newStaffs = staffs.map(staff => {
@@ -403,7 +403,7 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         })
         setStaffs(newStaffs)
         onValueChange?.(newStaffs)
-    }, [staffs, onValueChange])
+    }, [staffs, onValueChange, setStaffs])
 
     const onDeleteType = (type: string) => () => {
         const newStaffs = staffs.filter(s => s.type !== type);
@@ -419,7 +419,7 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
             setStaffs(newStaffs)
             onValueChange?.(newStaffs)
         }
-    }, [staffs, onValueChange])
+    }, [staffs, onValueChange, setStaffs])
 
     return (
         <Box display="flex" flexDirection="column" gap="2" {...attrs}>
@@ -527,7 +527,7 @@ export const RelationEditor = memo(function RelationEditor({ value = {}, onValue
         }, 500)
 
         return () => clearTimeout(timeoutId)
-    }, [searchText])
+    }, [searchText, executeSearch])
 
     // 处理搜索文本变化
     const handleSearchTextChange = useCallback((text: string) => {

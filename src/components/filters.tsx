@@ -36,7 +36,7 @@ export const SearchBox = memo(function SearchBox(props: SearchBoxProps) {
             if(p.has("page")) p.delete("page")
             router.push(`?${p.toString()}`)
         }
-    }, [onValueChange, searchParamName])
+    }, [onValueChange, searchParamName, searchParams, router])
 
     return (
         <InputGroup endElement={<RiSearch2Line/>} {...attrs}>

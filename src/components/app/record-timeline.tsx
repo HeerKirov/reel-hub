@@ -133,6 +133,7 @@ export function TimelineCanvas(props: {
         const todayY = dateToY(new Date(), bounds.globalMaxAt)
         const desired = Math.max(0, Math.min(totalHeight - viewportHeight, todayY - viewportHeight * 0.35))
         element.scrollTop = desired
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setScrollTop(desired)
         setInitialized(true)
     }, [initialized, viewportHeight, totalHeight, bounds.globalMaxAt, dateToY])
@@ -181,6 +182,10 @@ export function TimelineCanvas(props: {
         element.scrollTo({ top: desired, behavior: "smooth" })
     }, [dateToY, bounds.globalMaxAt, totalHeight, viewportHeight])
 
+    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        setScrollTop(e.currentTarget.scrollTop)
+    }, [])
+
     useEffect(() => {
         registerScrollToToday?.(scrollToToday)
         return () => registerScrollToToday?.(null)
@@ -197,7 +202,7 @@ export function TimelineCanvas(props: {
             borderWidth="1px"
             rounded="md"
             bg="bg.panel"
-            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+            onScroll={handleScroll}
         >
             {!ready && <Box h={VIEWPORT_HEIGHT} />}
             {ready && <Box position="relative" w="full" minW={`${canvasWidth}px`} h={`${totalHeight}px`}>

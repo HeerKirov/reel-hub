@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { PROJECT_TYPE } from "@/constants/project"
-import { ProjectType } from "@/prisma/generated"
+import type { ProjectType } from "@/constants/project"
 
 // =============================================================================
 // Model / API Return

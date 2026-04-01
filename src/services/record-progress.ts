@@ -1,14 +1,15 @@
 "use server"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
-import { Prisma, ProjectType, RecordStatus } from "@/prisma/generated"
+import { ProjectType, isEpisodeProjectType } from "@/constants/project"
+import { RecordStatus } from "@/constants/record"
+import type { Prisma } from "@/prisma/generated/client"
 import { exceptionInternalServerError, exceptionNotFound, exceptionParamError, exceptionParamRequired, exceptionReject, exceptionRejectCreateProgress, exceptionRejectNextEpisode } from "@/constants/exception"
 import { safeExecuteTransaction } from "@/helpers/execution"
 import { err, ok, Result } from "@/schemas/all"
 import { ActivityEvent, RecordProgressUpsertForm, recordProgressUpsertForm } from "@/schemas/record"
 import { CreateProgressError, DeleteProgressError, NextEpisodeError, UpdateLatestProgressError } from "@/schemas/error"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
-import { isEpisodeProjectType } from "@/constants/project"
 import { objects } from "@/helpers/primitive"
 
 export async function createProgress(projectId: string, form: RecordProgressUpsertForm): Promise<Result<void, CreateProgressError>> {

@@ -1,6 +1,6 @@
-import { RecordStatus, FollowType } from "@/prisma/generated"
-import { SelectItem } from "./general"
+import { RecordStatus, FollowType } from "@/prisma/generated/enums"
 import { arrays } from "@/helpers/primitive"
+import { SelectItem } from "./general"
 
 export { RecordStatus, FollowType }
 
