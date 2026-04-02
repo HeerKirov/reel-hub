@@ -2,23 +2,6 @@ import type { RecordStatus } from "@/constants/record"
 import type { RecordSubscriptionAnimeListFilter } from "@/schemas/record"
 import type { EpisodePublishRecordModel } from "@/schemas/project"
 
-export function resolveServerTimeZone(): string {
-    try {
-        return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-    } catch {
-        return "UTC"
-    }
-}
-
-export function isValidIanaTimeZone(tz: string): boolean {
-    try {
-        new Intl.DateTimeFormat("en-US", { timeZone: tz }).format(new Date())
-        return true
-    } catch {
-        return false
-    }
-}
-
 export function parseEpisodePublishRecord(json: unknown): EpisodePublishRecordModel[] {
     if (!Array.isArray(json)) return []
     return json as EpisodePublishRecordModel[]

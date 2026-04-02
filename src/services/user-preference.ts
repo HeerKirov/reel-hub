@@ -9,7 +9,7 @@ import {
     USER_PREFERENCE_DEFAULT, parseUserPreferenceSchema, userPreferenceSetForm, type UserPreferenceSchema, type UserPreferenceSetForm
 } from "@/schemas/user-preference"
 import { requireAuth } from "@/helpers/auth-guard"
-import { isValidIanaTimeZone } from "@/helpers/subscription"
+import { dates } from "@/helpers/primitive"
 
 export const retrieveUserPreference = cache(async function(): Promise<Result<UserPreferenceSchema, GetUserPreferenceError>> {
     return safeExecute(async () => {
@@ -27,7 +27,7 @@ export async function updateUserPreference(form: UserPreferenceSetForm): Promise
         if (!validate.success) return err(exceptionParamError(validate.error.message))
 
         const data = validate.data
-        if (data.timezone != null && !isValidIanaTimeZone(data.timezone)) {
+        if (data.timezone != null && !dates.isValidIanaTimeZone(data.timezone)) {
             return err(exceptionParamError("Invalid timezone"))
         }
 
@@ -62,7 +62,7 @@ export async function getUserPreference(userId: string): Promise<UserPreferenceS
     const parsed = parseUserPreferenceSchema(row)
     return {
         ...parsed,
-        timezone: parsed.timezone != null && isValidIanaTimeZone(parsed.timezone)
+        timezone: parsed.timezone != null && dates.isValidIanaTimeZone(parsed.timezone)
             ? parsed.timezone
             : null
     }

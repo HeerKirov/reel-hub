@@ -9,7 +9,7 @@ import { ShoppingType, SHOPPING_TYPE_SELECT_ITEMS, SHOPPING_TYPE_LABEL } from "@
 import { PurchaseWithProjectSchema } from "@/schemas/purchase"
 import { createPurchase, deletePurchase, updatePurchase } from "@/services/purchase"
 import { handleActionResult } from "@/helpers/action"
-import { dates } from "@/helpers/primitive"
+import { dates, numbers } from "@/helpers/primitive"
 import { useEffectComputed } from "@/helpers/hooks"
 
 export function PurchaseDetailTable({ projectId, data }: { projectId: string, data: PurchaseWithProjectSchema[] }) {
@@ -192,8 +192,8 @@ const PurchaseDetailTableRow = memo(function PurchaseDetailTableRow({ row, onCli
         <Table.Row cursor="pointer" onClick={() => onClick(row)} _hover={{ bg: "bg.subtle" }}>
             <Table.Cell>{SHOPPING_TYPE_LABEL[row.purchaseType]}</Table.Cell>
             <Table.Cell><Text lineClamp={2}>{row.description || "—"}</Text></Table.Cell>
-            <Table.Cell textAlign="right">{row.cost.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Table.Cell>
-            <Table.Cell color="fg.muted" fontSize="sm">{dates.toDailyText(row.purchaseTime)}</Table.Cell>
+            <Table.Cell textAlign="right">{numbers.formatCurrency(row.cost)}</Table.Cell>
+            <Table.Cell color="fg.muted" fontSize="sm">{dates.format(row.purchaseTime, "dailyText")}</Table.Cell>
         </Table.Row>
     )
 })

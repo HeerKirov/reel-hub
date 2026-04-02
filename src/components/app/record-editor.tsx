@@ -10,6 +10,7 @@ import { RecordDetailSchema, RecordProgressDetailItem } from "@/schemas/record"
 import { deleteRecord } from "@/services/record"
 import { deleteProgress, updateLatestProgress } from "@/services/record-progress"
 import { handleActionResult } from "@/helpers/action"
+import { dates } from "@/helpers/primitive"
 import { isEpisodeProjectType, ProjectType } from "@/constants/project"
 import { VALUE_TO_RECORD_STATUS, VALUE_TO_FOLLOW_TYPE } from "@/constants/record"
 
@@ -104,10 +105,10 @@ const ProgressTableRow = memo(function ProgressTableRow({ progress, type, projec
                 </Badge>
             </Table.Cell>
             <Table.Cell>
-                {progress.startTime ? progress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "-"}
+                {dates.format(progress.startTime, "dateOnly", "-")}
             </Table.Cell>
             <Table.Cell>
-                {progress.endTime ? progress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "-"}
+                {dates.format(progress.endTime, "dateOnly", "-")}
             </Table.Cell>
             {isEpisodeProjectType(type) && <Table.Cell>{progress.episodeWatchedNum !== null ? progress.episodeWatchedNum : "-"}</Table.Cell>}
             {type === ProjectType.ANIME && <Table.Cell>

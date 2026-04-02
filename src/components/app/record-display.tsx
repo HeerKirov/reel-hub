@@ -1,6 +1,7 @@
 import NextLink from "next/link"
 import { Box, Text, Icon, Flex, Stat, HStack, Badge, Button, Dialog, Portal, Heading, Image, Table } from "@chakra-ui/react"
 import { RiBookmark3Line, RiPushpin2Fill, RiDatabase2Fill, RiEdit2Line, RiArrowRightLine, RiBillFill } from "react-icons/ri"
+import { FormattedDateTime } from "@/components/datetime"
 import { InlineError } from "@/components/app/inline-error"
 import { DetailPageLayout } from "@/components/server/layout"
 import { ProjectType } from "@/constants/project"
@@ -60,7 +61,7 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
                         </Stat.Root>
                         <Stat.Root>
                             <Stat.Label>上一集在</Stat.Label>
-                            <Stat.HelpText>{data.latestWatchedTime ? data.latestWatchedTime.toLocaleDateString() : "(未知)"}</Stat.HelpText>
+                            <Stat.HelpText><FormattedDateTime value={data.latestWatchedTime} variant="dateOnly" emptyLabel="(未知)"/></Stat.HelpText>
                         </Stat.Root>
                     </Flex>
                 </NextLink>
@@ -77,7 +78,7 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
                             <Stat.ValueText>{data.startTime ? `${Math.floor((new Date().getTime() - new Date(data.startTime).getTime()) / (1000 * 60 * 60 * 24))}天` : "(未知)"}</Stat.ValueText>
                         </Stat.Root> : data.status === RecordStatus.COMPLETED ? <Stat.Root mt="2">
                             <Stat.Label>结束于</Stat.Label>
-                            <Stat.HelpText>{data.endTime ? data.endTime.toLocaleDateString() : "(未知)"}</Stat.HelpText>
+                            <Stat.HelpText><FormattedDateTime value={data.endTime} variant="dateOnly" emptyLabel="(未知)"/></Stat.HelpText>
                         </Stat.Root> : <Stat.Root mt="2">
                             <Stat.Label>状态</Stat.Label>
                             <Stat.ValueText>{VALUE_TO_RECORD_STATUS[data.status].label}</Stat.ValueText>
@@ -102,7 +103,7 @@ export async function RecordBox({ project, type }: {project: ProjectDetailSchema
                             <Stat.ValueText>{data.startTime ? `${Math.floor((new Date().getTime() - new Date(data.startTime).getTime()) / (1000 * 60 * 60 * 24))}天` : "(未知)"}</Stat.ValueText>
                         </Stat.Root> : data.status === RecordStatus.COMPLETED ? <Stat.Root>
                             <Stat.Label>结束于</Stat.Label>
-                            <Stat.HelpText>{data.endTime ? data.endTime.toLocaleDateString() : "(未知)"}</Stat.HelpText>
+                            <Stat.HelpText><FormattedDateTime value={data.endTime} variant="dateOnly" emptyLabel="(未知)"/></Stat.HelpText>
                         </Stat.Root> : undefined}
                     </Flex>
                 </NextLink>
@@ -227,12 +228,14 @@ function LatestProgressBar({ projectId, type, latestProgress, episodeProject }: 
                         {latestProgress.startTime && (
                             <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">
                                 <Icon><RiBookmark3Line/></Icon>
-                                <Text>订阅时间 {latestProgress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                                <Text>订阅时间 </Text>
+                                <FormattedDateTime value={latestProgress.startTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" />
                             </Flex>
                         )}
                         <Flex flex="1 0 auto" order={{base: 1, md: 0}} alignItems="center" gap="2" fontSize="sm" color="fg.muted">
                             <Icon><RiBookmark3Line/></Icon>
-                            <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
+                            <Text>完成时间 </Text>
+                            <FormattedDateTime value={latestProgress.endTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" emptyLabel="(未完成)" />
                         </Flex>
                         <Box display={{base: "none", md: "block"}} w="full"/>
                         {latestProgress.endTime === null ? <Box order={{base: 0, md: 1}}>  
@@ -263,12 +266,14 @@ function LatestProgressBar({ projectId, type, latestProgress, episodeProject }: 
                         {latestProgress.startTime && (
                             <Flex alignItems="center" gap="2">
                                 <Icon><RiBookmark3Line/></Icon>
-                                <Text>订阅时间 {latestProgress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                                <Text>订阅时间 </Text>
+                                <FormattedDateTime value={latestProgress.startTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" />
                             </Flex>
                         )}
                         <Flex alignItems="center" gap="2">
                             <Icon><RiBookmark3Line/></Icon>
-                            <Text>完成时间 {latestProgress.endTime ? latestProgress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未完成)"}</Text>
+                            <Text>完成时间 </Text>
+                            <FormattedDateTime value={latestProgress.endTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" emptyLabel="(未完成)" />
                         </Flex>
                     </Flex>
                     {latestProgress.status === RecordStatus.DROPPED ? (
@@ -295,11 +300,11 @@ function HistoryProgressBar({ progress, episodeProject }: { progress: RecordProg
                     <Text width="full" fontSize="sm" fontWeight="medium">{progress.episodeWatchedNum}话完成</Text>
                 )}
                 <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">
-                    <Text>{progress.startTime ? progress.startTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"}) : "(未知时间)"}</Text>
+                    <FormattedDateTime value={progress.startTime} variant="dateOnly" fontSize="sm" color="fg.muted" emptyLabel="(未知时间)" />
                     {progress.endTime && (
                         <>
                             <Icon><RiArrowRightLine/></Icon>
-                            <Text>{progress.endTime.toLocaleDateString("zh-CN", {year: "numeric", month: "long", day: "numeric"})}</Text>
+                            <FormattedDateTime value={progress.endTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" />
                         </>
                     )}
                 </Flex>

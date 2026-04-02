@@ -261,7 +261,7 @@ export function TimelineCanvas(props: {
                                     <Flex direction="column" gap="2" minW={0}>
                                         <Text fontWeight="600" lineClamp={2}>{mobilePreviewItem.data.title}</Text>
                                         <Text fontSize="sm" color="fg.muted" lineHeight="1.3">
-                                            {dates.toDateText(mobilePreviewItem.startAt)} - {dates.toDateText(mobilePreviewItem.endAt)}
+                                            {dates.format(mobilePreviewItem.startAt, "dateOnly")} - {dates.format(mobilePreviewItem.endAt, "dateOnly")}
                                         </Text>
                                         <Flex align="center" gap="2" flexWrap="wrap">
                                             <Badge colorPalette={mobilePreviewItem.data.color} variant="subtle">
@@ -310,7 +310,7 @@ const TimelineProgressBarItem = memo(function TimelineProgressBarItem(props: {
     onOpenMobilePreview: (item: VisibleTimelineItem) => void
 }) {
     const { item } = props
-    const info = `${dates.toDateText(item.startAt)} - ${dates.toDateText(item.endAt)}`
+    const info = `${dates.format(item.startAt, "dateOnly")} - ${dates.format(item.endAt, "dateOnly")}`
     if(props.enableTouchPreview) {
         return <Box
             position="absolute"

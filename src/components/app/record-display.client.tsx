@@ -42,8 +42,8 @@ export function RecordBoxDialogContent({ type, projectId }: {type: ProjectType, 
         const form: RecordCreateForm = {
             createMode: "SUPPLEMENT",
             progress: progressList.map(p => ({
-                startTime: p.startTime ? dates.parseStandardText(p.startTime) ?? null : null,
-                endTime: p.endTime ? dates.parseStandardText(p.endTime) ?? null : null,
+                startTime: p.startTime ? dates.parseDate(p.startTime) ?? null : null,
+                endTime: p.endTime ? dates.parseDate(p.endTime) ?? null : null,
                 episodeWatchedNum: p.episodeWatchedNum ?? undefined,
                 platform: p.platform ?? []
             }))

@@ -11,8 +11,8 @@ CREATE TABLE "PurchaseSummary" (
     "projectId" TEXT NOT NULL,
     "totalCost" DECIMAL(10,2) NOT NULL,
     "totalCount" INTEGER NOT NULL,
-    "createTime" TIMESTAMP(3) NOT NULL,
-    "updateTime" TIMESTAMP(3) NOT NULL,
+    "createTime" TIMESTAMPTZ(3) NOT NULL,
+    "updateTime" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "PurchaseSummary_pkey" PRIMARY KEY ("id")
 );
@@ -25,9 +25,9 @@ CREATE TABLE "Purchase" (
     "purchaseType" "ShoppingType" NOT NULL,
     "description" TEXT NOT NULL,
     "cost" DECIMAL(10,2) NOT NULL,
-    "purchaseTime" TIMESTAMP(3) NOT NULL,
-    "createTime" TIMESTAMP(3) NOT NULL,
-    "updateTime" TIMESTAMP(3) NOT NULL,
+    "purchaseTime" TIMESTAMPTZ(3) NOT NULL,
+    "createTime" TIMESTAMPTZ(3) NOT NULL,
+    "updateTime" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "Purchase_pkey" PRIMARY KEY ("id")
 );
@@ -39,8 +39,8 @@ CREATE TABLE "Statistic" (
     "type" VARCHAR(256) NOT NULL,
     "key" VARCHAR(256),
     "content" JSONB NOT NULL,
-    "createTime" TIMESTAMP(3) NOT NULL,
-    "updateTime" TIMESTAMP(3) NOT NULL,
+    "createTime" TIMESTAMPTZ(3) NOT NULL,
+    "updateTime" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "Statistic_pkey" PRIMARY KEY ("id")
 );

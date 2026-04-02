@@ -106,7 +106,7 @@ export const numbers = {
 }
 
 export const dates = {
-    parseStandardText(str: string): Date | undefined {
+    parseDate(str: string): Date | undefined {
         const re = /(?<Y>\d+)-(?<M>\d+)(-(?<D>\d+))?/
         const matcher = str.match(re)
         if(matcher && matcher.groups) {
@@ -119,23 +119,72 @@ export const dates = {
             return d
         }
     },
-    toDateText(date: Date): string {
-        return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
-    },
-    toDailyText(date: Date, now?: Date): string {
-        const current = now ?? new Date()
-        const today = new Date(current.getFullYear(), current.getMonth(), current.getDate())
-        const yesterday = new Date(today)
-        yesterday.setDate(yesterday.getDate() - 1)
-
-        const timeStr = `${numbers.zero(date.getHours(), 2)}:${numbers.zero(date.getMinutes(), 2)}`
-
-        if (date >= today) {
-            return timeStr
-        } else if (date >= yesterday) {
-            return `昨天 ${timeStr}`
-        } else {
-            return `${date.getFullYear()}-${numbers.zero(date.getMonth() + 1, 2)}-${numbers.zero(date.getDate(), 2)} ${timeStr}`
+    resolveTimeZone(): string {
+        try {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+        } catch {
+            return "UTC"
         }
+    },
+    isValidIanaTimeZone(tz: string): boolean {
+        try {
+            new Intl.DateTimeFormat("en-US", { timeZone: tz }).format(new Date())
+            return true
+        } catch {
+            return false
+        }
+    },
+    formatDisplayDatetime(value: Date | string | number | null | undefined, variant: DisplayDatetimeVariant, timeZone: string | undefined, locale: string = "zh-CN", now: Date | null = null, emptyLabel: string = "-"): string {
+        if(value === null || value === undefined) return emptyLabel
+        const d = value instanceof Date ? value : new Date(value)
+        if(Number.isNaN(d.getTime())) return emptyLabel
+
+        switch(variant) {
+            case "dateTime":
+                return new Intl.DateTimeFormat(locale, { timeZone, dateStyle: "medium", timeStyle: "short" }).format(d)
+            case "dateOnly":
+                return new Intl.DateTimeFormat(locale, { timeZone, dateStyle: "medium" }).format(d)
+            case "timeOnly":
+                return new Intl.DateTimeFormat(locale, { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).format(d)
+            case "dailyText": {
+                const currentDate = now ?? new Date()
+                const parts = zonedYmdHmForDisplay(d, timeZone)
+                const timeStr = `${numbers.zero(parts.h, 2)}:${numbers.zero(parts.min, 2)}`
+                const dKey = zonedDateKeyForDisplay(d, timeZone)
+                const todayKey = zonedDateKeyForDisplay(currentDate, timeZone)
+                if(dKey === todayKey) return timeStr
+                const yestKey = addCalendarDayKeyForDisplay(todayKey, -1)
+                if(dKey === yestKey) return `昨天 ${timeStr}`
+                return `${parts.y}-${numbers.zero(parts.m, 2)}-${numbers.zero(parts.day, 2)} ${timeStr}`
+            }
+            default:
+                return emptyLabel
+        }
+    },
+    /** 使用运行环境默认 IANA 时区（浏览器或 Node）与 zh-CN，等同 `formatDisplayDatetime` 的各 variant；适用于 Client Component */
+    format(value: Date | string | number | null | undefined, variant: DisplayDatetimeVariant, emptyLabel = "—"): string {
+        return dates.formatDisplayDatetime(value, variant, undefined, "zh-CN", null, emptyLabel)
     }
+}
+
+export type DisplayDatetimeVariant = "dateTime" | "dateOnly" | "timeOnly" | "dailyText"
+
+function zonedYmdHmForDisplay(d: Date, timeZone: string | undefined): { y: number, m: number, day: number, h: number, min: number } {
+    const f = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })
+    const o: Record<string, string> = {}
+    for(const p of f.formatToParts(d)) {
+        if(p.type !== "literal" && p.type !== "timeZoneName") o[p.type] = p.value
+    }
+    return { y: +o.year, m: +o.month, day: +o.day, h: +o.hour, min: +o.minute }
+}
+
+function zonedDateKeyForDisplay(d: Date, timeZone: string | undefined): string {
+    const p = zonedYmdHmForDisplay(d, timeZone)
+    return `${p.y}-${numbers.zero(p.m, 2)}-${numbers.zero(p.day, 2)}`
+}
+
+function addCalendarDayKeyForDisplay(key: string, delta: number): string {
+    const [y, m, d] = key.split("-").map(Number)
+    const u = new Date(Date.UTC(y, m - 1, d + delta))
+    return `${u.getUTCFullYear()}-${numbers.zero(u.getUTCMonth() + 1, 2)}-${numbers.zero(u.getUTCDate(), 2)}`
 }

@@ -9,7 +9,8 @@ import { ONLINE_TYPE_ITEMS, PLATFORM_ITEMS, Platform, OnlineType } from "@/const
 import { SHOPPING_TYPE_LABEL, SHOPPING_TYPE_SELECT_ITEMS, ShoppingType } from "@/constants/purchase"
 import { PurchaseSummaryWithProjectSchema, PurchaseWithProjectSchema } from "@/schemas/purchase"
 import { listPurchaseSummary, listPurchases } from "@/services/purchase"
-import { dates, numbers } from "@/helpers/primitive"
+import { FormattedDateTime } from "@/components/datetime"
+import { numbers } from "@/helpers/primitive"
 import { unwrapQueryResult } from "@/helpers/result"
 import { resAvatar, staticHref } from "@/helpers/ui"
 
@@ -170,7 +171,7 @@ function ContentRecords({ list }: { list: PurchaseWithProjectSchema[] }) {
                         </Table.Cell>
                         <Table.Cell>{SHOPPING_TYPE_LABEL[item.purchaseType]}</Table.Cell>
                         <Table.Cell textAlign="right">{numbers.formatCurrency(item.cost)}</Table.Cell>
-                        <Table.Cell color="fg.muted" fontSize="sm">{dates.toDailyText(item.purchaseTime)}</Table.Cell>
+                        <Table.Cell><FormattedDateTime value={item.purchaseTime} variant="dailyText" color="fg.muted" fontSize="sm" /></Table.Cell>
                     </Table.Row>
                 ))}
             </Table.Body>
@@ -210,7 +211,7 @@ function ContentSummary({ list }: { list: PurchaseSummaryWithProjectSchema[] }) 
                         </Table.Cell>
                         <Table.Cell textAlign="right">{item.totalCount}</Table.Cell>
                         <Table.Cell textAlign="right">{numbers.formatCurrency(item.totalCost)}</Table.Cell>
-                        <Table.Cell color="fg.muted" fontSize="sm">{dates.toDailyText(item.updateTime)}</Table.Cell>
+                        <Table.Cell><FormattedDateTime value={item.updateTime} variant="dailyText" color="fg.muted" fontSize="sm" /></Table.Cell>
                     </Table.Row>
                 ))}
             </Table.Body>

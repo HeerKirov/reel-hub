@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     title: "偏好设置"
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function UserPreferencePage() {
     const result = await retrieveUserPreference()
     const { data, error } = unwrapQueryResult(result)

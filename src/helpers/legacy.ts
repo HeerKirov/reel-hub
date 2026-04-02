@@ -1,4 +1,4 @@
-import { Pool } from "pg"
+import { Pool, TypeOverrides } from "pg"
 import type { Prisma } from "@/prisma/generated/client"
 import { BoardcastType, FollowType, OriginalType, ProjectType } from "@/prisma/generated/enums"
 import { getFollowType, getRecordStatus } from "@/helpers/data"
@@ -112,6 +112,36 @@ const OLD_PUBLISH_TYPES: BoardcastType[] = [BoardcastType.TV_AND_WEB, BoardcastT
 const OLD_ORIGINAL_TYPES: OriginalType[] = [OriginalType.ORIGINAL, OriginalType.MANGA, OriginalType.NOVEL, OriginalType.GAME, OriginalType.OTHER]
 const STAFF_TYPE_TEXT = ["作者", "制作人员", "制作公司"]
 
+/** PostgreSQL timestamp without time zone (OID 1114)。旧库按「无时区 UTC 墙上钟」存，node-pg 默认会按会话/进程时区解析，此处强制按 UTC 读。 */
+const PG_TIMESTAMP_OID = 1114
+/** PostgreSQL date (OID 1082)，按 UTC 当日 00:00:00 解析。 */
+const PG_DATE_OID = 1082
+
+function parseLegacyTimestampWithoutTzAsUtc(val: string | null): Date | null {
+    if(val === null || val === undefined) return null
+    const t = String(val).trim()
+    if(t === "") return null
+    const normalized = t.includes("T") ? t : t.replace(" ", "T")
+    const withZone = normalized.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(normalized) ? normalized : `${normalized}Z`
+    const d = new Date(withZone)
+    return Number.isNaN(d.getTime()) ? null : d
+}
+
+function parseLegacyDateAsUtcMidnight(val: string | null): Date | null {
+    if(val === null || val === undefined) return null
+    const s = String(val).trim()
+    if(s === "") return null
+    const d = new Date(`${s}T00:00:00.000Z`)
+    return Number.isNaN(d.getTime()) ? null : d
+}
+
+function createLegacyPool(connectionString: string): Pool {
+    const types = new TypeOverrides()
+    types.setTypeParser(PG_TIMESTAMP_OID, val => parseLegacyTimestampWithoutTzAsUtc(val))
+    types.setTypeParser(PG_DATE_OID, val => parseLegacyDateAsUtcMidnight(val))
+    return new Pool({ connectionString, types })
+}
+
 function parseDate(value: Date | string | null | undefined): Date | null {
     if(!value) return null
     if(value instanceof Date) return value
@@ -220,7 +250,7 @@ function normalizeFollowType(value: FollowType | null): FollowType | null {
 
 export async function runLegacyMigration(options: LegacyMigrationOptions): Promise<LegacyMigrationSummary> {
     const userMapping = options.userMapping
-    const pool = new Pool({ connectionString: options.oldDatabaseUrl })
+    const pool = createLegacyPool(options.oldDatabaseUrl)
     try {
         const data = await loadLegacyData(pool)
         if(options.dryRun) {

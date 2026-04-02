@@ -90,8 +90,8 @@ export function TimelineFilterBar({ searchParams }: { searchParams: RecordListSe
             </Menu.Root>
             <Box display={{ base: "block", md: "none" }} flex="1" minW={0} fontSize="xs" color="fg.muted" lineHeight="1.25">
                 {visibleRange ? <>
-                    <Text truncate title={dates.toDateText(visibleRange.newerAt)}>{dates.toDateText(visibleRange.newerAt)}</Text>
-                    <Text truncate title={dates.toDateText(visibleRange.olderAt)}>{dates.toDateText(visibleRange.olderAt)}</Text>
+                    <Text truncate title={dates.format(visibleRange.newerAt, "dateOnly")}>{dates.format(visibleRange.newerAt, "dateOnly")}</Text>
+                    <Text truncate title={dates.format(visibleRange.olderAt, "dateOnly")}>{dates.format(visibleRange.olderAt, "dateOnly")}</Text>
                 </> : <Text>—</Text>}
             </Box>
         </Flex>
@@ -107,8 +107,8 @@ export function TimelineFilterPanel({ searchParams, visibleDaysOnScreen }: {sear
         <SidePanel.FilterStack>
             <SidePanel.FilterStackItem title="可视范围">
                 {visibleRange ? <Flex direction="column" align="flex-start" gap="1">
-                    <Badge variant="subtle" fontSize="xs" maxW="full" whiteSpace="normal">{dates.toDateText(visibleRange.newerAt)}</Badge>
-                    <Badge variant="subtle" fontSize="xs" maxW="full" whiteSpace="normal">{dates.toDateText(visibleRange.olderAt)}</Badge>
+                    <Badge variant="subtle" fontSize="xs" maxW="full" whiteSpace="normal">{dates.format(visibleRange.newerAt, "dateOnly")}</Badge>
+                    <Badge variant="subtle" fontSize="xs" maxW="full" whiteSpace="normal">{dates.format(visibleRange.olderAt, "dateOnly")}</Badge>
                 </Flex> : <Badge variant="subtle" fontSize="xs">—</Badge>}
             </SidePanel.FilterStackItem>
             <SidePanel.FilterStackItem title="">

@@ -38,13 +38,13 @@ async function Root({ children }: Readonly<{children: React.ReactNode}>) {
     const preferenceResult = isLogin ? await retrieveUserPreference() : null
     const preference = preferenceResult?.ok ? preferenceResult.value : null
     const autoTimezoneEnabled = isLogin && (preference?.autoTimezone ?? false)
-    
+
     const contentBase: SystemStyleObject = {mt: "50px", mb: "32px"}
     const contentLg: SystemStyleObject = {ml: "60px", mt: "0"}
     const contentXl: SystemStyleObject = {ml: "200px"}
 
     return (<>
-        {autoTimezoneEnabled && <TimezoneAutoWriter currentTimezone={preference?.timezone ?? null} />}
+        <TimezoneAutoWriter autoTimezoneEnabled={autoTimezoneEnabled} preferenceTimezone={preference?.timezone ?? null} />
         <Box {...contentBase} lg={contentLg} xl={contentXl}>
             <Container>
                 {children}

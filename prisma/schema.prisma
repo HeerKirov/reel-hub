@@ -85,8 +85,8 @@ model Project {
   relations          Json
   relationsTopology  Json
   resources          Json
-  createTime         DateTime
-  updateTime         DateTime
+  createTime         DateTime @db.Timestamptz(3)
+  updateTime         DateTime @db.Timestamptz(3)
   creator            String   @db.VarChar(24)
   updator            String   @db.VarChar(24)
 
@@ -120,8 +120,8 @@ model Staff {
   name        String   @db.VarChar(256) @unique
   otherNames  String   @db.VarChar(256)
   description String   @db.Text
-  createTime  DateTime
-  updateTime  DateTime
+  createTime  DateTime @db.Timestamptz(3)
+  updateTime  DateTime @db.Timestamptz(3)
   creator     String   @db.VarChar(24)
   updator     String   @db.VarChar(24)
 
@@ -145,8 +145,8 @@ model Tag {
   type        ProjectType
   name        String   @db.VarChar(256)
   description String   @db.Text
-  createTime  DateTime
-  updateTime  DateTime
+  createTime  DateTime @db.Timestamptz(3)
+  updateTime  DateTime @db.Timestamptz(3)
   creator     String   @db.VarChar(24)
   updator     String   @db.VarChar(24)
 
@@ -171,8 +171,8 @@ model PurchaseSummary {
   projectId   String
   totalCost   Decimal @db.Decimal(10, 2)
   totalCount  Int
-  createTime  DateTime
-  updateTime  DateTime
+  createTime  DateTime @db.Timestamptz(3)
+  updateTime  DateTime @db.Timestamptz(3)
 
   project Project @relation(fields: [projectId], references: [id])
 
@@ -186,9 +186,9 @@ model Purchase {
   purchaseType ShoppingType
   description  String   @db.Text
   cost         Decimal  @db.Decimal(10, 2)
-  purchaseTime DateTime
-  createTime   DateTime
-  updateTime   DateTime
+  purchaseTime DateTime @db.Timestamptz(3)
+  createTime   DateTime @db.Timestamptz(3)
+  updateTime   DateTime @db.Timestamptz(3)
 
   project Project @relation(fields: [projectId], references: [id])
 
@@ -202,12 +202,12 @@ model Record {
   specialAttention Boolean
   status      RecordStatus
   progressCount Int
-  startTime   DateTime?
-  endTime     DateTime?
-  lastActivityTime DateTime?
+  startTime   DateTime? @db.Timestamptz(3)
+  endTime     DateTime? @db.Timestamptz(3)
+  lastActivityTime DateTime? @db.Timestamptz(3)
   lastActivityEvent Json @default("{}")
-  createTime DateTime
-  updateTime DateTime
+  createTime DateTime @db.Timestamptz(3)
+  updateTime DateTime @db.Timestamptz(3)
 
   project    Project          @relation(fields: [projectId], references: [id])
   progresses RecordProgress[]
@@ -222,10 +222,10 @@ model RecordProgress {
   ordinal    Int
   isLatest   Boolean   @default(false)
   status     RecordStatus
-  startTime  DateTime?
-  endTime    DateTime?
-  createTime DateTime
-  updateTime DateTime
+  startTime  DateTime? @db.Timestamptz(3)
+  endTime    DateTime? @db.Timestamptz(3)
+  createTime DateTime @db.Timestamptz(3)
+  updateTime DateTime @db.Timestamptz(3)
 
   // Anime specific fields
   episodeWatchedNum     Int?
@@ -246,8 +246,8 @@ model Comment {
   score           Int?
   title           String?  @db.Text
   article         String?  @db.Text
-  createTime      DateTime
-  updateTime      DateTime
+  createTime      DateTime @db.Timestamptz(3)
+  updateTime      DateTime @db.Timestamptz(3)
 
   project Project @relation(fields: [projectId], references: [id])
 
@@ -260,8 +260,8 @@ model Statistic {
   type        String   @db.VarChar(256)
   key         String?  @db.VarChar(256)
   content     Json
-  createTime  DateTime
-  updateTime  DateTime
+  createTime  DateTime @db.Timestamptz(3)
+  updateTime  DateTime @db.Timestamptz(3)
 
   @@unique([ownerId, type, key])
 }

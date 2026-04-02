@@ -1,19 +1,26 @@
 "use client"
 import React, { memo, useEffect } from "react"
 import NextLink from "next/link"
-import { Lora } from "next/font/google"
+import localFont from "next/font/local"
 import { usePathname, useRouter } from "next/navigation"
 import { SessionProvider, signIn, signOut } from "next-auth/react"
 import { RiArrowDownSFill, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine, RiSettings2Fill } from "react-icons/ri"
 import { Avatar, Box, Button, Collapsible, Heading, Menu, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
 import { Toaster } from "@/components/ui/toaster"
+import { DISPLAY_TIMEZONE_COOKIE, DISPLAY_TIMEZONE_COOKIE_MAX_AGE_SEC, TIMEZME_CHECK_KEY, TIMEZME_CHECK_INTERVAL_MS } from "@/constants/system"
 import { NavigationItem, NAVIGATIONS, NavigationSubItem } from "@/constants/ui"
 import { updateUserPreference } from "@/services/user-preference"
+import { dates } from "@/helpers/primitive"
 
-const headerFont = Lora({
-    weight: "700",
-    subsets: ["latin"],
+const headerFont = localFont({
+    src: [
+        {
+            path: "../assets/fonts/lora-latin-700.woff2",
+            weight: "700",
+            style: "normal",
+        },
+    ],
     display: "swap",
 })
 
@@ -150,20 +157,15 @@ const VerticalMenuButtonGroup = memo(function VerticalMenuButtonGroup(props: Nav
     </>)
 })
 
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
-const LAST_CHECK_AT_KEY = "user-preference-timezone-last-check-at"
-
-export function TimezoneAutoWriter({ currentTimezone }: { currentTimezone: string | null }) {
+export function TimezoneAutoWriter({ autoTimezoneEnabled, preferenceTimezone }: { autoTimezoneEnabled: boolean, preferenceTimezone: string | null }) {
     useEffect(() => {
-        if (typeof window === "undefined") return
+        if(typeof window === "undefined") return
 
         const now = Date.now()
-        const raw = window.localStorage.getItem(LAST_CHECK_AT_KEY)
+        const raw = window.localStorage.getItem(TIMEZME_CHECK_KEY)
         const lastCheckAt = raw ? Number.parseInt(raw, 10) : NaN
-        if (!Number.isNaN(lastCheckAt) && (now - lastCheckAt) < CHECK_INTERVAL_MS) {
-            return
-        }
-        window.localStorage.setItem(LAST_CHECK_AT_KEY, `${now}`)
+        if(!Number.isNaN(lastCheckAt) && (now - lastCheckAt) < TIMEZME_CHECK_INTERVAL_MS) return
+        window.localStorage.setItem(TIMEZME_CHECK_KEY, `${now}`)
 
         let browserTimezone: string | undefined
         try {
@@ -171,11 +173,29 @@ export function TimezoneAutoWriter({ currentTimezone }: { currentTimezone: strin
         } catch {
             return
         }
-        if (!browserTimezone || browserTimezone === currentTimezone) return
+        if(!browserTimezone) return
 
-        void updateUserPreference({ timezone: browserTimezone })
-        console.log("Wrote timezone to server.", browserTimezone)
-    }, [currentTimezone])
+        const cookieTz = readDisplayTimezoneCookie()
+        if(browserTimezone !== cookieTz) writeDisplayTimezoneCookie(browserTimezone)
+
+        if(autoTimezoneEnabled && browserTimezone !== preferenceTimezone) {
+            void updateUserPreference({ timezone: browserTimezone })
+        }
+    }, [autoTimezoneEnabled, preferenceTimezone])
 
     return null
+}
+
+function readDisplayTimezoneCookie(): string | null {
+    if(typeof document === "undefined") return null
+    const m = document.cookie.match(new RegExp(`(?:^|; )${DISPLAY_TIMEZONE_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}=([^;]*)`))
+    const v = m ? decodeURIComponent(m[1]) : null
+    return v && dates.isValidIanaTimeZone(v) ? v : null
+}
+
+function writeDisplayTimezoneCookie(value: string): void {
+    if(typeof document === "undefined") return
+    if(!dates.isValidIanaTimeZone(value)) return
+    const enc = encodeURIComponent(value)
+    document.cookie = `${DISPLAY_TIMEZONE_COOKIE}=${enc}; Path=/; Max-Age=${DISPLAY_TIMEZONE_COOKIE_MAX_AGE_SEC}; SameSite=Lax`
 }

@@ -8,7 +8,7 @@ import { InlineError } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { CommentWithProjectSchema } from "@/schemas/comment"
 import { listComments } from "@/services/comment"
-import { dates } from "@/helpers/primitive"
+import { FormattedDateTime } from "@/components/datetime"
 import { resAvatar, staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
 
@@ -96,7 +96,7 @@ function ContentActivity({ list, type }: {list: CommentWithProjectSchema[], type
                                 </Text>
                                 <Starlight value={item.score} disabled/>
                             </Flex>
-                            <Text color="fg.muted" fontSize="sm">{dates.toDailyText(item.updateTime)}</Text>
+                            <FormattedDateTime value={item.updateTime} variant="dailyText" color="fg.muted" fontSize="sm" />
                         </Flex>
                         {item.title && <Text fontWeight="600" fontSize="lg"><Icon mr="2"><RiChatQuoteFill/></Icon>{item.title}</Text>}
                         {item.article && <Text color="fg.muted" lineClamp={2}>{item.article}</Text>}

@@ -10,7 +10,7 @@ import { ProjectType } from "@/constants/project"
 import { RECORD_STATUS_ITEMS, RecordStatus, VALUE_TO_RECORD_STATUS } from "@/constants/record"
 import { RecordActivityListSchema, RecordHistoryListSchema } from "@/schemas/record"
 import { listRecordActivity, listRecordHistory, listRecordTimeline } from "@/services/record-list"
-import { dates } from "@/helpers/primitive"
+import { FormattedDateTime } from "@/components/datetime"
 import { resAvatar, staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
 
@@ -195,7 +195,11 @@ function ContentActivity({ list, type }: { list: RecordActivityListSchema[], typ
                                     <Badge colorPalette={status.color} variant="subtle">{status.label}</Badge>
                                     {item.specialAttention && <Badge colorPalette="yellow" variant="outline">{type === ProjectType.ANIME ? "订阅中" : "特别关注"}</Badge>}
                                 </Flex>
-                                <Text color="fg.muted" fontSize="sm">{item.activityTime ? dates.toDailyText(item.activityTime) : "暂无动态"}</Text>
+                                {item.activityTime ? (
+                                    <FormattedDateTime value={item.activityTime} variant="dailyText" color="fg.muted" fontSize="sm" />
+                                ) : (
+                                    <Text color="fg.muted" fontSize="sm">暂无动态</Text>
+                                )}
                             </Flex>
                             <Flex align="center" gap="2" color="fg.muted" fontSize="sm" justify="space-between">
                                 <Text>{activityText}</Text>
@@ -228,8 +232,7 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
         </Table.Header>
         <Table.Body>
             {list.map((item, idx) => {
-                const startTime = item.startTime ? dates.toDateText(item.startTime) : null
-                const endTime = item.endTime ? dates.toDateText(item.endTime) : null
+                const showStart = item.startTime && (!item.endTime || !sameLocalCalendarDay(item.startTime, item.endTime))
                 return (
                     <Table.Row key={idx}>
                     <Table.Cell>
@@ -246,9 +249,9 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
                     </Table.Cell>
                     <Table.Cell textAlign="right">
                         <Box>
-                            {(startTime && startTime !== endTime) ? startTime : null}
-                            {(startTime && startTime !== endTime) && <Icon display={{base: "none", sm: "inline"}} mx="2"><RiArrowRightLine/></Icon>}
-                            <Text display={{base: "block", sm: "inline"}}>{endTime}</Text>
+                            {showStart && <FormattedDateTime value={item.startTime} variant="dateOnly" display="inline" />}
+                            {showStart && <Icon display={{base: "none", sm: "inline"}} mx="2"><RiArrowRightLine/></Icon>}
+                            <FormattedDateTime value={item.endTime} variant="dateOnly" display={{base: "block", sm: "inline"}} emptyLabel="" />
                         </Box>
                     </Table.Cell>
                 </Table.Row>
@@ -256,6 +259,10 @@ function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type:
             })}
         </Table.Body>
     </Table.Root>
+}
+
+function sameLocalCalendarDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
 function clampTimelineScaleDays(n: number): number {
