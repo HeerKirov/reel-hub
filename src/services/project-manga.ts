@@ -4,7 +4,7 @@ import { objects } from "@/helpers/primitive"
 import { createProjectCrudApi, ProjectCrudKind } from "./project-crud-kind"
 import { MangaDetailSchema, MangaForm, MangaListFilter, MangaListSchema, parseMangaDetailSchema, parseMangaListSchema, mangaForm, mangaListFilter } from "@/schemas/project-manga"
 import { EpisodePublishRecord } from "@/schemas/project"
-import { syncEpisodeRecordProgressAfterEpisodeMetaChange } from "./record"
+import { syncEpisodeRecordProgressAfterEpisodeMetaChange } from "./record-utils"
 import { processEpisodePlan } from "./project-utils"
 
 const mangaProjectKind: ProjectCrudKind<MangaListFilter, MangaForm, MangaListSchema, MangaDetailSchema> = {

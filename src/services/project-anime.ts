@@ -3,7 +3,7 @@ import { objects } from "@/helpers/primitive"
 import { AnimeForm, AnimeListFilter, animeForm, AnimeDetailSchema, AnimeListSchema, parseAnimeListSchema, parseAnimeDetailSchema, animeListFilter } from "@/schemas/project-anime"
 import { ProjectType } from "@/constants/project"
 import { EpisodePublishRecord } from "@/schemas/project"
-import { syncEpisodeRecordProgressAfterEpisodeMetaChange } from "@/services/record"
+import { syncEpisodeRecordProgressAfterEpisodeMetaChange } from "@/services/record-utils"
 import { createProjectCrudApi, ProjectCrudKind } from "./project-crud-kind"
 import { processEpisodePlan } from "./project-utils"
 

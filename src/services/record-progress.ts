@@ -267,17 +267,17 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
 
         const isEpisodeType = isEpisodeProjectType(project.type)
 
-        const newStartTime = validate.data.startTime !== undefined ? validate.data.startTime : progress.startTime
+        const newStartTime: Date | null | undefined = validate.data.startTime !== undefined ? validate.data.startTime : undefined
         let newEndTime: Date | null | undefined = validate.data.endTime ? validate.data.endTime : undefined
         let newStatus: RecordStatus | undefined = validate.data.status !== undefined && validate.data.status !== progress.status ? validate.data.status : undefined
 
         // start/end 基础范围校验
-        if(newStartTime !== null && newEndTime !== undefined && newStartTime.getTime() >= newEndTime.getTime()) {
+        if(newStartTime !== null && newStartTime !== undefined && newEndTime !== undefined && newStartTime.getTime() >= newEndTime.getTime()) {
             return err(exceptionParamError("Start time must be before end time"))
         }
 
         // start 必须晚于上一条进度 end
-        if(ordinal > 1 && newStartTime !== null) {
+        if(ordinal > 1 && newStartTime !== null && newStartTime !== undefined) {
             const prevProgress = await tx.recordProgress.findFirst({
                 where: {recordId: record.id, ordinal: ordinal - 1}
             })
@@ -302,7 +302,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
                 const rawWatchedNum = validate.data.episodeWatchedNum !== undefined ? (validate.data.episodeWatchedNum ?? 0) : (progress.episodeWatchedNum ?? 0)
 
                 // 如果用户把 endTime 从 null 设置成非 null => 试图把进度置为完成
-                if(newEndTime !== null) {
+                if(newEndTime !== null && newEndTime !== undefined) {
                     if(!episodeFullyPublished) return err(exceptionReject("Episode is not fully published"))
                     // 完成时需要同步已看集数到总集数（与 BUSINESS 一致）
                     newEpisodeWatchedNum = episodeTotalNum
@@ -337,7 +337,7 @@ export async function updateLatestProgress(projectId: string, ordinal: number, f
             if(progress.status !== RecordStatus.WATCHING) {
                 return err(exceptionReject("Only watching progress can be dropped"))
             }
-            if(newEndTime === undefined) {
+            if(newEndTime === undefined || newEndTime === null) {
                 newEndTime = now
             }
         }else if(newStatus === RecordStatus.WATCHING) {

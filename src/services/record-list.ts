@@ -14,10 +14,9 @@ import { err, ListResult, ok, Result } from "@/schemas/all"
 import { exceptionParamError } from "@/constants/exception"
 import { ListRecordError } from "@/schemas/error"
 import { RecordStatus } from "@/constants/record"
-import { getUserPreference } from "@/services/user-preference"
+import { getDisplayTimeZone, getUserPreference } from "@/services/user-preference-utils"
 import { isEpisodeProjectType } from "@/constants/project"
 import { safeExecute } from "@/helpers/execution"
-import { dates } from "@/helpers/primitive"
 import {
     passesSubscriptionMode, parseEpisodePublishRecord, getNextPublishPlanItemAfterNow, nextPublishTimeFromItem, sortSubscriptionAnimeRows, 
     type SubscriptionAnimeSortRow
@@ -58,7 +57,7 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
                             episodeTotalNum: true
                         }
                     },
-                    progresses: isEpisodeProjectType(validate.data.type) ? {
+                    progresses: validate.data.type === undefined || isEpisodeProjectType(validate.data.type) ? {
                         where: { isLatest: true },
                         select: {
                             episodeWatchedNum: true
@@ -206,10 +205,7 @@ export async function listRecordSubscriptionAnime(filter: RecordSubscriptionAnim
 
         const now = new Date()
         const preference = await getUserPreference(userId)
-        const inputTimezone = validate.data.timezone && dates.isValidIanaTimeZone(validate.data.timezone)
-            ? validate.data.timezone
-            : null
-        const timeZone = inputTimezone ?? preference.timezone ?? dates.resolveTimeZone()
+        const timeZone = await getDisplayTimeZone()
         const nightTimeTable = validate.data.nightTimeTable ?? preference.nightTimeTable
         const direction = validate.data.orderDirection === "desc" ? -1 : 1
 

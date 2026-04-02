@@ -65,8 +65,8 @@ function Content({ comment, type }: {comment: CommentSchema, type: ProjectType})
                 </Flex>
                 {comment.score && <Text mt="2" mr="1" color="fg.muted" fontSize="sm">{comment.score && SCORE_DESCRIPTIONS[type][comment.score - 1].content}</Text>}
             </Flex>
-            <Heading mb="2"><Icon><RiChatQuoteFill/></Icon> {comment.title}</Heading>
-            <WrappedText text={comment.article}/>
+            <Heading mb="2"><Icon><RiChatQuoteFill/></Icon> {comment.title || <Text as="span" fontStyle="italic" color="fg.muted" fontSize="md">(未写评论标题)</Text>}</Heading>
+            {comment.article ? <WrappedText text={comment.article}/> : <Text fontStyle="italic" color="fg.muted" fontSize="sm">(未写评论)</Text>}
         </>
     )
 }
@@ -81,9 +81,9 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
         return (
             <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" minH="7rem">
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%">
-                    <Text color="fg.muted" fontSize="sm">未进行任何评价</Text>
+                    <Text color="fg.muted" fontSize="sm">未进行任何评论</Text>
                     <Button variant="solid" colorPalette="blue" size="sm" mt="2" asChild>
-                        <NextLink href={`/${type.toLowerCase()}/comment/${project.id}/edit`}><RiPenNibLine/> 编写评价</NextLink>
+                        <NextLink href={`/${type.toLowerCase()}/comment/${project.id}/edit`}><RiPenNibLine/> 编写评论</NextLink>
                     </Button>
                 </Box>
             </Box>
@@ -94,8 +94,10 @@ export async function CommentBox({ project, type }: {project: ProjectDetailSchem
         <Box flex="1 1 100%" borderWidth="1px" rounded="md" p="3" asChild>
             <NextLink href={`/${type.toLowerCase()}/comment/${project.id}`}>
                 <Starlight value={data.score} disabled/>
-                <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>{data.title}</Text>
-                <Text mt="1" color="fg.muted" fontSize="sm" lineClamp={2}>{data.article}</Text>
+                {data.title || data.article ? <>
+                    <Text mt="2" fontWeight="500"><Icon mr="2"><RiChatQuoteFill/></Icon>{data.title}</Text>
+                    <Text mt="1" color="fg.muted" fontSize="sm" lineClamp={2}>{data.article}</Text>
+                </> : <Text mt="2" fontStyle="italic" color="fg.muted" fontSize="sm"><Icon mr="2"><RiChatQuoteFill/></Icon>(未写评论)</Text>}
             </NextLink>
         </Box>
     )

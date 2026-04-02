@@ -136,7 +136,7 @@ export interface RecordSubscriptionAnimeListSchema {
 // =============================================================================
 
 export const recordActivityListFilter = z.object({
-    type: z.enum(PROJECT_TYPE),
+    type: z.enum(PROJECT_TYPE).optional(),
     search: z.string().optional(),
     specialAttention: z.enum(["true", "false"]).optional(),
     status: z.enum(RECORD_STATUS).optional(),

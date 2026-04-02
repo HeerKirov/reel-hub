@@ -161,8 +161,8 @@ const ProgressTableRowEdit = memo(function ProgressTableRowEdit({ progress, type
         startTransition(async () => {
             const result = handleActionResult(
                 await updateLatestProgress(projectId, progress.ordinal, {
-                    startTime: startTime ? new Date(startTime) : null,
-                    endTime: endTime ? new Date(endTime) : null,
+                    startTime: startTime ? new Date(startTime) : undefined,
+                    endTime: endTime ? new Date(endTime) : undefined,
                     episodeWatchedNum: episodeWatchedNum ?? undefined
                 }),
                 { successTitle: "进度已保存" }

@@ -1,23 +1,20 @@
 "use server"
-import { cache } from "react"
-import { prisma } from "@/lib/prisma"
-import { err, ok, type Result } from "@/schemas/all"
 import { exceptionParamError } from "@/constants/exception"
-import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
+import { err, ok, type Result } from "@/schemas/all"
 import { type GetUserPreferenceError, type SetUserPreferenceError } from "@/schemas/error"
-import {
-    USER_PREFERENCE_DEFAULT, parseUserPreferenceSchema, userPreferenceSetForm, type UserPreferenceSchema, type UserPreferenceSetForm
-} from "@/schemas/user-preference"
+import { USER_PREFERENCE_DEFAULT, parseUserPreferenceSchema, userPreferenceSetForm, type UserPreferenceSchema, type UserPreferenceSetForm } from "@/schemas/user-preference"
+import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { requireAuth } from "@/helpers/auth-guard"
 import { dates } from "@/helpers/primitive"
+import { getUserPreference } from "@/services/user-preference-utils"
 
-export const retrieveUserPreference = cache(async function(): Promise<Result<UserPreferenceSchema, GetUserPreferenceError>> {
+export async function retrieveUserPreference(): Promise<Result<UserPreferenceSchema, GetUserPreferenceError>> {
     return safeExecute(async () => {
         const session = await requireAuth()
         const preference = await getUserPreference(session.user.id)
         return ok(preference)
     })
-})
+}
 
 export async function updateUserPreference(form: UserPreferenceSetForm): Promise<Result<UserPreferenceSchema, SetUserPreferenceError>> {
     return safeExecuteTransaction(async tx => {
@@ -48,22 +45,4 @@ export async function updateUserPreference(form: UserPreferenceSetForm): Promise
 
         return ok(parseUserPreferenceSchema(row))
     })
-}
-
-export async function getUserPreference(userId: string): Promise<UserPreferenceSchema> {
-    const row = await prisma.userPreference.findUnique({ where: { userId } })
-    if (!row) {
-        return {
-            timezone: USER_PREFERENCE_DEFAULT.timezone,
-            autoTimezone: USER_PREFERENCE_DEFAULT.autoTimezone,
-            nightTimeTable: USER_PREFERENCE_DEFAULT.nightTimeTable
-        }
-    }
-    const parsed = parseUserPreferenceSchema(row)
-    return {
-        ...parsed,
-        timezone: parsed.timezone != null && dates.isValidIanaTimeZone(parsed.timezone)
-            ? parsed.timezone
-            : null
-    }
 }

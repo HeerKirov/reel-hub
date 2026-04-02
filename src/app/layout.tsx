@@ -2,7 +2,7 @@ import React from "react"
 import type { Metadata } from "next"
 import { Box, Container, SystemStyleObject } from "@chakra-ui/react"
 import { getSession, getUserIdOrNull } from "@/helpers/next"
-import { retrieveUserPreference } from "@/services/user-preference"
+import { getUserPreference } from "@/services/user-preference-utils"
 import { NavigationSideBar, Wrapper, TimezoneAutoWriter } from "./components"
 import "./globals.css"
 
@@ -34,9 +34,9 @@ export default function RootLayout({ children }: Readonly<{children: React.React
 
 async function Root({ children }: Readonly<{children: React.ReactNode}>) {
     const session = await getSession()
-    const isLogin = (await getUserIdOrNull()) !== null
-    const preferenceResult = isLogin ? await retrieveUserPreference() : null
-    const preference = preferenceResult?.ok ? preferenceResult.value : null
+    const userId = await getUserIdOrNull(session)
+    const isLogin = userId !== null
+    const preference = isLogin ? await getUserPreference(userId) : null
     const autoTimezoneEnabled = isLogin && (preference?.autoTimezone ?? false)
 
     const contentBase: SystemStyleObject = {mt: "50px", mb: "32px"}

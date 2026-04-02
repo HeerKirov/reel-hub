@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { migrateLegacyByToken } from "@/services/migration-legacy"
+import { migrateLegacyByToken } from "@/services/legacy"
 import config from "@/config/config"
 
 interface MigrateRequestBody {

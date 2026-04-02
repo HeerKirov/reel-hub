@@ -288,18 +288,15 @@ type StaffTypeInputProps = {
     onValueChange?: (value: string) => void
     onEnter?: (value: string) => void
     placeholder?: string
-    clearInEnter?: boolean
+    clearInCommit?: boolean
+    commitInBlur?: boolean
 } & SystemStyleObject
 
-const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValueChange, onEnter, placeholder, clearInEnter = false, ...attrs }: StaffTypeInputProps) {
-    const [draft, setDraft] = useState(value)
+const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValueChange, onEnter, placeholder, clearInCommit = false, commitInBlur = true, ...attrs }: StaffTypeInputProps) {
+    const [draft, setDraft] = useEffectState(value)
     const [searchResults, setSearchResults] = useState<string[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [isComposing, setIsComposing] = useState(false)
-
-    useEffect(() => {
-        setDraft(value)
-    }, [value])
 
     const items = useMemo(() => searchResults.map(item => ({ label: item, value: item })), [searchResults])
     const collection = useMemo(() => createListCollection({ items }), [items])
@@ -333,7 +330,7 @@ const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValu
 
     const onInputChange = useCallback((details: Combobox.InputValueChangeDetails) => {
         setDraft(details.inputValue ?? "")
-    }, [])
+    }, [setDraft])
 
     const onFocus = useCallback(() => {
         doSearch(draft)
@@ -342,25 +339,32 @@ const StaffTypeInput = memo(function StaffTypeInput({ value, projectType, onValu
     const commitValue = useCallback((text: string) => {
         const finalValue = text.trim()
         if(!finalValue) return
-        setDraft(finalValue)
         onValueChange?.(finalValue)
+        console.log("commitValue", finalValue)
+        if(clearInCommit) setDraft("")
+        else setDraft(finalValue)
     }, [onValueChange])
+
+    const onSelect = useCallback((item: {itemValue: string}) => {
+        commitValue(item.itemValue)
+        console.log("onSelect", item.itemValue)
+    }, [commitValue])
 
     const onTypeKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
         if(e.key === "Enter" && !isComposing) {
             commitValue(draft)
-            onEnter?.(draft.trim())
-            if(clearInEnter) setDraft("")
         }
-    }, [commitValue, draft, isComposing, onEnter, clearInEnter])
+    }, [commitValue, draft, isComposing, onEnter, clearInCommit])
 
     const onBlur = useCallback(() => {
-        if(isComposing) return
+        if(!commitInBlur || isComposing) return
         commitValue(draft)
-    }, [commitValue, draft, isComposing])
+    }, [commitValue, draft, isComposing, commitInBlur])
+
+    console.log("draft", draft)
 
     return (
-        <Combobox.Root allowCustomValue collection={collection} inputValue={draft} onInputValueChange={onInputChange} openOnClick {...attrs}>
+        <Combobox.Root allowCustomValue collection={collection} inputValue={draft} onInputValueChange={onInputChange} onSelect={onSelect} openOnClick {...attrs}>
             <Combobox.Control>
                 <Combobox.Input placeholder={placeholder} onFocus={onFocus} onKeyDown={onTypeKeyDown} onBlur={onBlur} onCompositionStart={() => setIsComposing(true)} onCompositionEnd={() => setIsComposing(false)}/>
             </Combobox.Control>
@@ -425,13 +429,13 @@ export const StaffEditor = memo(function StaffEditor({ value = [], onValueChange
         <Box display="flex" flexDirection="column" gap="2" {...attrs}>
             {staffs.map((staff, index) => (
                 <Box key={index} display="flex" gap="2">
-                    <StaffTypeInput flex="1 0 140px" value={staff.type} projectType={projectType} onValueChange={onTypeChange(staff.type)} placeholder="STAFF类型"/>
+                    <StaffTypeInput flex="1 0 140px" value={staff.type} projectType={projectType} onValueChange={onTypeChange(staff.type)} placeholder="STAFF类型" commitInBlur/>
                     <TagEditor flex="1 1 100%" value={staff.members} onValueChange={onMembersChange(staff.type)} placeholder="添加STAFF" variant="surface" width="full" noDuplicate search={search}/>
                     <IconButton flex="0 0 auto" variant="ghost" size="sm" onClick={onDeleteType(staff.type)}><PiTrashBold/></IconButton>
                 </Box>
             ))}
             <Box display="flex" gap="4">
-                <StaffTypeInput value="" flex="1 0 140px" projectType={projectType} onEnter={handleEnter} placeholder="新STAFF类型" clearInEnter/>
+                <StaffTypeInput value="" flex="1 0 140px" projectType={projectType} onValueChange={handleEnter} placeholder="新STAFF类型" clearInCommit/>
                 <Box flex="1 1 100%" />
                 <Box flex="0 0 auto" />
             </Box>

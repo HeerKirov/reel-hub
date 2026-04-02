@@ -4,7 +4,7 @@ import { objects } from "@/helpers/primitive"
 import { EpisodePublishRecord } from "@/schemas/project"
 import { MovieForm, MovieListFilter, MovieDetailSchema, MovieListSchema, parseMovieDetailSchema, parseMovieListSchema, movieForm, movieListFilter } from "@/schemas/project-movie"
 import { createProjectCrudApi, ProjectCrudKind } from "./project-crud-kind"
-import { syncEpisodeRecordProgressAfterEpisodeMetaChange } from "./record"
+import { syncEpisodeRecordProgressAfterEpisodeMetaChange } from "./record-utils"
 import { processEpisodePlan } from "./project-utils"
 
 const movieProjectKind: ProjectCrudKind<MovieListFilter, MovieForm, MovieListSchema, MovieDetailSchema> = {
