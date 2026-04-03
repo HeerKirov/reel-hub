@@ -1,17 +1,20 @@
 "use client"
-import React, { memo, useEffect } from "react"
+import React, { memo, useEffect, useMemo } from "react"
 import NextLink from "next/link"
 import localFont from "next/font/local"
 import { usePathname, useRouter } from "next/navigation"
 import { SessionProvider, signIn, signOut } from "next-auth/react"
-import { RiArrowDownSFill, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine, RiSettings2Fill } from "react-icons/ri"
-import { Avatar, Box, Button, Collapsible, Heading, Menu, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
+import { RiArrowDownSFill, RiArrowLeftSLine, RiArrowRightSLine, RiHome3Line, RiLoginBoxLine, RiLogoutBoxLine, RiSettings2Fill } from "react-icons/ri"
+import { Avatar, Badge, Box, Button, Collapsible, Flex, Heading, IconButton, Menu, Portal, Stack, SystemStyleObject, Text, useBreakpointValue } from "@chakra-ui/react"
 import { Provider } from "@/components/ui/provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DISPLAY_TIMEZONE_COOKIE, DISPLAY_TIMEZONE_COOKIE_MAX_AGE_SEC, TIMEZME_CHECK_KEY, TIMEZME_CHECK_INTERVAL_MS } from "@/constants/system"
 import { NavigationItem, NAVIGATIONS, NavigationSubItem } from "@/constants/ui"
+import type { EpisodeTimeTableGroup, EpisodeTimeTableItem } from "@/schemas/project"
 import { updateUserPreference } from "@/services/user-preference"
+import { resAvatar } from "@/helpers/ui"
 import { dates } from "@/helpers/primitive"
+import { useEffectState } from "@/helpers/hooks"
 
 const headerFont = localFont({
     src: [
@@ -31,6 +34,15 @@ export function Wrapper({ children }: { children: React.ReactNode }) {
             <Toaster/>
         </Provider>
     </SessionProvider>
+}
+
+/** 主页侧栏未登录时的登录按钮（需客户端触发 signIn） */
+export function HomeGuestLoginButton() {
+    return (
+        <Button width="100%" variant="solid" colorPalette="teal" onClick={() => signIn("auth-service")}>
+            <RiLoginBoxLine/> 登录
+        </Button>
+    )
 }
 
 export function NavigationSideBar(props: {avatar?: {name: string, image?: string}, isLogin: boolean} & SystemStyleObject) {
@@ -198,4 +210,98 @@ function writeDisplayTimezoneCookie(value: string): void {
     if(!dates.isValidIanaTimeZone(value)) return
     const enc = encodeURIComponent(value)
     document.cookie = `${DISPLAY_TIMEZONE_COOKIE}=${enc}; Path=/; Max-Age=${DISPLAY_TIMEZONE_COOKIE_MAX_AGE_SEC}; SameSite=Lax`
+}
+
+export function EpisodeTimeTable(props: { groups: EpisodeTimeTableGroup[], displayTimeZone: string }) {
+    const { groups, displayTimeZone } = props
+
+    const todayWeekday = useMemo(() => isoWeekdayInTimeZone(new Date(), displayTimeZone), [displayTimeZone])
+    
+    const viewSize = useBreakpointValue({base: 3, md: 5}) ?? 3
+    
+    const [shift, setShift] = useEffectState(todayWeekday - Math.floor(viewSize / 2) - 1)
+
+    const seasonYearHeader = useMemo(() => episodeTimetableSeasonYearTitle(new Date(), displayTimeZone), [displayTimeZone])
+
+    const columns = useMemo(() => episodeTimetableVisibleWeekdays(shift, viewSize).map(w => groups.find(g => g.weekday === w) ?? {weekday: w, items: []}), [shift, viewSize])
+
+    return (
+        <Box borderWidth="1px" rounded="md" overflow="hidden">
+            <Flex align="center" justify="space-between" gap="2" px="2" py="2" borderBottomWidth="1px" bg="bg.subtle">
+                <IconButton aria-label="向前" variant="ghost" size="sm" onClick={() => setShift(s => (s - 1) % 7)}>
+                    <RiArrowLeftSLine/>
+                </IconButton>
+                <Text fontSize="sm" color="fg.muted" fontWeight="bold" flex="1" textAlign="center">
+                    {seasonYearHeader}
+                </Text>
+                <IconButton aria-label="向后" variant="ghost" size="sm" onClick={() => setShift(s => (s + 1) % 7)}>
+                    <RiArrowRightSLine/>
+                </IconButton>
+            </Flex>
+            <Flex align="stretch" minH="120px">
+                {columns.map((col, colIdx) => <TimeTableColumn key={col.weekday} col={col} today={col.weekday === todayWeekday} colIdx={colIdx}/>)}
+            </Flex>
+        </Box>
+    )
+}
+
+const TimeTableColumn = memo(function TimeTableColumn({ col, today, colIdx }: { col: { weekday: number, items: EpisodeTimeTableItem[] }, today: boolean, colIdx: number }) {
+    return (
+        <Box flex="1 1 0" minW="0" py="2" borderLeftWidth={colIdx === 0 ? "0" : "1px"} borderColor="border">
+            <Flex align="center" justify="center" gap="1" mb="2" flexWrap="wrap">
+                <Text fontSize="xs" fontWeight="semibold" color="fg.muted">
+                    {EPISODE_TIMETABLE_WEEKDAY_LABELS[col.weekday - 1]}
+                </Text>
+                {today && <Badge size="sm" variant="subtle" colorPalette="teal">今天</Badge>}
+            </Flex>
+            <Stack maxH="min(70vh, 520px)" overflowY="auto">
+                {col.items.map(item => <TimeTableRow key={item.project.id} item={item}/>)}
+            </Stack>
+        </Box>
+    )
+})
+
+const TimeTableRow = memo(function TimeTableRow({ item }: { item: EpisodeTimeTableItem }) {
+    return (
+        <Flex gap="2" align="flex-start" p="2" transition="background 0.15s" _hover={{ bg: "bg.subtle" }} asChild>
+            <NextLink href={`/${item.project.type.toLowerCase()}/database/${item.project.id}`}>
+                <Avatar.Root size="sm" shape="rounded" flexShrink={0}>
+                    <Avatar.Fallback name={item.project.title}/>
+                    <Avatar.Image src={resAvatar(item.project.resources)}/>
+                </Avatar.Root>
+                <Box minW={0} flex="1">
+                    <Text fontSize="xs" fontWeight="medium" lineClamp={2} title={item.project.title}>
+                        {item.project.title}
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted">
+                        {dates.format(item.nextPublishTime, "timeOnly")} · 第{item.nextPublishPlanItem.actualEpisodeNum ?? item.nextPublishPlanItem.index}话
+                    </Text>
+                </Box>
+            </NextLink>
+        </Flex>
+    )
+})
+
+
+const EPISODE_TIMETABLE_WEEKDAY_LABELS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"] as const
+
+const ISO_WEEKDAY_NAME_TO_NUM: Record<string, number> = {
+    Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7
+}
+
+function isoWeekdayInTimeZone(date: Date, timeZone: string): number {
+    const name = Intl.DateTimeFormat("en-US", { timeZone: timeZone, weekday: "long" }).format(date)
+    return ISO_WEEKDAY_NAME_TO_NUM[name] ?? 1
+}
+
+function episodeTimetableVisibleWeekdays(shift: number, viewSize: number): number[] {
+    return Array.from({ length: viewSize }, (_, j) => ((shift + j + 21) % 7) + 1)
+}
+
+function episodeTimetableSeasonYearTitle(date: Date, timeZone: string): string {
+    const parts = Intl.DateTimeFormat("en-CA", { timeZone: timeZone, year: "numeric", month: "2-digit" }).formatToParts(date)
+    const year = parseInt(parts.find(p => p.type === "year")!.value, 10)
+    const month = parseInt(parts.find(p => p.type === "month")!.value, 10)
+    const season = month <= 3 ? "冬" : month <= 6 ? "春" : month <= 9 ? "夏" : "秋"
+    return `${year}年 · ${season}季`
 }

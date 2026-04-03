@@ -46,6 +46,13 @@ export const commentListFilter = z.object({
 
 export type CommentListFilter = z.infer<typeof commentListFilter>
 
+export const completedUnscoredProjectsListFilter = z.object({
+    page: z.number().optional(),
+    size: z.number().optional()
+})
+
+export type CompletedUnscoredProjectsListFilter = z.infer<typeof completedUnscoredProjectsListFilter>
+
 // =============================================================================
 // Form
 // =============================================================================

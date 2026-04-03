@@ -43,3 +43,16 @@ export function getRecordStatus(progressCount: number, endTime: Date | null, epi
     else if(endTime !== null) return RecordStatus.COMPLETED
     else return RecordStatus.WATCHING
 }
+
+/** 将 lastActivityEvent 转为简短中文说明（与记录列表页一致） */
+export function getActivityText(activityEvent: Record<string, unknown>): string {
+    const type = activityEvent.type
+    if(type === "CREATE_RECORD") return "创建了记录"
+    if(type === "CREATE_PROGRESS") return "新建了进度"
+    if(type === "EDIT_PROGRESS") return "编辑了进度"
+    if(type === "WATCH_EPISODE") {
+        const episodeNum = activityEvent.episodeNum
+        return typeof episodeNum === "number" ? `看到第 ${episodeNum} 话` : "推进了进度"
+    }
+    return "有新的动态"
+}

@@ -1,12 +1,14 @@
 "use server"
-import { CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchema, commentUpsertSchema, parseCommentSchema, CommentWithProjectSchema, parseCommentWithProjectSchema } from "@/schemas/comment"
+import { completedUnscoredProjectsListFilter, type CompletedUnscoredProjectsListFilter, CommentListFilter, commentListFilter, CommentSchema, CommentUpsertSchema, commentUpsertSchema, parseCommentSchema, CommentWithProjectSchema, parseCommentWithProjectSchema } from "@/schemas/comment"
 import { prisma } from "@/lib/prisma"
 import { getUserId } from "@/helpers/next"
 import { requireAccess } from "@/helpers/auth-guard"
-import { exceptionNotFound, exceptionParamError } from "@/constants/exception"
+import { exceptionNotFound, exceptionParamError, InternalServerError, ParamError } from "@/constants/exception"
+import { RecordStatus } from "@/constants/record"
 import { safeExecute, safeExecuteTransaction } from "@/helpers/execution"
 import { err, ListResult, ok, Result } from "@/schemas/all"
 import { DeleteCommentError, ListCommentsError, RetrieveCommentError, UpsertCommentError } from "@/schemas/error"
+import { parseProjectSimpleSchema, type ProjectSimpleSchema } from "@/schemas/project"
 
 export async function listComments(filter: CommentListFilter): Promise<Result<ListResult<CommentWithProjectSchema>, ListCommentsError>> {
     return safeExecute(async () => {
@@ -105,5 +107,68 @@ export async function deleteComment(projectId: string): Promise<Result<void, Del
             }
         })
         return ok(undefined)
+    })
+}
+
+export async function listCompletedUnscoredProjects(filter: CompletedUnscoredProjectsListFilter): Promise<Result<ListResult<ProjectSimpleSchema>, ParamError | InternalServerError>> {
+    return safeExecute(async () => {
+        await requireAccess("comment", "read")
+        const userId = await getUserId()
+
+        const validate = completedUnscoredProjectsListFilter.safeParse(filter)
+        if(!validate.success) return err(exceptionParamError(validate.error.message))
+
+        const size = validate.data.size ?? 15
+        const skip = (validate.data.page ?? 1 - 1) * size
+
+        const where = {
+            ownerId: userId,
+            status: RecordStatus.COMPLETED,
+            project: {
+                comments: {
+                    none: {
+                        ownerId: userId
+                    }
+                }
+            }
+        }
+
+        const [completedRecords, total] = await Promise.all([
+            prisma.record.findMany({
+                where,
+                select: {
+                    projectId: true
+                },
+                orderBy: {
+                    lastActivityTime: "desc"
+                },
+                skip,
+                take: size
+            }),
+            prisma.record.count({ where })
+        ])
+
+        if (completedRecords.length === 0) return ok({ list: [], total })
+
+        const projectIds = completedRecords.map(r => r.projectId)
+        const orderIndex = new Map(completedRecords.map((r, i) => [r.projectId, i] as const))
+
+        const projects = await prisma.project.findMany({
+            where: {
+                id: { in: projectIds }
+            },
+            select: {
+                id: true,
+                type: true,
+                title: true,
+                resources: true
+            }
+        })
+
+        projects.sort((a, b) => orderIndex.get(a.id)! - orderIndex.get(b.id)!)
+        return ok({
+            list: projects.map(parseProjectSimpleSchema),
+            total
+        })
     })
 }

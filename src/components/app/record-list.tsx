@@ -13,6 +13,7 @@ import { listRecordActivity, listRecordHistory, listRecordTimeline } from "@/ser
 import { FormattedDateTime } from "@/components/datetime"
 import { resAvatar, staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
+import { getActivityText } from "@/helpers/data"
 
 const HISTORY_PAGE_SIZE = 20
 const ACTIVITY_PAGE_SIZE = 15
@@ -68,7 +69,7 @@ export async function RecordList(props: { searchParams: Promise<RecordListSearch
                 breadcrumb={{ url: `/${type.toLowerCase()}/record` }}
                 bar={<FilterBar searchParams={searchParams}/>}
                 filter={<FilterPanel searchParams={searchParams} type={type}/>}
-                content={<ContentActivity list={list} type={type}/>}
+                content={<ContentActivity list={list}/>}
                 totalRecord={total}
                 totalPage={Math.ceil(total / ACTIVITY_PAGE_SIZE)}
                 currentPage={page}
@@ -172,53 +173,57 @@ function FilterPanel({ searchParams, type }: { searchParams: RecordListSearchPar
     )
 }
 
-function ContentActivity({ list, type }: { list: RecordActivityListSchema[], type: ProjectType }) {
+function ContentActivity({ list }: { list: RecordActivityListSchema[] }) {
     return <Box>
-        {list.map((item, idx) => {
-            const status = VALUE_TO_RECORD_STATUS[item.status]
-            const progressPercent = item.totalEpisode && item.totalEpisode > 0 && item.watchedEpisode !== null
-                ? Math.min(100, Math.floor((item.watchedEpisode / item.totalEpisode) * 100))
-                : null
-            const activityText = getActivityText(item.activityEvent)
-            return (
-                <Flex key={idx} m="3" asChild>
-                    <NextLink href={`/${type.toLowerCase()}/record/${item.project.id}`}>
-                        <Avatar.Root mr="2">
-                            <Avatar.Fallback name={item.project.title} />
-                            <Avatar.Image src={resAvatar(item.project.resources)} />
-                        </Avatar.Root>
-                        <Box width="full">
-                            <Flex lineHeight="38px" justify="space-between" align="center" gap="2">
-                                <Flex align="center" gap="2" flexWrap="wrap">
-                                    <Text fontSize="md" fontWeight="500">{item.project.title}</Text>
-                                    {item.progressCount > 1 && <Badge colorPalette="pink" variant="outline">{item.progressCount}周目</Badge>}
-                                    <Badge colorPalette={status.color} variant="subtle">{status.label}</Badge>
-                                    {item.specialAttention && <Badge colorPalette="yellow" variant="outline">{type === ProjectType.ANIME ? "订阅中" : "特别关注"}</Badge>}
-                                </Flex>
-                                {item.activityTime ? (
-                                    <FormattedDateTime value={item.activityTime} variant="dailyText" color="fg.muted" fontSize="sm" />
-                                ) : (
-                                    <Text color="fg.muted" fontSize="sm">暂无动态</Text>
-                                )}
-                            </Flex>
-                            <Flex align="center" gap="2" color="fg.muted" fontSize="sm" justify="space-between">
-                                <Text>{activityText}</Text>
-                                <Box display="flex" alignItems="center" gap="2">
-                                    <Icon><RiTv2Line /></Icon>
-                                    <Text>
-                                        {item.totalEpisode !== null
-                                            ? `已看 ${item.watchedEpisode ?? 0} / ${item.totalEpisode}`
-                                            : `已记录 ${item.progressCount} 段进度`}
-                                    </Text>
-                                </Box>
-                            </Flex>
-                            {progressPercent !== null && <Progress.Root mt="2" colorPalette="blue" value={progressPercent} size="xs"><Progress.Track><Progress.Range /></Progress.Track></Progress.Root>}
-                        </Box>
-                    </NextLink>
-                </Flex>
-            )
-        })}
+        {list.map((item, idx) => <RecordActivityItem key={idx} item={item}/>)}
     </Box>
+}
+
+export function RecordActivityItem({ item }: { item: RecordActivityListSchema }) {
+    const status = VALUE_TO_RECORD_STATUS[item.status]
+    const progressPercent = item.totalEpisode && item.totalEpisode > 0 && item.watchedEpisode !== null
+        ? Math.min(100, Math.floor((item.watchedEpisode / item.totalEpisode) * 100))
+        : null
+    const activityText = getActivityText(item.activityEvent)
+    const type = item.project.type
+
+    return (
+        <Flex m="3" asChild>
+            <NextLink href={`/${type.toLowerCase()}/record/${item.project.id}`}>
+                <Avatar.Root mr="2">
+                    <Avatar.Fallback name={item.project.title} />
+                    <Avatar.Image src={resAvatar(item.project.resources)} />
+                </Avatar.Root>
+                <Box width="full">
+                    <Flex lineHeight="38px" justify="space-between" align="center" gap="2">
+                        <Flex align="center" gap="2" flexWrap="wrap">
+                            <Text fontSize="md" fontWeight="500">{item.project.title}</Text>
+                            {item.progressCount > 1 && <Badge colorPalette="pink" variant="outline">{item.progressCount}周目</Badge>}
+                            <Badge colorPalette={status.color} variant="subtle">{status.label}</Badge>
+                            {item.specialAttention && <Badge colorPalette="yellow" variant="outline">{type === ProjectType.ANIME ? "订阅中" : "特别关注"}</Badge>}
+                        </Flex>
+                        {item.activityTime ? (
+                            <FormattedDateTime value={item.activityTime} variant="dailyText" color="fg.muted" fontSize="sm" />
+                        ) : (
+                            <Text color="fg.muted" fontSize="sm">暂无动态</Text>
+                        )}
+                    </Flex>
+                    <Flex align="center" gap="2" color="fg.muted" fontSize="sm" justify="space-between">
+                        <Text>{activityText}</Text>
+                        <Box display="flex" alignItems="center" gap="2">
+                            <Icon><RiTv2Line /></Icon>
+                            <Text>
+                                {item.totalEpisode !== null
+                                    ? `已看 ${item.watchedEpisode ?? 0} / ${item.totalEpisode}`
+                                    : `已记录 ${item.progressCount} 段进度`}
+                            </Text>
+                        </Box>
+                    </Flex>
+                    {progressPercent !== null && <Progress.Root mt="2" colorPalette="blue" value={progressPercent} size="xs"><Progress.Track><Progress.Range /></Progress.Track></Progress.Root>}
+                </Box>
+            </NextLink>
+        </Flex>
+    )
 }
 
 function ContentHistory({ list, type }: { list: RecordHistoryListSchema[], type: ProjectType }) {
@@ -270,14 +275,3 @@ function clampTimelineScaleDays(n: number): number {
     return Math.min(730, Math.max(7, Math.round(n)))
 }
 
-function getActivityText(activityEvent: Record<string, unknown>): string {
-    const type = activityEvent.type
-    if(type === "CREATE_RECORD") return "创建了记录"
-    if(type === "CREATE_PROGRESS") return "新建了进度"
-    if(type === "EDIT_PROGRESS") return "编辑了进度"
-    if(type === "WATCH_EPISODE") {
-        const episodeNum = activityEvent.episodeNum
-        return typeof episodeNum === "number" ? `看到第 ${episodeNum} 话` : "推进了进度"
-    }
-    return "有新的动态"
-}

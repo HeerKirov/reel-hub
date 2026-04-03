@@ -110,6 +110,18 @@ export interface ProjectDetailSchema extends ProjectListSchema {
     staffs: ProjectStaffItem[]
 }
 
+
+export interface EpisodeTimeTableItem {
+    project: ProjectSimpleSchema
+    nextPublishTime: Date
+    nextPublishPlanItem: EpisodePublishRecordModel
+}
+
+export interface EpisodeTimeTableGroup {
+    weekday: number
+    items: EpisodeTimeTableItem[]
+}
+
 // =============================================================================
 // Form — Zod 校验用户输入
 // =============================================================================

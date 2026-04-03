@@ -1,13 +1,21 @@
 import React from "react"
 import NextLink from "next/link"
-import { Box, Breadcrumb, CloseButton, Drawer, Flex, Heading, IconButton, Portal, Stack, Text } from "@chakra-ui/react"
+import { Box, Breadcrumb, CloseButton, Drawer, Flex, Heading, IconButton, Portal, Stack, SystemStyleObject, Text } from "@chakra-ui/react"
 import { RiFilter2Line } from "react-icons/ri"
 import { NAVIGATIONS } from "@/constants/ui"
 import { ResponsiveIf } from "@/components/logical"
 import { CompactPagination } from "@/components/server/filters"
 import { SidePanelFilterStackCollapseItem } from "./_components"
 
-export function NavigationBreadcrumb(props: {url?: string, detail?: string, detailIcon?: React.ReactNode}) {
+export function NavigationBreadcrumb(props: {url?: string, detail?: string, detailIcon?: React.ReactNode, children?: React.ReactNode}) {
+    if(props.children) {
+        return (
+            <Breadcrumb.Root py="3">
+                <Breadcrumb.List>{props.children}</Breadcrumb.List>
+            </Breadcrumb.Root>
+        )
+    }
+    
     const nItem = props.url ? NAVIGATIONS.find(n => props.url!.startsWith(n.href)) : undefined
     const nsItem = nItem?.children?.find(n => props.url!.startsWith(n.href))
 
@@ -130,11 +138,12 @@ export const SidePanel = {
 }
 
 export interface DetailPageLayoutProps {
-    breadcrumb?: {url?: string, detail?: string, detailIcon?: React.ReactNode}
+    breadcrumb?: {url?: string, detail?: string, detailIcon?: React.ReactNode, children?: React.ReactNode}
     header?: React.ReactNode
     side?: React.ReactNode
     content?: React.ReactNode
     bottom?: React.ReactNode
+    sideStyle?: SystemStyleObject
 }
 
 export function DetailPageLayout(props: DetailPageLayoutProps) {
@@ -145,7 +154,7 @@ export function DetailPageLayout(props: DetailPageLayoutProps) {
             {props.header && <Heading as="h1" size="3xl" mb={{base: "3", sm: "2"}} textAlign={{base: "center", sm: "left"}}>{props.header}</Heading>}
 
             <Flex flexWrap={{base: "wrap", sm: "nowrap"}} alignItems="flex-start" gap="3">
-                <Box flex="1 0 auto" order={{base: 0, sm: 1}} width={{base: "100%", sm: "200px", md: "220px", lg: "240px", xl: "260px"}} borderWidth="1px" rounded="md" overflow="hidden">
+                <Box flex="1 0 auto" order={{base: 0, sm: 1}} width={{base: "100%", sm: "200px", md: "220px", lg: "240px", xl: "260px"}} borderWidth="1px" rounded="md" overflow="hidden" {...props.sideStyle}>
                     {props.side}
                 </Box>
                 <Box flex="1 1 100%">
