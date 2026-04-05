@@ -7,7 +7,7 @@ import { ListPageLayout } from "@/components/server/layout"
 import { InlineError } from "@/components/app/inline-error"
 import { ProjectType } from "@/constants/project"
 import { CommentWithProjectSchema } from "@/schemas/comment"
-import { listComments } from "@/services/comment"
+import { listCommentActivity, listCommentScoreRank } from "@/services/comment"
 import { FormattedDateTime } from "@/components/datetime"
 import { resAvatar, staticHref } from "@/helpers/ui"
 import { unwrapQueryResult } from "@/helpers/result"
@@ -20,27 +20,51 @@ export async function CommentList(props: {searchParams: Promise<CommentListSearc
     const type = props.type
     const searchParams = await props.searchParams
     const page = searchParams.page !== undefined ? parseInt(searchParams.page) : 1
+    const view = searchParams.view ?? "activity"
 
-    const listResult = await listComments({type, page, size: PAGE_SIZE, search: searchParams.search, orderBy: searchParams.view === "table" ? "score" : "updateTime"})
-    const { data, error } = unwrapQueryResult(listResult)
-
-    if(error) {
-        return <InlineError error={error}/>
+    if(view === "activity") {
+        const listResult = await listCommentActivity({type, page, size: PAGE_SIZE, search: searchParams.search})
+        const { data, error } = unwrapQueryResult(listResult)
+    
+        if(error) {
+            return <InlineError error={error}/>
+        }
+        const { list, total } = data
+    
+        return (
+            <ListPageLayout
+                searchParams={searchParams}
+                breadcrumb={{url: `/${type.toLowerCase()}/comment`}}
+                bar={<FilterBar searchParams={searchParams}/>}
+                filter={<FilterPanel searchParams={searchParams} />}
+                content={<ContentActivity list={list} type={type}/>}
+                totalRecord={total}
+                totalPage={Math.ceil(total / PAGE_SIZE)}
+                currentPage={page}
+            />
+        )
+    }else{
+        const listResult = await listCommentScoreRank({type, page, size: PAGE_SIZE, search: searchParams.search})
+        const { data, error } = unwrapQueryResult(listResult)
+    
+        if(error) {
+            return <InlineError error={error}/>
+        }
+        const { list, total } = data
+    
+        return (
+            <ListPageLayout
+                searchParams={searchParams}
+                breadcrumb={{url: `/${type.toLowerCase()}/comment`}}
+                bar={<FilterBar searchParams={searchParams}/>}
+                filter={<FilterPanel searchParams={searchParams} />}
+                content={<ContentTable list={list} type={type}/>}
+                totalRecord={total}
+                totalPage={Math.ceil(total / PAGE_SIZE)}
+                currentPage={page}
+            />
+        )
     }
-    const { list, total } = data
-
-    return (
-        <ListPageLayout
-            searchParams={searchParams}
-            breadcrumb={{url: `/${type.toLowerCase()}/comment`}}
-            bar={<FilterBar searchParams={searchParams}/>}
-            filter={<FilterPanel searchParams={searchParams} />}
-            content={searchParams.view === "table" ? <ContentTable list={list} type={type}/> : <ContentActivity list={list} type={type}/>}
-            totalRecord={total}
-            totalPage={Math.ceil(total / PAGE_SIZE)}
-            currentPage={page}
-        />
-    )
 }
 
 function FilterBar({ searchParams }: {searchParams: CommentListSearchParams}) {

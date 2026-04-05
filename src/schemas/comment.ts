@@ -40,8 +40,7 @@ export const commentListFilter = z.object({
     type: z.enum(PROJECT_TYPE),
     search: z.string().optional(),
     page: z.number().optional(),
-    size: z.number().optional(),
-    orderBy: z.enum(["updateTime", "score"]).optional()
+    size: z.number().optional()
 })
 
 export type CommentListFilter = z.infer<typeof commentListFilter>

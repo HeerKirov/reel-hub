@@ -141,7 +141,8 @@ export const recordActivityListFilter = z.object({
     specialAttention: z.enum(["true", "false"]).optional(),
     status: z.enum(RECORD_STATUS).optional(),
     page: z.number().optional(),
-    size: z.number().optional()
+    size: z.number().optional(),
+    orderBy: z.enum(["lastActivityTime", "startTime"]).optional()
 })
 
 export const RECORD_HISTORY_PROGRESS_KIND = ["latest", "first", "rewatch"] as const

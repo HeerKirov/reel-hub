@@ -32,7 +32,7 @@ function Header({ id, title, type }: {id: string, title: string, type: ProjectTy
             <Button variant="outline" float="right" width={{base: "40px", sm: "auto"}} asChild>
                 <NextLink href={`/${type.toLowerCase()}/comment/${id}/edit`} replace><RiEdit2Line/><Text display={{base: "none", sm: "inline"}}>编辑</Text></NextLink>
             </Button>
-            {title}
+            <NextLink href={`/${type.toLowerCase()}/database/${id}`}>{title}</NextLink>
         </>
     )
 }

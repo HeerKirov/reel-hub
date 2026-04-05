@@ -184,7 +184,7 @@ function HomeLinks() {
 }
 
 async function HomeAttension() {
-    const result = await listRecordActivity({ specialAttention: "true", status: RecordStatus.WATCHING, page: 1, size: 15 })
+    const result = await listRecordActivity({ specialAttention: "true", status: RecordStatus.WATCHING, orderBy: "startTime", page: 1, size: 15 })
     const { data, error } = unwrapQueryResult(result)
     if(error) {
         return <InlineError error={error}/>

@@ -154,7 +154,7 @@ function Header({ id, title, type }: {id: string, title: string, type: ProjectTy
                     <Text display={{base: "none", sm: "inline"}}>编辑</Text>
                 </NextLink>
             </Button>
-            {title}
+            <NextLink href={`/${type.toLowerCase()}/database/${id}`}>{title}</NextLink>
         </>
     )
 }

@@ -32,7 +32,7 @@ export default async function PurchaseDetail(props: {id: string, searchParams: P
 
     return (
         <DetailPageLayout breadcrumb={{ url: "/game/purchase", detail: project.title || "(未命名)" }} 
-            header={project.title || "(未命名)"}
+            header={<Header id={project.id} title={project.title}/>}
             side={<Side project={project}/>}
             content={<Content projectId={props.id} list={list} totalPage={totalPage} page={page} searchParams={searchParams} total={total} />}
         />
@@ -40,6 +40,12 @@ export default async function PurchaseDetail(props: {id: string, searchParams: P
 }
 
 const PAGE_SIZE = 15
+
+function Header({ id, title }: {id: string, title: string}) {
+    return (
+        <NextLink href={`/game/database/${id}`}>{title}</NextLink>
+    )
+}
 
 function Side({ project }: {project: ProjectDetailSchema}) {
     return (

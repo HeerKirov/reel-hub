@@ -66,7 +66,7 @@ export async function listRecordActivity(filter: RecordActivityListFilter): Prom
                     } : false
                 },
                 orderBy: {
-                    lastActivityTime: "desc"
+                    [validate.data.orderBy ?? "lastActivityTime"]: {sort: "desc", nulls: "last"}
                 },
                 skip: ((validate.data.page ?? 1) - 1) * (validate.data.size ?? 15),
                 take: validate.data.size ?? 15
