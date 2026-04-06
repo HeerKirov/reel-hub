@@ -191,7 +191,14 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
                 <RecordDisplayAttentionButton projectId={project.id} type={type} specialAttention={record.specialAttention}/>
             </Flex>
 
-            {latestProgress && <LatestProgressBar projectId={project.id} type={type} latestProgress={latestProgress} episodeProject={episodeProject} />}
+            {latestProgress && (
+                episodeProject 
+                    ? <LatestProgressBarOfEpidodeType projectId={project.id} latestProgress={latestProgress} episodeProject={episodeProject} /> 
+                : type === ProjectType.GAME 
+                    ? <LatestProgressBarOfGame projectId={project.id} latestProgress={latestProgress} /> 
+                :
+                    <LatestProgressBar projectId={project.id} latestProgress={latestProgress} />
+            )}
 
             {record.progresses.length > 1 && <>
                 <Heading size="md" py="1.5">历史进度</Heading>
@@ -205,7 +212,7 @@ function Content({ record, type, project }: {record: RecordDetailSchema, type: P
     )
 }
 
-function LatestProgressBar({ projectId, type, latestProgress, episodeProject }: { projectId: string, type: ProjectType, latestProgress: RecordProgressDetailItem, episodeProject: AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema | null }) {
+function LatestProgressBarOfEpidodeType({ projectId, latestProgress, episodeProject }: { projectId: string, latestProgress: RecordProgressDetailItem, episodeProject: AnimeDetailSchema | MovieDetailSchema | MangaDetailSchema }) {
     return (
         <Box borderWidth="1px" rounded="md" p="4" bg="bg.subtle">
             <Flex direction="column" gap="4">
@@ -213,55 +220,26 @@ function LatestProgressBar({ projectId, type, latestProgress, episodeProject }: 
                     <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
                         <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
                     </Box>
-                    {(episodeProject && latestProgress.episodeWatchedNum !== null) ? (
-                        <Flex alignItems="center" gap="2" flex="1">
-                            <Text fontSize="sm" color="fg.muted">
-                                {Math.floor((latestProgress.episodeWatchedNum / episodeProject.episodeTotalNum) * 100)}%
-                            </Text>
-                            <DualProgressBar
-                                watched={latestProgress.episodeWatchedNum}
-                                published={episodeProject.episodePublishedNum}
-                                total={episodeProject.episodeTotalNum}
-                            />
-                        </Flex>
-                    ) : (<>
-                        {latestProgress.startTime && (
-                            <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">
-                                <Icon><RiBookmark3Line/></Icon>
-                                <Text>订阅时间 </Text>
-                                <FormattedDateTime value={latestProgress.startTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" />
-                            </Flex>
-                        )}
-                        <Flex flex="1 0 auto" order={{base: 1, md: 0}} alignItems="center" gap="2" fontSize="sm" color="fg.muted">
-                            <Icon><RiBookmark3Line/></Icon>
-                            <Text>完成时间 </Text>
-                            <FormattedDateTime value={latestProgress.endTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" emptyLabel="(未完成)" />
-                        </Flex>
-                        <Box display={{base: "none", md: "block"}} w="full"/>
-                        {latestProgress.endTime === null ? <Box order={{base: 0, md: 1}}>  
-                            <RecordDisplayFinishButton projectId={projectId} ordinal={latestProgress.ordinal}/>
-                        </Box> : latestProgress.status === RecordStatus.DROPPED ? (<Box order={{base: 0, md: 1}}>  
-                            <RecordDisplayResumeButton projectId={projectId} ordinal={latestProgress.ordinal}/>
-                        </Box>) : undefined}
-                    </>)}
+                    <Flex alignItems="center" gap="2" flex="1">
+                        <Text fontSize="sm" color="fg.muted">
+                            {Math.floor((latestProgress.episodeWatchedNum! / episodeProject.episodeTotalNum) * 100)}%
+                        </Text>
+                        <DualProgressBar watched={latestProgress.episodeWatchedNum!} published={episodeProject.episodePublishedNum} total={episodeProject.episodeTotalNum}/>
+                    </Flex>
                 </Flex>
 
-                {episodeProject && <Flex alignItems="center" justifyContent="space-between" fontSize="sm" color="fg.muted" px="1">
+                <Flex alignItems="center" justifyContent="space-between" fontSize="sm" color="fg.muted" px="1">
                     <Text>
-                        已看完 <Badge px="2" py="1">{latestProgress.episodeWatchedNum}</Badge> 话
+                        已看完 <Badge px="2" py="1">{latestProgress.episodeWatchedNum!}</Badge> 话
                     </Text>
                     <Text>
                         共&nbsp;
                         {episodeProject.episodePublishedNum < episodeProject.episodeTotalNum && <><Badge colorPalette="green" px="2" py="1">{episodeProject.episodePublishedNum}</Badge> / </>}
                         <Badge colorPalette="gray" px="2" py="1">{episodeProject.episodeTotalNum}</Badge>&nbsp;话
                     </Text>
-                </Flex>}
+                </Flex>
 
-                {type === ProjectType.GAME && <Flex alignItems="center" gap="2" fontSize="sm" color="fg.muted">
-                    <RecordDisplayPlatformEditor projectId={projectId} ordinal={latestProgress.ordinal} platform={latestProgress.platform}/>
-                </Flex>}
-
-                {(episodeProject && latestProgress.episodeWatchedNum !== null) && <Flex alignItems="flex-end" justifyContent="space-between" pl="1">
+                <Flex alignItems="flex-end" justifyContent="space-between" pl="1">
                     <Flex direction="column" gap="2" fontSize="sm" color="fg.muted">
                         {latestProgress.startTime && (
                             <Flex alignItems="center" gap="2">
@@ -277,11 +255,92 @@ function LatestProgressBar({ projectId, type, latestProgress, episodeProject }: 
                         </Flex>
                     </Flex>
                     {latestProgress.status === RecordStatus.DROPPED ? (
-                        <RecordDisplayResumeButton projectId={episodeProject.id} ordinal={latestProgress.ordinal}/>
+                        <RecordDisplayResumeButton projectId={projectId} ordinal={latestProgress.ordinal}/>
                     ) : latestProgress.episodeWatchedNum! < episodeProject.episodePublishedNum ? (
-                        <RecordDisplayNextButton projectId={episodeProject.id} ordinal={latestProgress.ordinal} watched={latestProgress.episodeWatchedNum!} />
+                        <RecordDisplayNextButton projectId={projectId} ordinal={latestProgress.ordinal} watched={latestProgress.episodeWatchedNum!} />
                     ) : undefined}
-                </Flex>}
+                </Flex>
+            </Flex>
+        </Box>
+    )
+}
+
+function LatestProgressBarOfGame({ projectId, latestProgress }: { projectId: string, latestProgress: RecordProgressDetailItem }) {
+    const duration = latestProgress.startTime ? Math.floor((new Date().getTime() - new Date(latestProgress.startTime).getTime()) / (1000 * 60 * 60 * 24)) : null
+    return (
+        <Flex direction={{base: "column", sm: "row"}} gap="4">
+            <Box flex="1 0.5 100%" borderWidth="1px" rounded="md" p="4" bg="bg.subtle">
+                <Flex direction="column" gap="4">
+                    <Flex alignItems="center" gap="4" wrap={{base: "wrap", md: "nowrap"}}>
+                        <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
+                            <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
+                        </Box>
+                        {duration && <Box fontSize="sm" color="fg.muted">
+                            已持续
+                            <Text as="span" fontWeight="medium" fontSize="lg" color="fg"> {duration} </Text>
+                            天
+                        </Box>}
+                        <Box flex="1 0 auto" display={{base: "none", md: "block"}} />
+                        <Box fontSize="sm">
+                            <RecordDisplayPlatformEditor projectId={projectId} ordinal={latestProgress.ordinal} platform={latestProgress.platform}/>
+                        </Box>
+                    </Flex>
+
+                    <Flex alignItems="flex-end" justifyContent="space-between" pl="1">
+                        <Flex direction="column" gap="2" fontSize="sm" color="fg.muted">
+                            {latestProgress.startTime && (
+                                <Flex alignItems="center" gap="2">
+                                    <Icon><RiBookmark3Line/></Icon>
+                                    <Text>订阅时间 </Text>
+                                    <FormattedDateTime value={latestProgress.startTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" />
+                                </Flex>
+                            )}
+                            <Flex alignItems="center" gap="2">
+                                <Icon><RiBookmark3Line/></Icon>
+                                <Text>完成时间 </Text>
+                                <FormattedDateTime value={latestProgress.endTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" emptyLabel="(未完成)" />
+                            </Flex>
+                        </Flex>
+                        {latestProgress.endTime === null ? (
+                            <RecordDisplayFinishButton projectId={projectId} ordinal={latestProgress.ordinal}/>
+                        ) : latestProgress.status === RecordStatus.DROPPED ? (
+                            <RecordDisplayResumeButton projectId={projectId} ordinal={latestProgress.ordinal}/>
+                        ) : undefined}
+                    </Flex>
+                </Flex>
+            </Box>
+            <PurchaseSubBox projectId={projectId} />
+        </Flex>
+    )
+}
+
+function LatestProgressBar({ projectId, latestProgress }: { projectId: string, latestProgress: RecordProgressDetailItem }) {
+    return (
+        <Box borderWidth="1px" rounded="md" p="4" bg="bg.subtle">
+            <Flex direction="column" gap="4">
+                <Flex alignItems="center" gap="4" wrap={{base: "wrap", md: "nowrap"}}>
+                    <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
+                        <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
+                    </Box>
+                    {latestProgress.startTime && (
+                        <Flex flex="1 0 auto" alignItems="center" gap="2" fontSize="sm" color="fg.muted">
+                            <Icon><RiBookmark3Line/></Icon>
+                            <Text>订阅时间 </Text>
+                            <FormattedDateTime value={latestProgress.startTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" />
+                        </Flex>
+                    )}
+                    <Flex flex="1 0 auto" order={{base: 1, md: 0}} alignItems="center" gap="2" fontSize="sm" color="fg.muted">
+                        <Icon><RiBookmark3Line/></Icon>
+                        <Text>完成时间 </Text>
+                        <FormattedDateTime value={latestProgress.endTime} variant="dateOnly" fontSize="sm" color="fg.muted" display="inline" emptyLabel="(未完成)" />
+                    </Flex>
+                    <Box display={{base: "none", md: "block"}} w="full"/>
+                    {latestProgress.endTime === null ? <Box order={{base: 0, md: 1}}>  
+                        <RecordDisplayFinishButton projectId={projectId} ordinal={latestProgress.ordinal}/>
+                    </Box> : latestProgress.status === RecordStatus.DROPPED ? (<Box order={{base: 0, md: 1}}>  
+                        <RecordDisplayResumeButton projectId={projectId} ordinal={latestProgress.ordinal}/>
+                    </Box>) : undefined}
+                </Flex>
             </Flex>
         </Box>
     )

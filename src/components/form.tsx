@@ -449,7 +449,7 @@ const DateTimePickerPopover = memo(function DateTimePickerPopover(props: DateTim
                     <Link variant="underline" color={currentPanel === "time" ? `blue.fg` : "fg.subtle"} fontWeight={700} onClick={() => setCurrentPanel("time")}>{numbers.zero(date.hour, 2)}:{numbers.zero(date.minute, 2)}</Link>
                 )}
             </Group>
-            <Box maxHeight="200px" overflowY="auto" mt="2">
+            <Box maxHeight="240px" overflowY="auto" mt="2">
                 {currentPanel === "year" ? (
                     <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap="1">
                         {yearOptions.map(year => (

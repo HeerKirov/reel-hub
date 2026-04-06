@@ -160,7 +160,7 @@ export async function listCompletedUnscoredProjects(filter: CompletedUnscoredPro
         if(!validate.success) return err(exceptionParamError(validate.error.message))
 
         const size = validate.data.size ?? 15
-        const skip = (validate.data.page ?? 1 - 1) * size
+        const skip = ((validate.data.page ?? 1) - 1) * size
 
         const where = {
             ownerId: userId,
