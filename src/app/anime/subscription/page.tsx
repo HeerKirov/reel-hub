@@ -7,7 +7,10 @@ import { ListPageLayout, SidePanel } from "@/components/server/layout"
 import { LinkGroupFilter } from "@/components/server/filters"
 import { InlineError } from "@/components/app/inline-error"
 import { RECORD_SUBSCRIPTION_ANIME_MODE, RECORD_SUBSCRIPTION_ANIME_ORDER, RecordSubscriptionAnimeListSchema } from "@/schemas/record"
+import { USER_PREFERENCE_DEFAULT } from "@/schemas/user-preference"
 import { listRecordSubscriptionAnime } from "@/services/record-list"
+import { getDisplayTimeZone, getUserPreference } from "@/services/user-preference-utils"
+import { getUserId } from "@/helpers/next"
 import { unwrapQueryResult } from "@/helpers/result"
 import { resAvatar } from "@/helpers/ui"
 import { SubscriptionAnimeRowNextButton } from "./components"
@@ -69,12 +72,18 @@ export default async function AnimeSubscriptionPage(props: { searchParams: Promi
     const raw = await props.searchParams
     const sp = normalizeSearchParams(raw)
     const filter = buildSubscriptionFilter(sp)
-    const result = await listRecordSubscriptionAnime(filter)
+    const userId = await getUserId()
+    const [result, timeZone, preference] = await Promise.all([
+        listRecordSubscriptionAnime(filter),
+        getDisplayTimeZone(),
+        getUserPreference(userId)
+    ])
     const { data, error } = unwrapQueryResult(result)
     if (error) {
         return <InlineError error={error} />
     }
     const list = data
+    const nightTimeTable = preference.nightTimeTable ?? USER_PREFERENCE_DEFAULT.nightTimeTable
 
     const layoutSearchParams: Record<string, string> = {}
     if (sp.search) layoutSearchParams.search = sp.search
@@ -87,7 +96,7 @@ export default async function AnimeSubscriptionPage(props: { searchParams: Promi
             searchParams={layoutSearchParams}
             breadcrumb={{ url: "/anime/subscription" }}
             filter={<FilterPanel searchParams={layoutSearchParams} />}
-            content={<Content list={list} />}
+            content={<Content list={list} timeZone={timeZone} nightTimeTable={nightTimeTable} />}
             totalRecord={list.length}
         />
     )
@@ -116,7 +125,7 @@ function FilterPanel({ searchParams }: { searchParams: Record<string, string> })
     )
 }
 
-function Content({ list }: { list: RecordSubscriptionAnimeListSchema[] }) {
+function Content({ list, timeZone, nightTimeTable }: { list: RecordSubscriptionAnimeListSchema[], timeZone: string, nightTimeTable: boolean }) {
     if (list.length === 0) {
         return (
             <Box m="3" color="fg.muted">
@@ -127,13 +136,13 @@ function Content({ list }: { list: RecordSubscriptionAnimeListSchema[] }) {
     return (
         <Box>
             {list.map(item => (
-                <SubscriptionAnimeRow key={item.recordId} item={item} />
+                <SubscriptionAnimeRow key={item.recordId} item={item} timeZone={timeZone} nightTimeTable={nightTimeTable} />
             ))}
         </Box>
     )
 }
 
-function SubscriptionAnimeRow({ item }: { item: RecordSubscriptionAnimeListSchema }) {
+function SubscriptionAnimeRow({ item, timeZone, nightTimeTable }: { item: RecordSubscriptionAnimeListSchema, timeZone: string, nightTimeTable: boolean }) {
     const hasBacklog = item.watchedEpisode !== null && item.watchedEpisode < item.publishedEpisode
 
     return (
@@ -144,20 +153,20 @@ function SubscriptionAnimeRow({ item }: { item: RecordSubscriptionAnimeListSchem
                     <Avatar.Image src={resAvatar(item.project.resources)} />
                 </Avatar.Root>
             </NextLink>
-            <Flex gap="2" align="flex-start" width="full" justify="space-between" direction="column">
+            <Flex gap="2" align="flex-start" flex="1" minW="0" justify="space-between" direction="column">
                 <NextLink href={`/anime/record/${item.project.id}`}>
                     <Text fontSize="md" fontWeight="500" lineHeight="tall">
                         {item.project.title}
                     </Text>
                 </NextLink>
-                {item.nextPublishPlanItem && <Badge colorPalette="teal" variant="subtle" whiteSpace="normal" textAlign="right" maxW="100%">
-                    {formatNextPublishLine(item.nextPublishPlanItem)}
+                {item.nextPublishPlanItem && <Badge colorPalette="teal" variant="subtle" whiteSpace="normal" textAlign="left" maxW="100%">
+                    {formatNextPublishLine(item.nextPublishPlanItem, timeZone, nightTimeTable)}
                 </Badge>}
             </Flex>
-            <Flex gap="3" align="flex-end" flex="1 0 auto" justifyContent="space-between" direction="column">
+            <Flex gap="3" align="flex-end" flexShrink={0} justifyContent="space-between" direction="column">
                 <EpisodeTriple watched={item.watchedEpisode} published={item.publishedEpisode} total={item.totalEpisode} />
                 {hasBacklog && <SubscriptionAnimeRowNextButton projectId={item.project.id} watched={item.watchedEpisode!} />}
-        </Flex>
+            </Flex>
         </Flex>
     )
 }

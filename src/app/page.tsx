@@ -16,7 +16,8 @@ import { listProjectGame } from "@/services/project-game"
 import { listProjectManga } from "@/services/project-manga"
 import { listProjectMovie } from "@/services/project-movie"
 import { listProjectNovel } from "@/services/project-novel"
-import { getDisplayTimeZone } from "@/services/user-preference-utils"
+import { getDisplayTimeZone, getUserPreference } from "@/services/user-preference-utils"
+import { USER_PREFERENCE_DEFAULT } from "@/schemas/user-preference"
 import { getUserIdOrNull } from "@/helpers/next"
 import { unwrapQueryResult } from "@/helpers/result"
 import { resCover } from "@/helpers/ui"
@@ -68,8 +69,13 @@ async function HomeTimeTable() {
     if(error) {
         return <InlineError error={error}/>
     }
-    const displayTimeZone = await getDisplayTimeZone()
-    return <EpisodeTimeTable groups={data ?? []} displayTimeZone={displayTimeZone}/>
+    const userId = await getUserIdOrNull()
+    const [displayTimeZone, preference] = await Promise.all([
+        getDisplayTimeZone(),
+        userId ? getUserPreference(userId) : Promise.resolve(null)
+    ])
+    const nightTimeTable = preference?.nightTimeTable ?? USER_PREFERENCE_DEFAULT.nightTimeTable
+    return <EpisodeTimeTable groups={data ?? []} displayTimeZone={displayTimeZone} nightTimeTable={nightTimeTable}/>
 }
 
 async function HomeActivity() {
@@ -211,7 +217,7 @@ async function HomeUncommented() {
     const items = data.list.map(item => ({
         type: item.type,
         title: item.title,
-        href: `/${item.type.toLowerCase()}/comment/${item.id}`,
+        href: `/${item.type.toLowerCase()}/comment/${item.id}/edit`,
         nextEpisode: null
     }))
 

@@ -56,7 +56,7 @@ const SCALE_OPTIONS: { days: number, label: string }[] = [
     { days: 365, label: "1 年" },
 ]
 
-const COLOR_PALETTE = ["blue", "purple", "teal", "cyan", "green", "orange", "pink", "red", "yellow", "lime"]
+const COLOR_PALETTE = ["blue", "purple", "teal", "cyan", "green", "orange", "pink", "red", "yellow"] as const
 
 export function TimelineFilterBar({ searchParams }: { searchParams: RecordListSearchParams }) {
     const { visibleRange } = useTimelineContext()

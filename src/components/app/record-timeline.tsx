@@ -526,7 +526,7 @@ function useVisibleTimelineItems(
                     startY,
                     endY,
                     lineTop,
-                    lineHeight: Math.max(0, lineBottom - lineTop),
+                    lineHeight: Math.max(STROKE_OUTER, lineBottom - lineTop),
                     showStartEndpoint: startY >= visibleTimeRange.renderTop && startY <= visibleTimeRange.renderBottom,
                     showEndEndpoint: endY >= visibleTimeRange.renderTop && endY <= visibleTimeRange.renderBottom,
                     clippedTop,

@@ -266,7 +266,9 @@ function LatestProgressBarOfEpidodeType({ projectId, latestProgress, episodeProj
 }
 
 function LatestProgressBarOfGame({ projectId, latestProgress }: { projectId: string, latestProgress: RecordProgressDetailItem }) {
-    const duration = latestProgress.startTime ? Math.floor((new Date().getTime() - new Date(latestProgress.startTime).getTime()) / (1000 * 60 * 60 * 24)) : null
+    const duration = latestProgress.startTime
+        ? Math.floor(((latestProgress.endTime ? new Date(latestProgress.endTime) : new Date()).getTime() - new Date(latestProgress.startTime).getTime()) / (1000 * 60 * 60 * 24))
+        : null
     return (
         <Flex direction={{base: "column", sm: "row"}} gap="4">
             <Box flex="1 0.5 100%" borderWidth="1px" rounded="md" p="4" bg="bg.subtle">
@@ -275,8 +277,8 @@ function LatestProgressBarOfGame({ projectId, latestProgress }: { projectId: str
                         <Box flex="0 0 auto" borderWidth="1px" rounded="md" px="3" py="1" bg="bg.default">
                             <Text fontSize="sm" fontWeight="medium">{latestProgress.ordinal > 1 ? `${latestProgress.ordinal}周目` : "首次订阅"}</Text>
                         </Box>
-                        {duration && <Box fontSize="sm" color="fg.muted">
-                            已持续
+                        {duration !== null && <Box fontSize="sm" color="fg.muted">
+                            已游玩
                             <Text as="span" fontWeight="medium" fontSize="lg" color="fg"> {duration} </Text>
                             天
                         </Box>}

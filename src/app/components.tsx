@@ -14,6 +14,7 @@ import type { EpisodeTimeTableGroup, EpisodeTimeTableItem } from "@/schemas/proj
 import { updateUserPreference } from "@/services/user-preference"
 import { resAvatar } from "@/helpers/ui"
 import { dates } from "@/helpers/primitive"
+import { formatPublishClockTime } from "@/helpers/subscription"
 import { useEffectState } from "@/helpers/hooks"
 
 const headerFont = localFont({
@@ -212,8 +213,8 @@ function writeDisplayTimezoneCookie(value: string): void {
     document.cookie = `${DISPLAY_TIMEZONE_COOKIE}=${enc}; Path=/; Max-Age=${DISPLAY_TIMEZONE_COOKIE_MAX_AGE_SEC}; SameSite=Lax`
 }
 
-export function EpisodeTimeTable(props: { groups: EpisodeTimeTableGroup[], displayTimeZone: string }) {
-    const { groups, displayTimeZone } = props
+export function EpisodeTimeTable(props: { groups: EpisodeTimeTableGroup[], displayTimeZone: string, nightTimeTable: boolean }) {
+    const { groups, displayTimeZone, nightTimeTable } = props
 
     const todayWeekday = useMemo(() => isoWeekdayInTimeZone(new Date(), displayTimeZone), [displayTimeZone])
     
@@ -223,7 +224,7 @@ export function EpisodeTimeTable(props: { groups: EpisodeTimeTableGroup[], displ
 
     const seasonYearHeader = useMemo(() => episodeTimetableSeasonYearTitle(new Date(), displayTimeZone), [displayTimeZone])
 
-    const columns = useMemo(() => episodeTimetableVisibleWeekdays(shift, viewSize).map(w => groups.find(g => g.weekday === w) ?? {weekday: w, items: []}), [shift, viewSize])
+    const columns = useMemo(() => episodeTimetableVisibleWeekdays(shift, viewSize).map(w => groups.find(g => g.weekday === w) ?? {weekday: w, items: []}), [shift, viewSize, groups])
 
     return (
         <Box borderWidth="1px" rounded="md" overflow="hidden">
@@ -239,13 +240,13 @@ export function EpisodeTimeTable(props: { groups: EpisodeTimeTableGroup[], displ
                 </IconButton>
             </Flex>
             <Flex align="stretch" minH="120px">
-                {columns.map((col, colIdx) => <TimeTableColumn key={col.weekday} col={col} today={col.weekday === todayWeekday} colIdx={colIdx}/>)}
+                {columns.map((col, colIdx) => <TimeTableColumn key={col.weekday} col={col} today={col.weekday === todayWeekday} colIdx={colIdx} displayTimeZone={displayTimeZone} nightTimeTable={nightTimeTable}/>)}
             </Flex>
         </Box>
     )
 }
 
-const TimeTableColumn = memo(function TimeTableColumn({ col, today, colIdx }: { col: { weekday: number, items: EpisodeTimeTableItem[] }, today: boolean, colIdx: number }) {
+const TimeTableColumn = memo(function TimeTableColumn({ col, today, colIdx, displayTimeZone, nightTimeTable }: { col: { weekday: number, items: EpisodeTimeTableItem[] }, today: boolean, colIdx: number, displayTimeZone: string, nightTimeTable: boolean }) {
     return (
         <Box flex="1 1 0" minW="0" py="2" borderLeftWidth={colIdx === 0 ? "0" : "1px"} borderColor="border">
             <Flex align="center" justify="center" gap="1" mb="2" flexWrap="wrap">
@@ -255,13 +256,13 @@ const TimeTableColumn = memo(function TimeTableColumn({ col, today, colIdx }: { 
                 {today && <Badge size="sm" variant="subtle" colorPalette="teal">今天</Badge>}
             </Flex>
             <Stack maxH="min(70vh, 520px)" overflowY="auto">
-                {col.items.map(item => <TimeTableRow key={item.project.id} item={item}/>)}
+                {col.items.map(item => <TimeTableRow key={item.project.id} item={item} displayTimeZone={displayTimeZone} nightTimeTable={nightTimeTable}/>)}
             </Stack>
         </Box>
     )
 })
 
-const TimeTableRow = memo(function TimeTableRow({ item }: { item: EpisodeTimeTableItem }) {
+const TimeTableRow = memo(function TimeTableRow({ item, displayTimeZone, nightTimeTable }: { item: EpisodeTimeTableItem, displayTimeZone: string, nightTimeTable: boolean }) {
     return (
         <Flex gap="2" align="flex-start" p="2" transition="background 0.15s" _hover={{ bg: "bg.subtle" }} asChild>
             <NextLink href={`/${item.project.type.toLowerCase()}/database/${item.project.id}`}>
@@ -274,7 +275,7 @@ const TimeTableRow = memo(function TimeTableRow({ item }: { item: EpisodeTimeTab
                         {item.project.title}
                     </Text>
                     <Text fontSize="xs" color="fg.muted">
-                        {dates.format(item.nextPublishTime, "timeOnly")} · 第{item.nextPublishPlanItem.actualEpisodeNum ?? item.nextPublishPlanItem.index}话
+                        {formatPublishClockTime(item.nextPublishTime, displayTimeZone, nightTimeTable)} · 第{item.nextPublishPlanItem.actualEpisodeNum ?? item.nextPublishPlanItem.index}话
                     </Text>
                 </Box>
             </NextLink>

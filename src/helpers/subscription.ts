@@ -99,8 +99,9 @@ function getIsoWeekdayInZone(d: Date, timeZone: string): number {
 
 function getMinuteOfDayInZone(d: Date, timeZone: string): number {
     const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d)
-    const h = parseInt(parts.find(p => p.type === "hour")!.value, 10)
+    let h = parseInt(parts.find(p => p.type === "hour")!.value, 10)
     const m = parseInt(parts.find(p => p.type === "minute")!.value, 10)
+    if (h === 24) h = 0
     return h * 60 + m
 }
 
@@ -112,6 +113,16 @@ export function computeTimeInWeek(datetime: Date, timeZone: string, nightTimeTab
     const weekday = getIsoWeekdayInZone(adjusted, timeZone)
     const minute = getMinuteOfDayInZone(adjusted, timeZone)
     return weekday * 60 * 24 + minute
+}
+
+/** 放送时刻展示：深夜档开启时用 24 点制（如周日 0:00 → 24:00），与周列归属一致 */
+export function formatPublishClockTime(datetime: Date, timeZone: string, nightTimeTable: boolean): string {
+    const timeInWeek = computeTimeInWeek(datetime, timeZone, nightTimeTable)
+    const minuteOfDay = timeInWeek % (60 * 24)
+    const totalMin = nightTimeTable ? minuteOfDay + NIGHT_TIME_TABLE_HOUR_OFFSET * 60 : minuteOfDay
+    const h = Math.floor(totalMin / 60)
+    const m = totalMin % 60
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
 }
 
 /** 与 ChronoUnit.WEEKS.between(now, target) 近似：整周差（目标晚于当前时为正） */
